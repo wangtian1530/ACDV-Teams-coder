@@ -688,9 +688,3 @@ Educational / personal use. Không cài module từ nguồn không tin cậy —
 | Testing | Chỉ curl | ✅ Cheat-sheet + reset |
 | Roadmap | Quá chi tiết | ✅ Ngắn, thực tế |
 
-**Lưu ý quan trọng:** Section 3 có sẵn đoạn fix `main.py` — bạn paste luôn vào `README.md` để lần sau clone về không bị bug đó nữa.
-
-Nếu muốn mình tách thành 2 file (`README.md` cho user + `DEVELOPMENT.md` cho dev), nói mình chia lại.# ACDV-Teams-coder
-# ACDV-Teams-coder
-# ACDV-Teams-coder
-# ACDV-Teams-coder
