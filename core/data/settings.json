@@ -1,0 +1,18 @@
+{
+  "theme": "dark",
+  "editor": {
+    "font_size": 10,
+    "tab_size": 4,
+    "line_wrap": false,
+    "auto_save": false
+  },
+  "diagnostics": {
+    "auto_run_on_open": false,
+    "auto_run_on_save": true,
+    "show_inline": true
+  },
+  "overlays": {
+    "safe_mode": false,
+    "per_module": {}
+  }
+}

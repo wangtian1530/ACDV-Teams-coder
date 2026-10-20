@@ -1,0 +1,25 @@
+
+===== RUN 2026-10-20 21:16:48 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/test/bot.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/test
+------------------------------------------------------------
+2026-10-20 21:16:51.403 [INFO   ] apscheduler.scheduler: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-10-20 21:16:51.662 [INFO   ] apscheduler.scheduler: Added job "reminder_8405826079" to job store "default"
+2026-10-20 21:16:51.663 [INFO   ] apscheduler.scheduler: Scheduler started
+2026-10-20 21:16:51.663 [INFO   ] telegram.ext.Application: Application started
+
+[exit code: -9]
+
+===== RUN 2026-10-20 22:28:01 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/test/bot.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/test
+------------------------------------------------------------
+2026-10-20 22:28:04.145 [INFO   ] apscheduler.scheduler: Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2026-10-20 22:28:04.433 [INFO   ] apscheduler.scheduler: Added job "reminder_8405826079" to job store "default"
+2026-10-20 22:28:04.434 [INFO   ] apscheduler.scheduler: Scheduler started
+2026-10-20 22:28:04.434 [INFO   ] telegram.ext.Application: Application started
+2026-10-20 22:28:11.148 [INFO   ] telegram.ext.Application: Application is stopping. This might take a moment.
+2026-10-20 22:28:11.149 [INFO   ] apscheduler.scheduler: Scheduler has been shut down
+2026-10-20 22:28:11.159 [INFO   ] telegram.ext.Application: Application.stop() complete
+
+[exit code: 0]

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#252526">
+  <title>ACDV-Teams Coder</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button class="icon-btn" id="menuBtn" title="Menu">☰</button>
+      <div class="brand">
+        <span class="brand-mark">◆</span>
+        <span class="brand-name">ACDV-Teams Coder</span>
+      </div>
+      <div class="top-actions">
+        <span class="status-dot" id="connDot" title="Disconnected"></span>
+        <button class="icon-btn" id="runBtn" title="Run current file (Ctrl+Enter)">▶</button>
+        <button class="icon-btn hidden" id="stopRunBtn" title="Stop process">■</button>
+        <button class="icon-btn" id="logsBtn" title="View logs">📜</button>
+        <button class="icon-btn" id="problemsBtn" title="Problems">⚠</button>
+        <button class="icon-btn" id="saveBtn" title="Save (Ctrl+S)">💾</button>
+        <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+        <button class="icon-btn" id="newProjectBtn" title="New project">＋</button>
+      </div>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <button class="tab active" data-tab="projects">Projects</button>
+        <button class="tab" data-tab="explorer">Explorer</button>
+        <button class="tab" data-tab="modules">Modules</button>
+      </div>
+
+      <div class="tab-body" id="tab-projects">
+        <div class="sidebar-head">
+          <span>Projects</span>
+          <div class="row-actions">
+            <button class="icon-btn small" id="uploadProjectBtn" title="Upload project ZIP">📤</button>
+            <button class="icon-btn small" id="newProjectBtn2" title="New project">＋</button>
+          </div>
+        </div>
+        <ul class="project-list" id="projectList"></ul>
+      </div>
+
+      <div class="tab-body hidden" id="tab-explorer">
+        <div class="sidebar-head">
+          <span id="currentProjectName">No project</span>
+          <div class="row-actions">
+            <button class="icon-btn small" id="newFileBtn" title="New file">＋F</button>
+            <button class="icon-btn small" id="newFolderBtn" title="New folder">＋D</button>
+            <button class="icon-btn small" id="refreshTreeBtn" title="Refresh">⟳</button>
+          </div>
+        </div>
+        <ul class="file-tree" id="fileTree"></ul>
+      </div>
+
+      <div class="tab-body hidden" id="tab-modules">
+        <div class="sidebar-head">
+          <span>Modules</span>
+          <div class="row-actions">
+            <button class="icon-btn small" id="uploadModuleBtn" title="Install module from ZIP">📤</button>
+          </div>
+        </div>
+        <ul class="module-list" id="moduleList"></ul>
+        <div class="module-actions-container" id="moduleActions"></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <div class="editor-tabs" id="editorTabs"></div>
+
+      <div class="editor-wrap">
+        <div class="editor-empty" id="editorEmpty">
+          <div class="empty-inner">
+            <h2>ACDV-Teams Coder</h2>
+            <p>Chọn hoặc tạo project để bắt đầu</p>
+            <button class="btn primary" id="emptyNewProjectBtn">＋ New Project</button>
+          </div>
+        </div>
+        <textarea id="editor" class="editor hidden"></textarea>
+      </div>
+
+      <div class="bottom-panel" id="bottomPanel">
+        <div class="panel-head">
+          <div class="panel-tabs">
+            <button class="ptab active" data-ptab="output">Output</button>
+            <button class="ptab" data-ptab="run">Run</button>
+            <button class="ptab" data-ptab="problems">⚠ Problems</button>
+          </div>
+          <div class="panel-actions">
+            <button class="icon-btn small" id="clearOutputBtn">Clear</button>
+            <button class="icon-btn small" id="togglePanelBtn">▾</button>
+          </div>
+        </div>
+        <div class="panel-pane" id="pane-output">
+          <pre class="panel-body" id="outputLog"></pre>
+        </div>
+        <div class="panel-pane hidden" id="pane-run">
+          <div class="run-header" id="runHeader">Idle</div>
+          <pre class="panel-body" id="runLog"></pre>
+        </div>
+        <div class="panel-pane hidden" id="pane-problems">
+          <div id="problemsList"></div>
+        </div>
+      </div>
+    </main>
+
+    <nav class="mobile-bar">
+      <button class="mb" data-mobile-tab="projects">📁<span>Projects</span></button>
+      <button class="mb" data-mobile-tab="explorer">🗂<span>Files</span></button>
+      <button class="mb" data-mobile-tab="editor">✎<span>Editor</span></button>
+      <button class="mb" data-mobile-tab="output">▤<span>Output</span></button>
+    </nav>
+  </div>
+
+  <div class="modal hidden" id="projectModal">
+    <div class="modal-card">
+      <h3>New Project</h3>
+      <input type="text" id="projectNameInput" placeholder="Project name" autocomplete="off">
+      <select id="projectLangSelect">
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="html">HTML</option>
+        <option value="plaintext">Plain text</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn primary" id="modalCreate">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="promptModal">
+    <div class="modal-card">
+      <h3 id="promptTitle">Input</h3>
+      <input type="text" id="promptInput" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn" id="promptCancel">Cancel</button>
+        <button class="btn primary" id="promptOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="logsModal">
+    <div class="modal-card logs-modal-card">
+      <h3>Logs</h3>
+      <div class="logs-body">
+        <ul class="log-list" id="logList"></ul>
+        <pre class="log-preview" id="logPreview"></pre>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="downloadLogBtn" disabled>⬇ Download</button>
+        <button class="btn primary" onclick="document.getElementById('logsModal').classList.add('hidden')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⭐ v1.3.0: Settings modal -->
+  <div id="settingsModal" class="modal" style="display:none;">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <h2>⚙ Settings</h2>
+        <button id="settingsClose" class="modal-close" title="Close">×</button>
+      </div>
+      <div id="settingsTabs" class="settings-tabs"></div>
+      <div id="settingsContent" class="settings-content"></div>
+    </div>
+  </div>
+
+  <input type="file" id="projectZipInput" accept=".zip,application/zip" hidden>
+  <input type="file" id="moduleZipInput" accept=".zip,application/zip" hidden>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/ws.js"></script>
+  <script src="/js/explorer.js"></script>
+  <script src="/js/editor.js"></script>
+  <script src="/js/overlay.js"></script>
+  <script src="/js/diagnostics.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
