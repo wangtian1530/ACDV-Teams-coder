@@ -23,7 +23,6 @@ const App = {
     this.ws.on("run_finished", (m) => this._onRunFinished(m));
     this.ws.on("module_action_result", (m) => this._onModuleActionResult(m));
 
-    // ⭐ v1.3.0: route diagnostics WS messages
     this.ws.on("diagnostics_update", (m) => {
       if (window.DiagnosticsUI) window.DiagnosticsUI.handleWsMessage(m);
     });
@@ -31,7 +30,6 @@ const App = {
       if (window.DiagnosticsUI) window.DiagnosticsUI.handleWsMessage({ type: "diagnostics_cleared" });
     });
 
-    // ⭐ v1.3.0: toast helper (used by settings.js / diagnostics.js)
     window.AppToast = function (msg, type) {
       const t = document.createElement("div");
       t.textContent = msg;
@@ -44,7 +42,6 @@ const App = {
       setTimeout(() => t.remove(), 3000);
     };
 
-    // ⭐ v1.3.0: AppEditor — wrapper for DiagnosticsUI
     window.AppEditor = {
       getCm(project, path) {
         return App.editor && typeof App.editor.getCm === "function"
@@ -86,7 +83,6 @@ const App = {
     } catch (e) {}
     this._refreshRunStatus();
 
-    // ⭐ v1.3.0: load any existing diagnostics from server
     setTimeout(() => {
       if (window.DiagnosticsUI) window.DiagnosticsUI.refreshAll();
     }, 500);
@@ -153,7 +149,6 @@ const App = {
     const logsBtn = document.getElementById("logsBtn");
     if (logsBtn) logsBtn.onclick = () => this.openLogsModal();
 
-    // ⭐ v1.3.0: Problems + Settings
     const problemsBtn = document.getElementById("problemsBtn");
     if (problemsBtn) problemsBtn.onclick = () => {
       this._switchPanelTab("problems");
@@ -163,6 +158,11 @@ const App = {
     const settingsBtn = document.getElementById("settingsBtn");
     if (settingsBtn) settingsBtn.onclick = () => {
       if (window.SettingsUI) window.SettingsUI.open();
+    };
+    // ⭐ v1.3.0: Help button opens Settings → About tab
+    const helpBtn = document.getElementById("helpBtn");
+    if (helpBtn) helpBtn.onclick = () => {
+      if (window.SettingsUI) window.SettingsUI.open("about");
     };
 
     document.querySelectorAll(".ptab").forEach(t => {
@@ -177,7 +177,6 @@ const App = {
         if (el) el.textContent = "";
       } else if (tab === "problems") {
         if (window.DiagnosticsUI) {
-          // clear all
           fetch("/api/diagnostics/clear", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

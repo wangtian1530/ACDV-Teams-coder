@@ -1,16 +1,110 @@
-/* ACDV Settings UI — global + per-module settings + overlay toggles */
+/* ACDV Settings UI — global + per-module settings + overlay toggles + About */
 (function () {
   'use strict';
 
   const state = {
     global: null,
     modules: [],
+    version: '1.3.0',
     activeTab: 'general',
   };
 
   function q(sel, root) { return (root || document).querySelector(sel); }
   function qa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
+  // ============================================================ //
+  //  USER GUIDE (rendered in About tab)
+  // ============================================================ //
+  const GUIDE_HTML = `
+    <details class="about-details" open>
+      <summary>1. Tạo và mở project</summary>
+      <div class="content">
+        <ul>
+          <li>Nhấn nút <code>＋</code> trên toolbar hoặc <code>New Project</code> ở màn hình chính</li>
+          <li>Chọn tên + ngôn ngữ → hệ thống tự tạo file starter (<code>main.py</code>, <code>index.js</code>, …)</li>
+          <li>Upload project có sẵn dạng ZIP qua nút <code>📤</code> trong tab Projects</li>
+          <li>Click tên project ở sidebar để mở (double-tap để xoá trên mobile)</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>2. Editor & Tabs</summary>
+      <div class="content">
+        <ul>
+          <li>Click file trong Explorer để mở tab</li>
+          <li><code>Ctrl+S</code> — Lưu · <code>Ctrl+Enter</code> — Chạy file hiện tại</li>
+          <li>Tab có chấm <code>●</code> = chưa lưu</li>
+          <li>Click <code>×</code> để đóng tab (cảnh báo nếu chưa lưu)</li>
+          <li>Hỗ trợ syntax highlighting: Python, JS, HTML, CSS, XML, Markdown</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>3. Chạy code</summary>
+      <div class="content">
+        <ul>
+          <li>Hỗ trợ: <code>.py</code>, <code>.js</code>, <code>.sh</code>, <code>.bash</code></li>
+          <li>Nhấn <code>▶</code> trên toolbar hoặc icon <code>▶</code> cạnh file trong Explorer</li>
+          <li>Output stream realtime vào panel Run</li>
+          <li>Nhấn <code>■</code> để dừng — SIGTERM trước, SIGKILL nếu quá 2s</li>
+          <li>Log lưu tự động trong <code>core/data/logs/</code></li>
+          <li>Khi đóng browser → auto-stop process (nếu <code>auto_stop_on_disconnect=true</code>)</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>4. Cài Module</summary>
+      <div class="content">
+        <ul>
+          <li>Module = thư mục trong <code>modules/</code> có <code>main.py</code> + <code>init.txt</code></li>
+          <li>Upload ZIP qua nút <code>📤</code> trong tab Modules</li>
+          <li>Reload: nhấn <code>⟳</code> · Uninstall: nhấn <code>🗑</code></li>
+          <li>Module có thể thêm: UI buttons, custom routes, overlay CSS/JS, diagnostics, settings schema</li>
+          <li>Xem <code>modules/demo_module/</code> để có template</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>5. Diagnostics (VS Code style)</summary>
+      <div class="content">
+        <ul>
+          <li>Module đăng ký <code>diagnose()</code> để báo lỗi/cảnh báo</li>
+          <li>Hiển thị dạng gạch chân + trong panel Problems</li>
+          <li>Click vào lỗi để nhảy tới đúng dòng</li>
+          <li>Bật auto-run: Settings → Diagnostics → Auto-run on save</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>6. Settings</summary>
+      <div class="content">
+        <ul>
+          <li><strong>General</strong> — Theme, cấu hình chung</li>
+          <li><strong>Editor</strong> — Font size, tab size, line wrap, auto-save</li>
+          <li><strong>Diagnostics</strong> — Tự động chạy, hiển thị inline</li>
+          <li><strong>Overlays</strong> — Bật/tắt CSS/JS từ module, safe mode</li>
+          <li><strong>Modules</strong> — Cấu hình riêng cho từng module</li>
+          <li><strong>About</strong> — Thông tin + hướng dẫn (tab này)</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>7. Troubleshooting</summary>
+      <div class="content">
+        <ul>
+          <li>Port bị chiếm: <code>python3 main.py --port 9000</code></li>
+          <li>Kẹt process: <code>pkill -f "python main.py"; fuser -k 8765/tcp</code></li>
+          <li>Reset settings: xoá <code>core/data/settings.json</code></li>
+          <li>Safe mode (không overlay): mở <code>/?safe=1</code></li>
+          <li>Nếu <code>main.py</code> bị đè bởi module: verify <code>head -1 main.py</code> = <code>#!/usr/bin/env python3</code></li>
+        </ul>
+      </div>
+    </details>
+  `;
+
+  // ============================================================ //
+  //  OPEN / HIDE
+  // ============================================================ //
   async function open(tab) {
     state.activeTab = tab || 'general';
     document.getElementById('settingsModal').style.display = 'flex';
@@ -24,21 +118,26 @@
 
   async function loadAll() {
     try {
-      const [gs, ms] = await Promise.all([
+      const [gs, ms, st] = await Promise.all([
         fetch('/api/settings').then(r => r.json()),
         fetch('/api/settings/modules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
         }).then(r => r.json()),
+        fetch('/api/status').then(r => r.json()).catch(() => null),
       ]);
       if (gs && gs.ok) state.global = gs.settings;
       if (ms && ms.ok) state.modules = ms.modules;
+      if (st && st.version) state.version = st.version;
     } catch (e) {
       console.error('[Settings] load error', e);
     }
   }
 
+  // ============================================================ //
+  //  RENDER
+  // ============================================================ //
   function render() {
     const tabBar = document.getElementById('settingsTabs');
     const content = document.getElementById('settingsContent');
@@ -51,6 +150,7 @@
       { id: 'diagnostics', label: '🩺 Diagnostics' },
       { id: 'overlays',    label: '🎨 Overlays' },
       { id: 'modules',     label: '🧩 Modules' },
+      { id: 'about',       label: 'ℹ About' },
     ];
     for (const t of tabs) {
       const el = document.createElement('button');
@@ -66,6 +166,7 @@
     else if (state.activeTab === 'diagnostics') content.appendChild(renderGlobalDiagnostics());
     else if (state.activeTab === 'overlays') content.appendChild(renderGlobalOverlays());
     else if (state.activeTab === 'modules') content.appendChild(renderModules());
+    else if (state.activeTab === 'about') content.appendChild(renderAbout());
   }
 
   function renderField(key, spec, value) {
@@ -307,6 +408,79 @@
 
       wrap.appendChild(item);
     }
+    return wrap;
+  }
+
+  // ⭐ v1.3.0: About tab — logo + info + user guide
+  function renderAbout() {
+    const wrap = document.createElement('div');
+    wrap.className = 'settings-section';
+
+    // ---- Hero ----
+    const hero = document.createElement('div');
+    hero.className = 'about-hero';
+    hero.innerHTML = `
+      <svg class="about-hero-logo" width="80" height="80" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="aboutLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1177bb"/>
+            <stop offset="100%" stop-color="#0e639c"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 90,27 90,73 50,95 10,73 10,27"
+                 fill="url(#aboutLogoGrad)" stroke="#4af" stroke-width="2.5"/>
+        <text x="50" y="46" text-anchor="middle" fill="#fff"
+              font-size="18" font-weight="bold" font-family="sans-serif">ACDV</text>
+        <text x="50" y="61" text-anchor="middle" fill="#4af"
+              font-size="11" font-family="sans-serif">TEAMS</text>
+        <text x="50" y="76" text-anchor="middle" fill="#aaa"
+              font-size="9" font-family="monospace">CODER</text>
+      </svg>
+      <div class="about-hero-text">
+        <h3>ACDV-Teams Coder</h3>
+        <div class="version">v${state.version || '1.3.0'}</div>
+        <div class="tagline">Local web IDE · Python stdlib backend · CodeMirror frontend</div>
+      </div>
+    `;
+    wrap.appendChild(hero);
+
+    // ---- System info ----
+    const sys = document.createElement('div');
+    sys.className = 'about-card';
+    sys.innerHTML = `
+      <h4>ℹ Thông tin hệ thống</h4>
+      <div class="about-grid">
+        <span class="label">Version</span><span class="value">${state.version || '?'}</span>
+        <span class="label">Modules</span><span class="value">${state.modules.length}</span>
+        <span class="label">Platform</span><span class="value">${navigator.platform || '?'}</span>
+        <span class="label">Backend</span><span class="value">Python stdlib</span>
+        <span class="label">Frontend</span><span class="value">CodeMirror 5 · Vanilla JS</span>
+      </div>
+    `;
+    wrap.appendChild(sys);
+
+    // ---- Usage guide ----
+    const guide = document.createElement('div');
+    guide.className = 'about-card';
+    guide.innerHTML = `<h4>📖 Hướng dẫn sử dụng</h4>${GUIDE_HTML}`;
+    wrap.appendChild(guide);
+
+    // ---- Links ----
+    const links = document.createElement('div');
+    links.className = 'about-card';
+    links.innerHTML = `
+      <h4>🔗 Liên kết</h4>
+      <div class="about-links">
+        <a href="/api/status" target="_blank" rel="noopener">API status</a>
+        <a href="/api/modules" target="_blank" rel="noopener">Module list</a>
+        <a href="/api/settings" target="_blank" rel="noopener">Settings JSON</a>
+      </div>
+      <div class="settings-desc" style="margin-top:8px;">
+        Educational / personal use. Không cài module từ nguồn không tin cậy.
+      </div>
+    `;
+    wrap.appendChild(links);
+
     return wrap;
   }
 

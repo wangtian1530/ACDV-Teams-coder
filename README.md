@@ -1,10 +1,3 @@
-📘 README.md — Viết lại cho phát triển
-
-Dưới đây là bản README gọn, tập trung vào dev workflow (không phải marketing). Copy đè lên README.md hiện tại.
-
----
-
-```markdown
 # ACDV-Teams Coder
 
 Local web IDE — Python stdlib backend, CodeMirror frontend, module extension system.
@@ -26,19 +19,13 @@ Local web IDE — Python stdlib backend, CodeMirror frontend, module extension s
 | Overlay CSS/JS (safe mode) | ✅ Ổn định |
 | Error dispatch chain | ⚠️ Mới — cần test thêm |
 | Frontend editor + explorer | ✅ Ổn định |
-| Frontend settings UI | ⚠️ Mới — cần test thêm |
-| Frontend diagnostics UI | ⚠️ Mới — cần test thêm |
-
-**Known bug đang chờ fix:** `main.py` ở root có thể bị đè bởi module `main.py`. Verify:
-```bash
-head -1 main.py
-# Phải là: #!/usr/bin/env python3
-# Nếu là:   from core.loader import ModuleBase  → bị đè, xem §3
-```
+| Frontend settings UI + About tab | ✅ Ổn định |
+| Frontend diagnostics UI | ✅ Ổn định |
+| **Demo module (v1.3.0)** | ✅ Mới — template đầy đủ contract |
 
 ---
 
-2. Cấu trúc thư mục
+## 2. Cấu trúc thư mục
 
 ```
 acdv-coder/
@@ -55,55 +42,49 @@ acdv-coder/
 │   ├── project_manager.py     # Project CRUD + file ops + ZIP upload
 │   ├── runner.py              # ProcessRunner (subprocess + kill group)
 │   ├── settings.py            # Global + per-module settings
-│   ├── diagnostics.py         # DiagnosticsManager (collect from modules)
+│   ├── diagnostics.py         # DiagnosticsManager
 │   └── data/                  # Auto-created: logs/, settings.json, .run_pids.json
 │
-├── frontend/                  # Client
+├── frontend/
 │   ├── index.html
 │   ├── css/style.css
 │   └── js/
-│       ├── api.js             # REST wrapper
-│       ├── ws.js              # WS client + auto reconnect
-│       ├── explorer.js        # Project tree + file list
-│       ├── editor.js          # CodeMirror manager (tabs, getCm, openFileAtLine)
-│       ├── app.js             # Glue: bindings, run, logs, modules, WS routing
-│       ├── diagnostics.js     # Problems panel + inline markers
-│       ├── settings.js        # Settings modal UI
-│       └── overlay.js         # Inject module CSS/JS with safe mode
+│       ├── api.js
+│       ├── ws.js
+│       ├── explorer.js
+│       ├── editor.js
+│       ├── app.js
+│       ├── diagnostics.js
+│       ├── settings.js        # ⭐ v1.3.0: thêm tab About + hướng dẫn
+│       └── overlay.js
 │
-├── modules/                   # User modules (per-module sandbox)
+├── modules/
+│   ├── demo_module/           # ⭐ v1.3.0: template đầy đủ contract
+│   │   ├── init.txt
+│   │   ├── main.py
+│   │   └── web/overlay.css
 │   └── <name>/
-│       ├── init.txt           # Metadata (JSON)
-│       ├── main.py            # class Module(ModuleBase)
-│       ├── data/              # Sandbox (auto-created)
-│       └── web/               # Optional web UI
-│           ├── index.html
-│           ├── overlay.css    # Optional — injected vào UI chính
-│           └── overlay.js     # Optional — injected vào UI chính
+│       ├── init.txt
+│       ├── main.py
+│       ├── data/
+│       └── web/
 │
 ├── projects/                  # User projects
-│   └── <name>/
-│       ├── .project.json
-│       └── ...
-│
 └── overrides/                 # Optional .py patches (dev only)
-    └── *.py                   # exec() với ns = {engine, sandbox, config, router}
 ```
 
 ---
 
-3. Quick start
-
-Chạy lần đầu
+## 3. Quick start
 
 ```bash
 cd /path/to/acdv-coder
 python3 main.py
 ```
 
-Mở: http://localhost:8765
+Mở: <http://localhost:8765>
 
-Nếu không có output
+### Troubleshoot
 
 ```bash
 # 1. Verify main.py là entry point đúng
@@ -113,64 +94,20 @@ head -1 main.py
 # 2. Verify import chain OK
 python3 -c "from core.engine import CoreEngine; print('OK')"
 
-# 3. Smoke test backend trực tiếp
-python3 - <<'EOF'
-import os, json, sys, time
-sys.path.insert(0, '.')
-from core.engine import CoreEngine
-with open('config.json') as f: cfg = json.load(f)
-eng = CoreEngine(os.getcwd(), cfg)
-eng.boot()
-time.sleep(2)
-eng.shutdown()
-EOF
-```
-
-Nếu port bị chiếm
-
-```bash
+# 3. Port bị chiếm
 python3 main.py --port 9000
 # hoặc
 fuser -k 8765/tcp
-```
 
-Fix main.py bị đè
-
-Nếu head -1 main.py không phải #!/usr/bin/env python3 → đã bị đè. Restore:
-
-```python
-#!/usr/bin/env python3
-"""ACDV-Teams Coder — Entry point."""
-import os, sys, json, signal, argparse
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, BASE_DIR)
-from core.engine import CoreEngine
-
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--host", default=None)
-    p.add_argument("--port", type=int, default=None)
-    args = p.parse_args()
-
-    cfg_path = os.path.join(BASE_DIR, "config.json")
-    with open(cfg_path, encoding="utf-8") as f:
-        config = json.load(f)
-    if args.host: config["host"] = args.host
-    if args.port: config["port"] = args.port
-
-    engine = CoreEngine(BASE_DIR, config)
-    signal.signal(signal.SIGINT, lambda *_: (engine.shutdown(), sys.exit(0)))
-    signal.signal(signal.SIGTERM, lambda *_: (engine.shutdown(), sys.exit(0)))
-    engine.boot()
-    engine.run_forever()
-
-if __name__ == "__main__":
-    main()
+# 4. Reset trạng thái
+pkill -f "python main.py"
+rm core/data/.run_pids.json
+rm core/data/settings.json
 ```
 
 ---
 
-4. Architecture
+## 4. Architecture
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -192,12 +129,11 @@ if __name__ == "__main__":
 └──────────────────┬───────────────────────────────────┘
                    │
 ┌──────────────────▼───────────────────────────────────┐
-│  Disk                                                │
-│  projects/, modules/, core/data/, frontend/          │
+│  Disk: projects/, modules/, core/data/, frontend/    │
 └──────────────────────────────────────────────────────┘
 ```
 
-Luồng 1 request HTTP
+### Luồng 1 request HTTP
 
 ```
 client → server._handle_http
@@ -213,29 +149,11 @@ client → server._handle_http
           → nếu None → 500 Internal Error
 ```
 
-Luồng module lifecycle
-
-```
-boot()
-  → scan_and_load_all()
-     → load_module(name)
-        → đọc init.txt (metadata)
-        → detect web/overlay.css|js
-        → import main.py
-        → tìm class Module(ModuleBase)
-        → instance.on_load()
-        → register settings_schema
-        → register diagnostics provider
-        → engine.register_module(instance)
-           → router.add route (reject nếu collide core)
-  → recover_sessions() → mod.on_recovery()
-```
-
 ---
 
-5. Module contract
+## 5. Module contract
 
-init.txt — metadata (JSON)
+### `init.txt` — metadata (JSON)
 
 ```json
 {
@@ -245,7 +163,7 @@ init.txt — metadata (JSON)
   "critical": false,
 
   "routes": [
-    { "method": "GET",  "path": "/api/my_module/hello", "handler": "hello" }
+    { "method": "GET", "path": "/api/my_module/hello", "handler": "hello" }
   ],
 
   "ui_buttons": [
@@ -272,129 +190,111 @@ init.txt — metadata (JSON)
 }
 ```
 
-main.py — class Module
+### `main.py` — class Module
 
 ```python
 from core.loader import ModuleBase
 
 class Module(ModuleBase):
-
-    # === lifecycle ===
+    # Lifecycle
     def on_load(self):              pass
     def on_recovery(self):          pass
     def on_shutdown(self):          pass
 
-    # === settings (v1.2.2+) ===
+    # Settings
     def on_settings_changed(self, new_settings):   pass
     def get_settings(self) -> dict:                ...
 
-    # === diagnostics (v1.2.2+) ===
+    # Diagnostics
     def diagnose(self, project, path, content) -> list[dict]:
-        """Return [{"severity": "error"|"warning"|"info"|"hint",
-                    "line", "column", "end_line", "end_column",
-                    "message", "code"}]"""
         return []
 
-    # === error interceptors (v1.3.0+) ===
-    def on_any_error(self, ctx) -> dict | None:
-        """ctx = {source, error, traceback, method?, path?, request?,
-                  module?, button_id?, params?}"""
-        return None
+    # Error interceptors
+    def on_any_error(self, ctx) -> dict | None:      return None
+    def on_http_error(self, ctx) -> dict | None:     return None
+    def on_ws_route_error(self, ctx) -> dict | None: return None
+    def on_ws_action_error(self, ctx) -> dict | None:return None
 
-    def on_http_error(self, ctx) -> dict | None:      return None
-    def on_ws_route_error(self, ctx) -> dict | None:  return None
-    def on_ws_action_error(self, ctx) -> dict | None: return None
-
-    # === routes (declared in init.txt) ===
+    # Routes (declared in init.txt)
     def hello(self, req) -> dict:
         return { "ok": True, "msg": "Hello" }
 
-    # === ui_buttons (custom action) ===
+    # UI button handlers
     def on_button_<id>(self, params) -> dict:  # vd: on_button_run_main
         return { "ok": True }
 ```
 
-Error interceptor return shape
+### Error interceptor return shape
 
 ```python
-# Không xử lý → cho pass through
-return None
-# hoặc
-return { "handled": False }
-
-# Xử lý, dùng response trực tiếp
-return { "handled": True, "response": { "ok": False, "error": "...", "custom": True } }
-
-# Xử lý, dùng chính dict đó làm response
-return { "ok": False, "error": "...", "custom": True }
+return None                                            # pass through
+return { "handled": False }                            # pass through
+return { "handled": True, "response": { ... } }        # handled
+return { "ok": False, "error": "..." }                 # handled (dùng luôn)
 ```
+
+### ⭐ Demo module
+
+Xem `modules/demo_module/` — minh hoạ đầy đủ:
+- 3 routes (`ping`, `sysinfo`, `echo`)
+- 2 UI buttons (`show_info` = custom action, `check_health` = route proxy)
+- Settings schema (`enabled`, `greeting`, `verbose`)
+- Diagnostics (warn `TODO` + `breakpoint()`)
+- Error interceptor (`on_http_error`)
 
 ---
 
-6. API Reference
+## 6. API Reference
 
-Core
+### Core
+| Endpoint | Method | Body | Response |
+|---|---|---|---|
+| `/api/status` | GET | — | `{status, version, uptime_modules}` |
+| `/api/modules` | GET | — | `{<name>: metadata}` |
+| `/api/modules/install` | POST | `{zip_base64}` | `{ok, module}` |
+| `/api/modules/uninstall` | POST | `{name}` | `{ok}` |
+| `/api/modules/reload` | POST | `{name}` | `{ok}` |
 
-Endpoint Method Body Response
-/api/status GET — {status, version, uptime_modules}
-/api/modules GET — {<name>: metadata}
-/api/modules/install POST {zip_base64} {ok, module}
-/api/modules/uninstall POST {name} {ok}
-/api/modules/reload POST {name} {ok}
+### Projects
+| Endpoint | Method | Body |
+|---|---|---|
+| `/api/projects` | GET | — |
+| `/api/projects/create` | POST | `{name, language}` |
+| `/api/projects/upload` | POST | `{name, zip_base64}` |
+| `/api/projects/delete` | POST | `{name}` |
+| `/api/projects/tree` | POST | `{project}` |
+| `/api/projects/file/read` | POST | `{project, path}` |
+| `/api/projects/file/write` | POST | `{project, path, content}` |
+| `/api/projects/file/create` | POST | `{project, path}` |
+| `/api/projects/file/delete` | POST | `{project, path}` |
+| `/api/projects/file/rename` | POST | `{project, old_path, new_path}` |
+| `/api/projects/folder/create` | POST | `{project, path}` |
 
-Projects
+### Run / Logs
+| Endpoint | Method | Body |
+|---|---|---|
+| `/api/projects/run` | POST | `{project, path}` |
+| `/api/projects/run/stop` | POST | `{force?: bool}` |
+| `/api/projects/run/status` | GET | — |
+| `/api/projects/logs/list` | POST | `{project?}` |
+| `/api/projects/logs/read` | POST | `{name}` |
+| `/api/projects/logs/delete` | POST | `{name}` |
 
-Endpoint Method Body
-/api/projects GET —
-/api/projects/create POST {name, language}
-/api/projects/upload POST {name, zip_base64}
-/api/projects/delete POST {name}
-/api/projects/tree POST {project}
-/api/projects/file/read POST {project, path}
-/api/projects/file/write POST {project, path, content}
-/api/projects/file/create POST {project, path}
-/api/projects/file/delete POST {project, path}
-/api/projects/file/rename POST {project, old_path, new_path}
-/api/projects/folder/create POST {project, path}
+### Settings / Diagnostics / Overlay
+| Endpoint | Method | Body |
+|---|---|---|
+| `/api/settings` | GET | — |
+| `/api/settings` | POST | `{<patch>}` |
+| `/api/settings/modules` | POST | `{}` |
+| `/api/settings/module/get` | POST | `{name}` |
+| `/api/settings/module/set` | POST | `{name, values}` |
+| `/api/diagnostics/check` | POST | `{project, path}` |
+| `/api/diagnostics/file` | POST | `{project, path}` |
+| `/api/diagnostics/all` | GET | — |
+| `/api/diagnostics/clear` | POST | `{project?, path?}` |
+| `/api/overlay` | GET | — |
 
-Run
-
-Endpoint Method Body
-/api/projects/run POST {project, path}
-/api/projects/run/stop POST {force?: bool}
-/api/projects/run/status GET —
-
-Logs
-
-Endpoint Method Body
-/api/projects/logs/list POST {project?}
-/api/projects/logs/read POST {name}
-/api/projects/logs/delete POST {name}
-
-Settings
-
-Endpoint Method Body
-/api/settings GET —
-/api/settings POST {<patch>}
-/api/settings/modules POST {}
-/api/settings/module/get POST {name}
-/api/settings/module/set POST {name, values}
-
-Diagnostics
-
-Endpoint Method Body
-/api/diagnostics/check POST {project, path}
-/api/diagnostics/file POST {project, path}
-/api/diagnostics/all GET —
-/api/diagnostics/clear POST {project?, path?}
-
-Overlay
-
-Endpoint Method Response
-/api/overlay GET {ok, safe_mode, overlays:[{name,css,js,css_enabled,js_enabled}]}
-
-Module static
-
+### Module static
 ```
 GET /module/<name>/                  → web/index.html
 GET /module/<name>/overlay.css       → web/overlay.css
@@ -404,26 +304,20 @@ GET /module/<name>/*                 → web/*
 
 ---
 
-7. WebSocket protocol
+## 7. WebSocket protocol
 
-Client → Server
-
+### Client → Server
 ```jsonc
 { "type": "ping", "time": 1234567890 }
 { "type": "status" }
 { "type": "modules" }
 { "type": "settings" }
 { "type": "module_settings", "module": "my_module" }
-
-{ "type": "route", "id": "req-1",
-  "method": "POST", "path": "/api/status", "body": {} }
-
-{ "type": "module_action",
-  "module": "my_module", "button_id": "custom_do", "params": {"x": 1} }
+{ "type": "route", "id": "req-1", "method": "POST", "path": "/api/status", "body": {} }
+{ "type": "module_action", "module": "my_module", "button_id": "custom_do", "params": {"x": 1} }
 ```
 
-Server → Client
-
+### Server → Client
 ```jsonc
 { "type": "pong", "time": 1234567890 }
 { "type": "status", "data": {modules, running, clients, runner, settings} }
@@ -432,33 +326,32 @@ Server → Client
 { "type": "route_result", "id": "req-1", "ok": true, "data": {...} }
 { "type": "module_action_result", "module": "x", "button_id": "y", "ok": true, "result": {...} }
 
-// Run events (broadcast)
+// Run events
 { "type": "run_started",  "project", "path", "log_name", "pid" }
 { "type": "run_output",   "project", "path", "lines": ["...", "..."] }
 { "type": "run_finished", "project", "path", "exit_code", "log_name" }
 
-// Diagnostics (broadcast)
+// Diagnostics
 { "type": "diagnostics_update",  "project", "path", "diagnostics": [...] }
 { "type": "diagnostics_cleared" }
 
-// Settings (broadcast)
+// Settings
 { "type": "settings_changed",        "settings": {...} }
 { "type": "module_settings_changed", "module", "values": {...} }
 ```
 
 ---
 
-8. Dev workflow
+## 8. Dev workflow
 
-Thêm 1 module mới
+### Thêm module mới (template nhanh)
 
 ```bash
 mkdir -p modules/my_mod/web
 cd modules/my_mod
 ```
 
-init.txt:
-
+**`init.txt`:**
 ```json
 {
   "name": "my_mod",
@@ -472,58 +365,51 @@ init.txt:
 }
 ```
 
-main.py:
-
+**`main.py`:**
 ```python
 from core.loader import ModuleBase
 
 class Module(ModuleBase):
     def on_load(self):
-        print(f"[{self.name}] loaded, settings={self.get_settings()}")
+        print(f"[{self.name}] loaded")
 
     def ping(self, req):
         return { "ok": True, "pong": True }
 
     def diagnose(self, project, path, content):
-        return []  # hoặc list problems
+        return []
 ```
 
-Test:
-
+**Test:**
 ```bash
-# Reload trong UI, hoặc:
-curl http://localhost:8765/api/modules/reload \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"my_mod"}'
-
+curl -X POST http://localhost:8765/api/modules/reload \
+  -H 'Content-Type: application/json' -d '{"name":"my_mod"}'
 curl http://localhost:8765/api/my_mod/ping
 ```
 
-Thêm 1 route mới (core)
+### Thêm 1 route mới (core)
 
-Trong core/engine.py → _init_core():
+Trong `core/engine.py` → `_init_core()`:
 
 ```python
 A = self.router.add_core          # ← protected route
 A("GET", "/api/my_endpoint", self._api_my_endpoint)
 ```
 
-⚠️ LUÔN dùng add_core cho core routes. Nếu dùng router.add, module có thể override.
+⚠️ LUÔN dùng `add_core` — nếu dùng `router.add`, module có thể override.
 
-Thêm 1 overlay (CSS/JS cho UI chính)
+### Thêm overlay
 
 ```bash
-# Trong module
 touch modules/my_mod/web/overlay.css
 touch modules/my_mod/web/overlay.js
 ```
 
-Sau đó reload → bật/tắt trong Settings → Overlays. Test safe mode: mở ?safe=1 (skip hết overlay).
+Reload module → overlay tự inject. Test safe mode: mở `/?safe=1`.
 
-Trigger diagnostics
+### Trigger diagnostics
 
 ```python
-# Trong module
 def diagnose(self, project, path, content):
     if not path.endswith(".py"):
         return []
@@ -535,12 +421,11 @@ def diagnose(self, project, path, content):
     }]
 ```
 
-Save file → diagnostics tự chạy (nếu settings.diagnostics.auto_run_on_save = true). Kết quả broadcast qua WS → Problems panel + inline markers.
+Save file → diagnostics tự chạy (nếu `diagnostics.auto_run_on_save=true`) → broadcast qua WS → hiện trong Problems panel + inline markers.
 
-Intercept errors
+### Intercept errors
 
 ```python
-# Trong module
 def on_http_error(self, ctx):
     if "/api/projects/" not in ctx.get("path", ""):
         return None
@@ -551,11 +436,9 @@ def on_http_error(self, ctx):
     }
 ```
 
-Test: gọi API lỗi → response bị replace.
-
 ---
 
-9. Testing cheat-sheet
+## 9. Testing cheat-sheet
 
 ```bash
 # Backend up?
@@ -563,6 +446,10 @@ curl http://localhost:8765/api/status
 
 # Module list
 curl http://localhost:8765/api/modules
+
+# Demo module ping
+curl http://localhost:8765/api/demo_module/ping
+curl http://localhost:8765/api/demo_module/sysinfo
 
 # Create project
 curl -X POST http://localhost:8765/api/projects/create \
@@ -593,104 +480,64 @@ curl -X POST http://localhost:8765/api/settings \
 curl http://localhost:8765/api/overlay
 
 # Module static
-curl http://localhost:8765/module/my_mod/
-curl http://localhost:8765/module/my_mod/overlay.css
+curl http://localhost:8765/module/demo_module/
 ```
 
-Reset trạng thái khi kẹt
+### Reset trạng thái khi kẹt
 
 ```bash
-# Kill process còn sót
 pkill -f "python main.py"
 fuser -k 8765/tcp
-
-# Xoá PID tracking
 rm core/data/.run_pids.json
-
-# Reset settings
 rm core/data/settings.json
-
-# Clear diag cache (server restart là đủ)
+# Clear diag cache: restart server
 ```
 
 ---
 
-10. Known issues / TODO
+## 10. Known issues / TODO
 
-🔴 Bug cần fix ngay
+### 🔴 Bug cần fix ngay
+- ☐ `main.py` bị module đè — verify mỗi lần clone, add CI check
+- ☐ Version mismatch giữa các file — luôn bump cùng lúc (`config.json`, `__init__.py`, `README.md`)
 
-☐ main.py bị module đè — verify mỗi lần clone, add CI check
-☐ Version mismatch: config.json = 1.2.2, code ghi 1.3.0 — bump đồng bộ
+### 🟡 Cần test kỹ
+- ☐ Error dispatch chain: `on_any_error` → `on_http_error` (pass-through + handle)
+- ☐ Settings modal: schema validation, save/load, `on_settings_changed` callback
+- ☐ Overlay: CSS injection, JS injection, safe mode `?safe=1`, per-module toggle
+- ☐ Diagnostics: auto-run on save, inline markers, jump-to-line, WS broadcast
+- ☐ Core route protection: module cố override `/api/status` phải bị reject
 
-🟡 Cần test kỹ
-
-☐ Error dispatch chain: on_any_error → on_http_error (pass-through + handle)
-☐ Settings modal: schema validation, save/load, on_settings_changed callback
-☐ Overlay: CSS injection, JS injection, safe mode ?safe=1, per-module toggle
-☐ Diagnostics: auto-run on save, inline markers, jump-to-line, WS broadcast
-☐ Core route protection: module cố override /api/status phải bị reject
-
-🟢 Nice to have
-
-☐ Project export ZIP
-☐ Import from Git URL
-☐ Terminal panel (chạy lệnh trực tiếp)
-☐ Multi-user auth
-☐ Syntax validation trước khi save
-☐ Resource limits (CPU/mem per process)
+### 🟢 Nice to have
+- ☐ Project export ZIP
+- ☐ Import from Git URL
+- ☐ Terminal panel
+- ☐ Multi-user auth
+- ☐ Resource limits (CPU/mem per process)
 
 ---
 
-11. Roadmap
+## 11. Roadmap
 
-v1.3.x — polish
+**v1.3.x — polish**
+- Test suite (pytest cho core, playwright cho frontend)
+- Docs cho error dispatch chain + example module ✅ (xem `modules/demo_module/`)
+- Diagnostics: severity filter trong UI
 
-· Fix main.py bug + version bump
-· Test suite (pytest cho core, jsdom/playwright cho frontend)
-· Error dispatch chain: docs + example module
-· Diagnostics: severity filter trong UI
+**v1.4.0 — developer experience**
+- Hot reload module (watch `modules/*/main.py`)
+- Terminal panel
+- Project export
+- Preview HTML project (`/preview/<project>/`)
 
-v1.4.0 — developer experience
-
-· Hot reload module (watch modules/*/main.py)
-· Terminal panel
-· Project export
-· Preview HTML project (/preview/<project>/)
-
-v2.0.0 — scale
-
-· Multi-user + auth
-· Collaborative editing (WS)
-· Docker isolation per project
-· Resource limits
+**v2.0.0 — scale**
+- Multi-user + auth
+- Collaborative editing (WS)
+- Docker isolation per project
+- Resource limits
 
 ---
 
-12. Legal
+## 12. Legal
 
-Educational / personal use. Không cài module từ nguồn không tin cậy — module có toàn quyền Python. Không chạy server bằng sudo.
-
-```
-
----
-
-## 📋 Tóm tắt thay đổi so với README cũ
-
-| Mục | Bản cũ | Bản mới |
-|---|---|---|
-| Độ dài | ~1000 dòng | ~450 dòng |
-| Focus | Marketing + feature | Dev workflow + reference |
-| Bug section | ❌ Không có | ✅ Known issues rõ ràng |
-| Quick start | Chỉ cần chạy | Có troubleshoot `main.py` bug |
-| API ref | Rải rác | ✅ 1 bảng duy nhất |
-| WS protocol | Dài dòng | ✅ Compact jsonc |
-| Dev workflow | Sơ sài | ✅ Copy-paste recipes |
-| Testing | Chỉ curl | ✅ Cheat-sheet + reset |
-| Roadmap | Quá chi tiết | ✅ Ngắn, thực tế |
-
-**Lưu ý quan trọng:** Section 3 có sẵn đoạn fix `main.py` — bạn paste luôn vào `README.md` để lần sau clone về không bị bug đó nữa.
-
-Nếu muốn mình tách thành 2 file (`README.md` cho user + `DEVELOPMENT.md` cho dev), nói mình chia lại.# ACDV-Teams-coder
-# ACDV-Teams-coder
-# ACDV-Teams-coder
-# ACDV-Teams-coder
+Educational / personal use. Không cài module từ nguồn không tin cậy — module có toàn quyền Python. Không chạy server bằng `sudo`.

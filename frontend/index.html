@@ -14,7 +14,12 @@
     <header class="topbar">
       <button class="icon-btn" id="menuBtn" title="Menu">☰</button>
       <div class="brand">
-        <span class="brand-mark">◆</span>
+        <svg class="brand-logo" width="22" height="22" viewBox="0 0 100 100" aria-hidden="true">
+          <polygon points="50,5 90,27 90,73 50,95 10,73 10,27"
+                   fill="#0e639c" stroke="#4af" stroke-width="3"/>
+          <text x="50" y="62" text-anchor="middle" fill="#fff"
+                font-size="32" font-weight="bold" font-family="sans-serif">A</text>
+        </svg>
         <span class="brand-name">ACDV-Teams Coder</span>
       </div>
       <div class="top-actions">
@@ -24,6 +29,7 @@
         <button class="icon-btn" id="logsBtn" title="View logs">📜</button>
         <button class="icon-btn" id="problemsBtn" title="Problems">⚠</button>
         <button class="icon-btn" id="saveBtn" title="Save (Ctrl+S)">💾</button>
+        <button class="icon-btn" id="helpBtn" title="Hướng dẫn / About">?</button>
         <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
         <button class="icon-btn" id="newProjectBtn" title="New project">＋</button>
       </div>
@@ -160,7 +166,7 @@
     </div>
   </div>
 
-  <!-- ⭐ v1.3.0: Settings modal -->
+  <!-- ⭐ v1.3.0: Settings modal (About tab được render bởi settings.js) -->
   <div id="settingsModal" class="modal" style="display:none;">
     <div class="modal-content settings-modal">
       <div class="modal-header">

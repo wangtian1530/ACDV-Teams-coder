@@ -1,0 +1,43 @@
+{
+  "name": "demo_module",
+  "version": "1.0.0",
+  "description": "Demo module — template showing full ModuleBase contract (routes, buttons, settings, diagnostics, overlay)",
+  "display_name": "Demo Module",
+  "critical": false,
+
+  "routes": [
+    { "method": "GET",  "path": "/api/demo_module/ping",    "handler": "ping" },
+    { "method": "GET",  "path": "/api/demo_module/sysinfo", "handler": "sys_info" },
+    { "method": "POST", "path": "/api/demo_module/echo",    "handler": "echo" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "show_info",
+      "label": "System Info",
+      "icon": "ℹ",
+      "color": "info",
+      "action": "custom"
+    },
+    {
+      "id": "check_health",
+      "label": "Ping",
+      "icon": "🏓",
+      "color": "success",
+      "action": "route",
+      "params": { "path": "/api/demo_module/ping", "method": "GET" }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled":  { "type": "boolean", "default": true, "label": "Enable Demo Module" },
+    "greeting": { "type": "string",  "default": "Hello from ACDV", "label": "Greeting" },
+    "verbose":  { "type": "boolean", "default": false, "label": "Verbose logging" }
+  },
+
+  "diagnostics": {
+    "files": ["*.py"]
+  },
+
+  "overlay": {}
+}
