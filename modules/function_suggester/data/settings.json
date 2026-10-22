@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "auto_scan_on_start": true,
+  "max_suggestions": 20,
+  "include_private": true,
+  "exclude_current_file": false
+}

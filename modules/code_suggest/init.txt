@@ -1,0 +1,34 @@
+{
+  "name": "code_suggest",
+  "version": "1.0.0",
+  "description": "VS Code-style autocomplete for Python / JS / Bash",
+  "critical": false,
+
+  "routes": [
+    { "method": "POST", "path": "/api/code_suggest/complete",  "handler": "complete" },
+    { "method": "GET",  "path": "/api/code_suggest/languages", "handler": "languages" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "list_langs",
+      "label": "Supported languages",
+      "icon": "🌐",
+      "color": "info",
+      "action": "route",
+      "params": { "method": "GET", "path": "/api/code_suggest/languages" }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled":         { "type": "boolean", "default": true, "label": "Enable suggestions" },
+    "min_prefix":      { "type": "number",  "default": 1, "min": 1, "max": 5,  "label": "Min prefix length" },
+    "max_items":       { "type": "number",  "default": 20, "min": 5, "max": 50, "label": "Max suggestions" },
+    "show_keywords":   { "type": "boolean", "default": true, "label": "Show keywords" },
+    "show_builtins":   { "type": "boolean", "default": true, "label": "Show builtins" },
+    "show_snippets":   { "type": "boolean", "default": true, "label": "Show snippets" },
+    "show_locals":     { "type": "boolean", "default": true, "label": "Show local symbols (in-file defs)" }
+  },
+
+  "diagnostics": { "files": [] }
+}

@@ -1,10 +1,9 @@
 """HTTP + WebSocket server written from scratch on raw sockets.
 
-v1.3.0:
-  - Error dispatch chain for HTTP routes and WS route/module_action calls
-  - module web/overlay.css & web/overlay.js served automatically
-  - FIX: WS "settings" / "module_settings" / "status" no longer leak
-    SettingsManager objects (json-serializable dicts only)
+v1.3.2:
+  - Terminal over WebSocket (`terminal_open`, `terminal_input`,
+    `terminal_resize`, `terminal_close`).
+  - Auto close terminals owned by a disconnected ws.
 """
 import os
 import struct
@@ -255,9 +254,17 @@ class HttpWsServer:
             return ("400 Bad Request", {"Content-Type": "text/plain"}, b"bad module name")
         if module_name not in self.engine.modules:
             return ("404 Not Found", {"Content-Type": "text/plain"}, b"module not found")
-        web_dir = os.path.join(self.engine.base_dir, "modules", module_name, "web")
-        if not os.path.isdir(web_dir):
-            return ("404 Not Found", {"Content-Type": "text/plain"}, b"no web ui")
+
+        source = "web"
+        if rest.startswith("_data_/"):
+            source = "data"
+            rest = rest[len("_data_/"):]
+
+        source_dir = os.path.join(self.engine.base_dir, "modules", module_name, source)
+        if not os.path.isdir(source_dir):
+            return ("404 Not Found", {"Content-Type": "text/plain"},
+                    b"no " + source.encode() + b" dir")
+
         rel = rest or "index.html"
         if "?" in rel:
             rel = rel.split("?", 1)[0]
@@ -265,14 +272,16 @@ class HttpWsServer:
             rel = "index.html"
         if ".." in rel.replace("\\", "/").split("/"):
             return ("403 Forbidden", {"Content-Type": "text/plain"}, b"forbidden")
-        web_abs = os.path.abspath(web_dir)
-        target = os.path.abspath(os.path.join(web_abs, rel))
-        if target != web_abs and not target.startswith(web_abs + os.sep):
+
+        source_abs = os.path.abspath(source_dir)
+        target = os.path.abspath(os.path.join(source_abs, rel))
+        if target != source_abs and not target.startswith(source_abs + os.sep):
             return ("403 Forbidden", {"Content-Type": "text/plain"}, b"forbidden")
         if os.path.isdir(target):
             target = os.path.join(target, "index.html")
         if not os.path.isfile(target):
             return ("404 Not Found", {"Content-Type": "text/plain"}, b"not found")
+
         mime, _ = mimetypes.guess_type(target)
         mime = mime or "application/octet-stream"
         with open(target, "rb") as f:
@@ -334,6 +343,13 @@ class HttpWsServer:
             ws.close()
             print(f"[WS] - {ws.addr}  (clients: {len(self.ws_clients)})")
 
+            # ⭐ v1.3.2: kill terminals owned by this ws
+            try:
+                if hasattr(self.engine, "terminal"):
+                    self.engine.terminal.close_by_ws(ws)
+            except Exception as e:
+                print(f"[WS] terminal cleanup error: {e}")
+
             if no_clients and self.engine.config.get("auto_stop_on_disconnect", True):
                 threading.Thread(
                     target=self._auto_stop_after_grace, daemon=True
@@ -366,7 +382,6 @@ class HttpWsServer:
             ws.send_json({"type": "pong", "time": msg.get("time")})
 
         elif mtype == "status":
-            # ⭐ FIX: settings.get_global() returns dict, not SettingsManager
             ws.send_json({
                 "type": "status",
                 "data": {
@@ -375,6 +390,7 @@ class HttpWsServer:
                     "clients": len(self.ws_clients),
                     "runner": self.engine.runner.status(),
                     "settings": self.engine.settings.get_global(),
+                    "terminals": len(self.engine.terminal.sessions),
                 },
             })
 
@@ -383,7 +399,6 @@ class HttpWsServer:
             ws.send_json({"type": "modules", "data": info})
 
         elif mtype == "settings":
-            # ⭐ FIX: use get_global()
             ws.send_json({"type": "settings", "data": self.engine.settings.get_global()})
 
         elif mtype == "module_settings":
@@ -476,6 +491,46 @@ class HttpWsServer:
                     ws.send_json({"type": "module_action_result",
                                   "module": module_name, "button_id": button_id,
                                   "ok": False, "error": str(e)})
+
+        # ⭐ v1.3.2: terminal WS protocol
+        elif mtype == "terminal_open":
+            term_id = msg.get("id")
+            if not term_id:
+                ws.send_json({"type": "terminal_error", "id": None,
+                              "error": "missing terminal id"}); return
+            try:
+                cols = int(msg.get("cols", 80) or 80)
+                rows = int(msg.get("rows", 24) or 24)
+                cwd_hint = msg.get("cwd")
+                self.engine.terminal.open(
+                    term_id, ws, cols=cols, rows=rows, cwd_hint=cwd_hint,
+                )
+                ws.send_json({"type": "terminal_opened", "id": term_id})
+            except Exception as e:
+                ws.send_json({"type": "terminal_error", "id": term_id,
+                              "error": str(e)})
+
+        elif mtype == "terminal_input":
+            term_id = msg.get("id")
+            data = msg.get("data") or ""
+            if term_id and isinstance(data, str):
+                self.engine.terminal.write(term_id, data)
+
+        elif mtype == "terminal_resize":
+            term_id = msg.get("id")
+            if term_id:
+                try:
+                    cols = int(msg.get("cols", 80) or 80)
+                    rows = int(msg.get("rows", 24) or 24)
+                    self.engine.terminal.resize(term_id, cols, rows)
+                except Exception:
+                    pass
+
+        elif mtype == "terminal_close":
+            term_id = msg.get("id")
+            if term_id:
+                self.engine.terminal.close(term_id)
+
         else:
             ws.send_json({"type": "error", "error": f"unknown type: {mtype}"})
 

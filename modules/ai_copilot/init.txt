@@ -1,0 +1,44 @@
+{
+  "name": "ai_copilot",
+  "version": "1.0.0",
+  "description": "Module AI Code Completion sử dụng Gemini Free API (Copilot-style)",
+  "critical": false,
+
+  "routes": [
+    { "method": "POST", "path": "/api/ai_copilot/suggest", "handler": "suggest_code" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "test_connection",
+      "label": "Test AI Key",
+      "icon": "🤖",
+      "color": "success",
+      "action": "route",
+      "params": { "method": "POST", "path": "/api/ai_copilot/suggest" }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled": { 
+      "type": "boolean", 
+      "default": true, 
+      "label": "Bật AI Copilot" 
+    },
+    "api_key": { 
+      "type": "string", 
+      "default": "", 
+      "label": "Gemini API Key (Free)" 
+    },
+    "model": { 
+      "type": "select", 
+      "default": "gemini-3.8-flash", 
+      "options": ["gemini-3.8-flash", "gemini-2.5-flash"], 
+      "label": "Gemini Model" 
+    }
+  },
+
+  "diagnostics": {
+    "files": []
+  }
+}

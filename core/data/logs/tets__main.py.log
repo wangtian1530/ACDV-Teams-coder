@@ -1,0 +1,391 @@
+
+===== RUN 2026-10-22 06:49:02 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API endpoint not found (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'en'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 07:22:49 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API endpoint not found (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'en'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 07:23:00 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API 路径不存在 (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'zh'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 07:25:06 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API 路径不存在 (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'zh'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 07:56:10 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m239[0m, in [35m_new_conn[0m
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/util/connection.py"[0m, line [35m60[0m, in [35mcreate_connection[0m
+    for res in [31msocket.getaddrinfo[0m[1;31m(host, port, family, socket.SOCK_STREAM)[0m:
+               [31m~~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/socket.py"[0m, line [35m987[0m, in [35mgetaddrinfo[0m
+    for res in [31m_socket.getaddrinfo[0m[1;31m(host, port, family, type, proto, flags)[0m:
+               [31m~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1;35msocket.gaierror[0m: [35m[Errno 7] No address associated with hostname[0m
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m793[0m, in [35murlopen[0m
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m499[0m, in [35m_make_request[0m
+    [31mconn.request[0m[1;31m([0m
+    [31m~~~~~~~~~~~~[0m[1;31m^[0m
+        [1;31mmethod,[0m
+        [1;31m^^^^^^^[0m
+    ...<6 lines>...
+        [1;31menforce_content_length=enforce_content_length,[0m
+        [1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1;31m)[0m
+    [1;31m^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m567[0m, in [35mrequest[0m
+    [31mself.endheaders[0m[1;31m()[0m
+    [31m~~~~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1362[0m, in [35mendheaders[0m
+    [31mself._send_output[0m[1;31m(message_body, encode_chunked=encode_chunked)[0m
+    [31m~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1122[0m, in [35m_send_output[0m
+    [31mself.send[0m[1;31m(msg)[0m
+    [31m~~~~~~~~~[0m[1;31m^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1066[0m, in [35msend[0m
+    [31mself.connect[0m[1;31m()[0m
+    [31m~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m398[0m, in [35mconnect[0m
+    self.sock = [31mself._new_conn[0m[1;31m()[0m
+                [31m~~~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m246[0m, in [35m_new_conn[0m
+    raise NameResolutionError(self.host, self, e) from e
+[1;35murllib3.exceptions.NameResolutionError[0m: [35mHTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)[0m
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/adapters.py"[0m, line [35m696[0m, in [35msend[0m
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m847[0m, in [35murlopen[0m
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/util/retry.py"[0m, line [35m555[0m, in [35mincrement[0m
+    [1;31mraise MaxRetryError(_pool, url, reason) from reason[0m  # type: ignore[arg-type]
+    [1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1;35murllib3.exceptions.MaxRetryError[0m: [35mHTTPConnectionPool(host='api.acdv-teams.io.vn', port=80): Max retries exceeded with url: /zh/projecst/ (Caused by NameResolutionError("HTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)"))[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m10[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m5[0m, in [35mmain[0m
+    repon = [31mrequests.get[0m[1;31m(url)[0m.json()
+            [31m~~~~~~~~~~~~[0m[1;31m^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/api.py"[0m, line [35m87[0m, in [35mget[0m
+    return request("get", url, params=params, **kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/api.py"[0m, line [35m71[0m, in [35mrequest[0m
+    return [31msession.request[0m[1;31m(method=method, url=url, **kwargs)[0m
+           [31m~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/sessions.py"[0m, line [35m651[0m, in [35mrequest[0m
+    resp = self.send(prep, **send_kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/sessions.py"[0m, line [35m784[0m, in [35msend[0m
+    r = adapter.send(request, **kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/adapters.py"[0m, line [35m729[0m, in [35msend[0m
+    raise ConnectionError(e, request=request)
+[1;35mrequests.exceptions.ConnectionError[0m: [35mHTTPConnectionPool(host='api.acdv-teams.io.vn', port=80): Max retries exceeded with url: /zh/projecst/ (Caused by NameResolutionError("HTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)"))[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-22 07:56:21 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m239[0m, in [35m_new_conn[0m
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/util/connection.py"[0m, line [35m60[0m, in [35mcreate_connection[0m
+    for res in [31msocket.getaddrinfo[0m[1;31m(host, port, family, socket.SOCK_STREAM)[0m:
+               [31m~~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/socket.py"[0m, line [35m987[0m, in [35mgetaddrinfo[0m
+    for res in [31m_socket.getaddrinfo[0m[1;31m(host, port, family, type, proto, flags)[0m:
+               [31m~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1;35msocket.gaierror[0m: [35m[Errno 7] No address associated with hostname[0m
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m793[0m, in [35murlopen[0m
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m499[0m, in [35m_make_request[0m
+    [31mconn.request[0m[1;31m([0m
+    [31m~~~~~~~~~~~~[0m[1;31m^[0m
+        [1;31mmethod,[0m
+        [1;31m^^^^^^^[0m
+    ...<6 lines>...
+        [1;31menforce_content_length=enforce_content_length,[0m
+        [1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1;31m)[0m
+    [1;31m^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m567[0m, in [35mrequest[0m
+    [31mself.endheaders[0m[1;31m()[0m
+    [31m~~~~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1362[0m, in [35mendheaders[0m
+    [31mself._send_output[0m[1;31m(message_body, encode_chunked=encode_chunked)[0m
+    [31m~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1122[0m, in [35m_send_output[0m
+    [31mself.send[0m[1;31m(msg)[0m
+    [31m~~~~~~~~~[0m[1;31m^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/http/client.py"[0m, line [35m1066[0m, in [35msend[0m
+    [31mself.connect[0m[1;31m()[0m
+    [31m~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m398[0m, in [35mconnect[0m
+    self.sock = [31mself._new_conn[0m[1;31m()[0m
+                [31m~~~~~~~~~~~~~~[0m[1;31m^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connection.py"[0m, line [35m246[0m, in [35m_new_conn[0m
+    raise NameResolutionError(self.host, self, e) from e
+[1;35murllib3.exceptions.NameResolutionError[0m: [35mHTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)[0m
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/adapters.py"[0m, line [35m696[0m, in [35msend[0m
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/connectionpool.py"[0m, line [35m847[0m, in [35murlopen[0m
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/urllib3/util/retry.py"[0m, line [35m555[0m, in [35mincrement[0m
+    [1;31mraise MaxRetryError(_pool, url, reason) from reason[0m  # type: ignore[arg-type]
+    [1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1;35murllib3.exceptions.MaxRetryError[0m: [35mHTTPConnectionPool(host='api.acdv-teams.io.vn', port=80): Max retries exceeded with url: /zh/projecst/ (Caused by NameResolutionError("HTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)"))[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m10[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m5[0m, in [35mmain[0m
+    repon = [31mrequests.get[0m[1;31m(url)[0m.json()
+            [31m~~~~~~~~~~~~[0m[1;31m^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/api.py"[0m, line [35m87[0m, in [35mget[0m
+    return request("get", url, params=params, **kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/api.py"[0m, line [35m71[0m, in [35mrequest[0m
+    return [31msession.request[0m[1;31m(method=method, url=url, **kwargs)[0m
+           [31m~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/sessions.py"[0m, line [35m651[0m, in [35mrequest[0m
+    resp = self.send(prep, **send_kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/sessions.py"[0m, line [35m784[0m, in [35msend[0m
+    r = adapter.send(request, **kwargs)
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/adapters.py"[0m, line [35m729[0m, in [35msend[0m
+    raise ConnectionError(e, request=request)
+[1;35mrequests.exceptions.ConnectionError[0m: [35mHTTPConnectionPool(host='api.acdv-teams.io.vn', port=80): Max retries exceeded with url: /zh/projecst/ (Caused by NameResolutionError("HTTPConnection(host='api.acdv-teams.io.vn', port=80): Failed to resolve 'api.acdv-teams.io.vn' ([Errno 7] No address associated with hostname)"))[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-22 07:56:27 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API 路径不存在 (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'zh'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:39:48 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'API 路径不存在 (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'zh'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:40:20 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:40:37 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:42:08 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:43:57 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:44:26 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+error
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:44:51 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+error
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:45:16 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/projecst/', 'method': 'GET', 'lang': 'vi'}
+Đường dẫn API không tồn tại (404)
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:45:31 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'error', 'message': 'Đường dẫn API không tồn tại (404)', 'path': '/project/', 'method': 'GET', 'lang': 'vi'}
+Đường dẫn API không tồn tại (404)
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:45:42 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+None
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:54:34 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+None
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:54:55 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]
+
+===== RUN 2026-10-22 12:55:23 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m8[0m
+    [1;31mbreak[0m 
+    [1;31m^^^^^[0m
+[1;35mSyntaxError[0m: [35m'break' outside loop[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-22 12:55:28 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m8[0m
+    [1;31mbreak[0m 
+    [1;31m^^^^^[0m
+[1;35mSyntaxError[0m: [35m'break' outside loop[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-22 19:27:40 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m8[0m
+    [1;31mbreak[0m 
+    [1;31m^^^^^[0m
+[1;35mSyntaxError[0m: [35m'break' outside loop[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-22 19:27:57 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]
+
+===== RUN 2026-10-22 19:29:47 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]

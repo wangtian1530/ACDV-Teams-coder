@@ -1,0 +1,28 @@
+{
+  "name": "function_suggester",
+  "version": "1.0.0",
+  "description": "Đề xuất hàm đã viết trong mọi project cùng ngôn ngữ, kèm tham số mẫu + vị trí file",
+  "critical": false,
+
+  "routes": [
+    { "method": "POST", "path": "/api/function_suggester/scan",    "handler": "scan_project" },
+    { "method": "POST", "path": "/api/function_suggester/suggest", "handler": "suggest_for_file" },
+    { "method": "POST", "path": "/api/function_suggester/refresh", "handler": "refresh_index" },
+    { "method": "GET",  "path": "/api/function_suggester/index",   "handler": "get_index" }
+  ],
+
+  "ui_buttons": [
+    { "id": "rescan",     "label": "Rescan All",  "icon": "🔄", "color": "info",    "action": "run", "params": {} },
+    { "id": "show_index", "label": "Show Index",  "icon": "📚", "color": "info",    "action": "run", "params": {} }
+  ],
+
+  "settings_schema": {
+    "enabled":            { "type": "boolean", "default": true,  "label": "Enable" },
+    "auto_scan_on_start": { "type": "boolean", "default": true,  "label": "Auto scan khi boot" },
+    "max_suggestions":    { "type": "number",  "default": 20,    "min": 1, "max": 200, "label": "Max suggestions" },
+    "include_private":    { "type": "boolean", "default": false, "label": "Bao gồm _private / private" },
+    "exclude_current_file": { "type": "boolean", "default": false, "label": "Bỏ qua hàm trong file hiện tại" }
+  },
+
+  "diagnostics": { "files": [] }
+}

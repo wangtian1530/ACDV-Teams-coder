@@ -224,6 +224,50 @@ class ProjectManager:
 
         return {**meta, "files_extracted": extracted, "files_skipped": skipped}
 
+    # ---------------------------------------------------------------- #
+    #  ⭐ Export ZIP
+    # ---------------------------------------------------------------- #
+    def export_zip(self, name):
+        """Export project thành ZIP bytes (base dir = <name>/).
+
+        - Bỏ `.project.json` (metadata nội bộ) và `__pycache__`.
+        - Round-trip: ZIP này có thể upload lại qua `create_from_zip()`.
+        """
+        if not name:
+            raise Exception("Missing project name")
+        if "/" in name or "\\" in name or name in (".", ".."):
+            raise Exception("Invalid project name")
+
+        proj_dir = self._safe_path(name)
+        if not os.path.isdir(proj_dir):
+            raise Exception("Project not found")
+
+        buf = io.BytesIO()
+        count = 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(proj_dir):
+                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", ".git", ".svn"))
+                for fname in sorted(files):
+                    if fname == ".project.json" or fname.endswith(".pyc"):
+                        continue
+                    full = os.path.join(root, fname)
+                    try:
+                        rel = os.path.relpath(full, proj_dir)
+                    except Exception:
+                        continue
+                    arcname = (name + "/" + rel).replace("\\", "/")
+                    try:
+                        zf.write(full, arcname=arcname)
+                        count += 1
+                    except (OSError, IOError):
+                        continue
+
+        return {
+            "data": buf.getvalue(),
+            "files": count,
+            "size": buf.tell(),
+        }
+
     def delete(self, name):
         target = self._safe_path(name)
         if os.path.isdir(target):

@@ -23,6 +23,9 @@ const API = {
     API.request("/api/projects/upload", "POST", { name, zip_base64: zipBase64 }),
   deleteProject: (name) =>
     API.request("/api/projects/delete", "POST", { name }),
+  // ⭐ NEW: export project ZIP
+  exportProject: (name) =>
+    API.request("/api/projects/export", "POST", { name }),
   getTree: (project) =>
     API.request("/api/projects/tree", "POST", { project }),
 
@@ -46,6 +49,9 @@ const API = {
     API.request("/api/modules/uninstall", "POST", { name }),
   reloadModule: (name) =>
     API.request("/api/modules/reload", "POST", { name }),
+  // ⭐ NEW: export module ZIP
+  exportModule: (name) =>
+    API.request("/api/modules/export", "POST", { name }),
 
   runFile: (project, path) =>
     API.request("/api/projects/run", "POST", { project, path }),

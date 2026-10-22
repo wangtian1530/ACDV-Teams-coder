@@ -4,24 +4,63 @@ const App = {
   _promptResolve: null,
   _run: { project: null, path: null, running: false },
 
-  // ============================================================ //
-  //  INIT
-  // ============================================================ //
   async init() {
     this.editor = new EditorManager();
     this.editor.init();
 
-    // ---- WebSocket ----
     this.ws = new WSClient();
     this.ws.on("open", () => {
       this._setOnline(true);
+      this._hideRestartOverlay();   // ⭐ v1.3.5: WS reconnect sau restart
       this._refreshRunStatus();
+      if (window.TerminalUI) window.TerminalUI.onReconnect();
+      if (this.editor && typeof this.editor.loadSettings === "function") {
+        try { this.editor.loadSettings(); } catch (e) {}
+      }
+      const active = document.querySelector(".ptab.active");
+      if (active && active.dataset.ptab === "terminal") {
+        setTimeout(() => window.TerminalUI && TerminalUI.show(), 120);
+      }
     });
     this.ws.on("close", () => this._setOnline(false));
     this.ws.on("run_started", (m) => this._onRunStarted(m));
     this.ws.on("run_output", (m) => this._onRunOutput(m));
     this.ws.on("run_finished", (m) => this._onRunFinished(m));
     this.ws.on("module_action_result", (m) => this._onModuleActionResult(m));
+
+    this.ws.on("settings_changed", (m) => {
+      if (!m || !m.settings) return;
+      if (this.editor && typeof this.editor.onSettingsChanged === "function") {
+        this.editor.onSettingsChanged(m.settings);
+      }
+    });
+
+    // ⭐ v1.3.5: module auto-detect broadcast
+    this.ws.on("modules_changed", (m) => {
+      const action = (m && m.action) || "changed";
+      const name = (m && m.module) || "";
+      this.log(`📦 Module ${action}${name ? ": " + name : ""}`, "success");
+      this.loadModules();
+      try {
+        const sm = document.getElementById("settingsModal");
+        if (sm && sm.style.display === "flex" && window.SettingsUI &&
+            typeof SettingsUI.reload === "function") {
+          SettingsUI.reload();
+        }
+      } catch (e) {}
+    });
+
+    this.ws.on("system_restarting", () => {
+      this._showRestartOverlay();
+    });
+    this.ws.on("system_shutdown", () => {
+      this._showShutdownOverlay();
+    });
+
+    this.ws.on("terminal_opened", (m) => { if (window.TerminalUI) TerminalUI.handleMessage(m); });
+    this.ws.on("terminal_output", (m) => { if (window.TerminalUI) TerminalUI.handleMessage(m); });
+    this.ws.on("terminal_exit",   (m) => { if (window.TerminalUI) TerminalUI.handleMessage(m); });
+    this.ws.on("terminal_error",  (m) => { if (window.TerminalUI) TerminalUI.handleMessage(m); });
 
     this.ws.on("diagnostics_update", (m) => {
       if (window.DiagnosticsUI) window.DiagnosticsUI.handleWsMessage(m);
@@ -57,15 +96,38 @@ const App = {
 
     this.ws.connect();
 
-    // ---- Keyboard shortcuts ----
     document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      const mod = e.ctrlKey || e.metaKey;
+
+      if (mod && e.key.toLowerCase() === "s") {
         e.preventDefault();
         this.editor.save();
+        return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      if (mod && e.key === "Enter") {
         e.preventDefault();
         this.runCurrent();
+        return;
+      }
+      if (mod && (e.key === "`" || e.key === "~" || e.code === "Backquote")) {
+        e.preventDefault();
+        this._switchPanelTab("terminal");
+        document.getElementById("bottomPanel").classList.remove("collapsed");
+        return;
+      }
+
+      if (!mod) return;
+      if (this._isEditableTarget(e.target)) return;
+      const cmInput = this.editor.cm && this.editor.cm.getInputField();
+      if (cmInput && document.activeElement === cmInput) return;
+
+      const k = (e.key || "").toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        this.editor.undo();
+      } else if (k === "y" || (k === "z" && e.shiftKey)) {
+        e.preventDefault();
+        this.editor.redo();
       }
     });
 
@@ -76,6 +138,7 @@ const App = {
     }
 
     await Explorer.loadProjects();
+    await this._loadWelcomeReadme();   // ⭐ NEW: nạp README cho Welcome screen
     this.log("ACDV-Teams Coder ready.");
     try {
       const s = await fetch("/api/status").then(r => r.json());
@@ -88,9 +151,66 @@ const App = {
     }, 500);
   },
 
-  // ============================================================ //
-  //  BINDINGS
-  // ============================================================ //
+  // ⭐ NEW: Welcome screen — render README.md
+  async _loadWelcomeReadme() {
+    const el = document.getElementById("welcomeReadme");
+    if (!el) return;
+    el.innerHTML = '<div class="welcome-loading">Đang tải README.md…</div>';
+    try {
+      const res = await fetch("/api/readme").then(r => r.json());
+      if (!res || !res.ok) {
+        el.innerHTML = `<div class="welcome-error">✗ ${this._escapeHtml(res && res.error || "Không tải được README")}</div>`;
+        return;
+      }
+      const content = res.content || "";
+      if (window.marked && typeof window.marked.parse === "function") {
+        el.innerHTML = window.marked.parse(content, { gfm: true, breaks: false });
+        this._wireReadmeAnchors(el);
+      } else {
+        // Fallback nếu CDN marked.js không load được
+        el.innerHTML = `<pre class="welcome-raw">${this._escapeHtml(content)}</pre>`;
+      }
+    } catch (e) {
+      el.innerHTML = `<div class="welcome-error">✗ Lỗi tải README: ${this._escapeHtml(e.message)}</div>`;
+    }
+  },
+
+  _wireReadmeAnchors(el) {
+    el.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const hash = (a.getAttribute("href") || "").substring(1);
+        if (!hash) return;
+        let target = el.querySelector(`[id="${hash}"]`);
+        if (!target) {
+          const text = (a.textContent || "").trim().toLowerCase()
+            .replace(/^[§#]/, "").replace(/[0-9]+[\.\s]*/, "").trim();
+          if (text) {
+            const headings = el.querySelectorAll("h1, h2, h3, h4");
+            for (const h of headings) {
+              if (h.textContent.toLowerCase().includes(text)) { target = h; break; }
+            }
+          }
+        }
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  },
+
+  _escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  },
+
+  _isEditableTarget(el) {
+    if (!el) return false;
+    const tag = (el.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+    if (el.isContentEditable) return true;
+    return false;
+  },
+
   _bind() {
     document.getElementById("menuBtn").onclick = () => {
       document.getElementById("sidebar").classList.toggle("open");
@@ -108,6 +228,12 @@ const App = {
       const el = document.getElementById(id);
       if (el) el.onclick = openModal;
     });
+
+    // ⭐ NEW: refresh README button
+    const refreshReadmeBtn = document.getElementById("refreshReadmeBtn");
+    if (refreshReadmeBtn) {
+      refreshReadmeBtn.onclick = () => this._loadWelcomeReadme();
+    }
 
     const upBtn = document.getElementById("uploadProjectBtn");
     if (upBtn) upBtn.onclick = () => document.getElementById("projectZipInput").click();
@@ -141,6 +267,11 @@ const App = {
 
     document.getElementById("saveBtn").onclick = () => this.editor.save();
 
+    const undoBtn = document.getElementById("undoBtn");
+    if (undoBtn) undoBtn.onclick = () => this.editor.undo();
+    const redoBtn = document.getElementById("redoBtn");
+    if (redoBtn) redoBtn.onclick = () => this.editor.redo();
+
     const runBtn = document.getElementById("runBtn");
     if (runBtn) runBtn.onclick = () => this.runCurrent();
     const stopBtn = document.getElementById("stopRunBtn");
@@ -155,15 +286,29 @@ const App = {
       document.getElementById("bottomPanel").classList.remove("collapsed");
       if (window.DiagnosticsUI) window.DiagnosticsUI.renderPanel();
     };
+
+    const terminalBtn = document.getElementById("terminalBtn");
+    if (terminalBtn) terminalBtn.onclick = () => {
+      this._switchPanelTab("terminal");
+      document.getElementById("bottomPanel").classList.remove("collapsed");
+    };
+
     const settingsBtn = document.getElementById("settingsBtn");
     if (settingsBtn) settingsBtn.onclick = () => {
       if (window.SettingsUI) window.SettingsUI.open();
     };
-    // ⭐ v1.3.0: Help button opens Settings → About tab
     const helpBtn = document.getElementById("helpBtn");
     if (helpBtn) helpBtn.onclick = () => {
       if (window.SettingsUI) window.SettingsUI.open("about");
     };
+
+    // ⭐ v1.3.5: system controls
+    const restartBtn = document.getElementById("restartBtn");
+    if (restartBtn) restartBtn.onclick = () => this.restartServer();
+    const shutdownBtn = document.getElementById("shutdownBtn");
+    if (shutdownBtn) shutdownBtn.onclick = () => this.shutdownServer();
+
+    this._bindTopMenu();
 
     document.querySelectorAll(".ptab").forEach(t => {
       t.onclick = () => this._switchPanelTab(t.dataset.ptab);
@@ -183,6 +328,8 @@ const App = {
             body: JSON.stringify({}),
           }).catch(() => {});
         }
+      } else if (tab === "terminal") {
+        if (window.TerminalUI) TerminalUI.clear();
       } else {
         const el = document.getElementById("outputLog");
         if (el) el.textContent = "";
@@ -191,6 +338,9 @@ const App = {
 
     document.getElementById("togglePanelBtn").onclick = () => {
       document.getElementById("bottomPanel").classList.toggle("collapsed");
+      setTimeout(() => {
+        if (window.TerminalUI && window.TerminalUI.fit) TerminalUI.fit();
+      }, 80);
     };
 
     document.querySelectorAll(".mb").forEach(btn => {
@@ -223,9 +373,252 @@ const App = {
     });
   },
 
-  // ============================================================ //
-  //  RUN
-  // ============================================================ //
+  _bindTopMenu() {
+    const moreBtn = document.getElementById("moreBtn");
+    const menu = document.getElementById("topMenu");
+    if (!moreBtn || !menu) return;
+
+    moreBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = !menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", isOpen);
+      if (!isOpen) this._syncTopMenu();
+    };
+
+    menu.querySelectorAll(".top-menu-item").forEach(item => {
+      item.onclick = (e) => {
+        e.stopPropagation();
+        const targetId = item.dataset.target;
+        if (!targetId) return;
+        menu.classList.add("hidden");
+        const btn = document.getElementById(targetId);
+        if (!btn || btn.disabled) return;
+        btn.click();
+      };
+    });
+
+    document.addEventListener("click", (e) => {
+      if (menu.classList.contains("hidden")) return;
+      if (moreBtn.contains(e.target) || menu.contains(e.target)) return;
+      menu.classList.add("hidden");
+    });
+
+    document.querySelectorAll(".top-actions .icon-btn").forEach(btn => {
+      if (btn === moreBtn) return;
+      btn.addEventListener("click", () => menu.classList.add("hidden"));
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) menu.classList.add("hidden");
+    });
+
+    this._bindProblemsBadgeMirror();
+  },
+
+  _syncTopMenu() {
+    const menu = document.getElementById("topMenu");
+    const problemsBtn = document.getElementById("problemsBtn");
+    if (!menu) return;
+
+    menu.querySelectorAll(".top-menu-item").forEach(item => {
+      const btn = document.getElementById(item.dataset.target || "");
+      const disabled = !!(btn && btn.disabled);
+      item.classList.toggle("disabled", disabled);
+    });
+
+    if (problemsBtn) {
+      const badge = problemsBtn.querySelector(".badge");
+      const problemsItem = menu.querySelector('[data-target="problemsBtn"] .mi-label');
+      if (problemsItem) {
+        const has = badge && badge.textContent && badge.style.display !== "none";
+        problemsItem.textContent = has
+          ? `Problems (${badge.textContent})`
+          : "Problems";
+      }
+    }
+  },
+
+  _bindProblemsBadgeMirror() {
+    const problemsBtn = document.getElementById("problemsBtn");
+    const moreBtn = document.getElementById("moreBtn");
+    if (!problemsBtn || !moreBtn) return;
+
+    const mirror = () => {
+      const badge = problemsBtn.querySelector(".badge");
+      const has = !!(badge && badge.textContent && badge.style.display !== "none");
+      const isError = !!(badge && badge.classList.contains("badge-error"));
+      let dot = moreBtn.querySelector(".mobile-badge-dot");
+      if (has) {
+        if (!dot) {
+          dot = document.createElement("span");
+          dot.className = "mobile-badge-dot";
+          moreBtn.appendChild(dot);
+        }
+        dot.classList.toggle("error", isError);
+      } else if (dot) {
+        dot.remove();
+      }
+    };
+
+    try {
+      const obs = new MutationObserver(mirror);
+      obs.observe(problemsBtn, {
+        childList: true, subtree: true, attributes: true, characterData: true,
+      });
+    } catch (e) { /* ignore */ }
+    mirror();
+  },
+
+  // ⭐ v1.3.5: Restart / Shutdown
+  async restartServer() {
+    const ok = confirm(
+      "🔄 Khởi động lại server?\n\n" +
+      "• Mọi process đang chạy sẽ bị dừng\n" +
+      "• Terminal session sẽ đóng\n" +
+      "• Trang sẽ tự kết nối lại sau vài giây\n\nTiếp tục?"
+    );
+    if (!ok) return;
+    try {
+      this.log("🔄 Restarting server…", "success");
+    } catch (e) {}
+    this._showRestartOverlay();
+    try {
+      await fetch("/api/system/restart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      }).then(r => r.json());
+    } catch (e) {
+      // Connection drop là bình thường
+    }
+    // WS auto-reconnect sẽ ẩn overlay
+  },
+
+  async shutdownServer() {
+    const ok = confirm(
+      "⏻ Tắt ứng dụng?\n\n" +
+      "• Server sẽ dừng hoàn toàn\n" +
+      "• Mọi process đang chạy sẽ bị kill\n" +
+      "• Bạn cần vào terminal chạy lại: python3 main.py\n\nTiếp tục?"
+    );
+    if (!ok) return;
+    try {
+      this.log("⏻ Shutting down server…", "success");
+    } catch (e) {}
+
+    // Ngăn WS auto-reconnect
+    if (this.ws) {
+      this.ws.allowReconnect = false;
+      try { if (this.ws.socket) this.ws.socket.close(); } catch (e) {}
+    }
+    this._showShutdownOverlay();
+    try {
+      await fetch("/api/system/shutdown", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      }).then(r => r.json());
+    } catch (e) {}
+  },
+
+  _showRestartOverlay() {
+    let el = document.getElementById("restartOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "restartOverlay";
+      el.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999999;" +
+        "display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "color:#fff;font-family:-apple-system,sans-serif;gap:20px;";
+      el.innerHTML = `
+        <div id="restartSpinner" style="font-size:56px;">🔄</div>
+        <div style="font-size:18px;font-weight:600;">Đang khởi động lại server…</div>
+        <div style="font-size:12px;color:#888;">Trang sẽ tự kết nối lại khi server sẵn sàng</div>
+      `;
+      document.body.appendChild(el);
+      const style = document.createElement("style");
+      style.textContent = "@keyframes acdvSpin { 100% { transform: rotate(360deg); } } #restartSpinner { animation: acdvSpin 1s linear infinite; display:inline-block; }";
+      document.head.appendChild(style);
+    }
+    el.style.display = "flex";
+  },
+
+  _hideRestartOverlay() {
+    const el = document.getElementById("restartOverlay");
+    if (el) el.style.display = "none";
+  },
+
+  _showShutdownOverlay() {
+    let el = document.getElementById("shutdownOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "shutdownOverlay";
+      el.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:999999;" +
+        "display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "color:#fff;font-family:-apple-system,sans-serif;gap:20px;text-align:center;padding:20px;";
+      el.innerHTML = `
+        <div style="font-size:56px;">⏻</div>
+        <div style="font-size:18px;font-weight:600;">Ứng dụng đã tắt</div>
+        <div style="font-size:13px;color:#aaa;max-width:420px;line-height:1.6;">
+          Server đã dừng hoàn toàn.<br>
+          Đóng tab này để thoát, hoặc chạy lại:<br>
+          <code style="background:#222;padding:4px 10px;border-radius:4px;font-family:monospace;display:inline-block;margin-top:8px;color:#4af;">python3 main.py</code>
+        </div>
+      `;
+      document.body.appendChild(el);
+    }
+    el.style.display = "flex";
+  },
+
+  // ⭐ NEW: helper download base64 ZIP
+  _downloadBase64(base64, filename) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "download.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  },
+
+  // ⭐ NEW: export project ZIP
+  async exportProject(name) {
+    if (!name) return;
+    try {
+      this.log(`📦 Exporting project "${name}" …`);
+      const res = await API.exportProject(name);
+      const fname = res.filename || `${name}.zip`;
+      this._downloadBase64(res.zip_base64, fname);
+      const kb = ((res.size || 0) / 1024).toFixed(1);
+      this.log(`✓ Downloaded ${fname} (${kb} KB, ${res.files || 0} files)`, "success");
+    } catch (e) {
+      this.log(`✗ Export project failed: ${e.message}`, "error");
+      alert(e.message);
+    }
+  },
+
+  // ⭐ NEW: export module ZIP
+  async exportModule(name) {
+    if (!name) return;
+    try {
+      this.log(`📦 Exporting module "${name}" …`);
+      const res = await API.exportModule(name);
+      const fname = res.filename || `${name}.zip`;
+      this._downloadBase64(res.zip_base64, fname);
+      const kb = ((res.size || 0) / 1024).toFixed(1);
+      this.log(`✓ Downloaded ${fname} (${kb} KB, ${res.files || 0} files)`, "success");
+    } catch (e) {
+      this.log(`✗ Export module failed: ${e.message}`, "error");
+      alert(e.message);
+    }
+  },
+
   async runCurrent() {
     const tab = this.editor.currentTab();
     if (!tab) return alert("Không có file nào đang mở");
@@ -377,9 +770,6 @@ const App = {
     this._refreshRunStatus();
   },
 
-  // ============================================================ //
-  //  PANEL TABS
-  // ============================================================ //
   _switchPanelTab(name) {
     document.querySelectorAll(".ptab").forEach(t =>
       t.classList.toggle("active", t.dataset.ptab === name));
@@ -389,11 +779,11 @@ const App = {
     if (name === "problems" && window.DiagnosticsUI) {
       window.DiagnosticsUI.renderPanel();
     }
+    if (name === "terminal" && window.TerminalUI) {
+      window.TerminalUI.show();
+    }
   },
 
-  // ============================================================ //
-  //  LOGS MODAL
-  // ============================================================ //
   async openLogsModal() {
     const modal = document.getElementById("logsModal");
     modal.classList.remove("hidden");
@@ -475,9 +865,6 @@ const App = {
     }
   },
 
-  // ============================================================ //
-  //  MODULE BUTTONS
-  // ============================================================ //
   async _triggerModuleButton(moduleName, btn) {
     const action = btn.action || "route";
     if (btn.confirm && !confirm(btn.confirm)) return;
@@ -534,9 +921,6 @@ const App = {
     }
   },
 
-  // ============================================================ //
-  //  PROJECTS
-  // ============================================================ //
   async _createProject() {
     const name = document.getElementById("projectNameInput").value.trim();
     const lang = document.getElementById("projectLangSelect").value;
@@ -598,9 +982,6 @@ const App = {
     });
   },
 
-  // ============================================================ //
-  //  TABS
-  // ============================================================ //
   switchTab(name) {
     document.querySelectorAll(".sidebar-tabs .tab").forEach(t =>
       t.classList.toggle("active", t.dataset.tab === name));
@@ -611,9 +992,6 @@ const App = {
     if (name === "projects") Explorer.loadProjects();
   },
 
-  // ============================================================ //
-  //  MODULES
-  // ============================================================ //
   async loadModules() {
     try {
       const data = await API.request("/api/modules");
@@ -657,6 +1035,17 @@ const App = {
           };
           actions.appendChild(b);
         }
+
+        // ⭐ NEW: download module ZIP
+        const exportBtn = document.createElement("button");
+        exportBtn.className = "icon-btn small";
+        exportBtn.title = "Download module as ZIP";
+        exportBtn.textContent = "⬇";
+        exportBtn.onclick = async (ev) => {
+          ev.stopPropagation();
+          await this.exportModule(name);
+        };
+        actions.appendChild(exportBtn);
 
         const reload = document.createElement("button");
         reload.className = "icon-btn small";
@@ -721,9 +1110,6 @@ const App = {
     }
   },
 
-  // ============================================================ //
-  //  FILES
-  // ============================================================ //
   async openFile(project, path) {
     try {
       const res = await API.readFile(project, path);
@@ -737,9 +1123,6 @@ const App = {
     }
   },
 
-  // ============================================================ //
-  //  HELPERS
-  // ============================================================ //
   prompt(title, placeholder) {
     document.getElementById("promptTitle").textContent = title;
     const inp = document.getElementById("promptInput");

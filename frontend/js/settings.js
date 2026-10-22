@@ -228,12 +228,23 @@
     return out;
   }
 
+  // ⭐ FIX (v1.3.2): apply settings ngay sau khi save (không đợi WS),
+  // và vẫn để WS handler trong app.js re-apply (idempotent).
   async function saveSettings(payload) {
-    const res = await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).then(r => r.json());
+    let res;
+    try {
+      res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then(r => r.json());
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+    if (res && res.ok && res.settings && window.App && window.App.editor &&
+        typeof window.App.editor.onSettingsChanged === 'function') {
+      try { window.App.editor.onSettingsChanged(res.settings); } catch (e) {}
+    }
     return res;
   }
 
@@ -241,13 +252,17 @@
     const wrap = document.createElement('div');
     wrap.className = 'settings-section';
     const gs = state.global || {};
+    // ⭐ FIX: options theme phải là theme hợp lệ của CodeMirror 5.
+    // `light`/`dark` không tồn tại → setOption xong nhìn như bị lỗi CSS.
     wrap.appendChild(renderField('theme',
-      { label: 'Theme', type: 'select', options: ['dracula', 'light', 'dark'] },
-      gs.theme));
+      { label: 'Theme', type: 'select',
+        options: ['dracula', 'default', 'material', 'monokai', 'solarized', 'eclipse'] },
+      gs.theme || 'dracula'));
     wrap.appendChild(makeSaveBar(async () => {
       const v = collectValues(wrap);
       const res = await saveSettings(v);
       if (res && res.ok) toast('Settings saved');
+      else toast('Save failed: ' + (res && res.error ? res.error : 'unknown'), 'error');
     }));
     return wrap;
   }
@@ -274,6 +289,7 @@
       }
       const res = await saveSettings(nested);
       if (res && res.ok) toast('Editor settings saved');
+      else toast('Save failed', 'error');
     }));
     return wrap;
   }
@@ -301,6 +317,7 @@
       }
       const res = await saveSettings(nested);
       if (res && res.ok) toast('Diagnostics settings saved');
+      else toast('Save failed', 'error');
     }));
     return wrap;
   }
@@ -359,7 +376,7 @@
       if (res && res.ok) {
         toast('Overlay settings saved — refreshing');
         if (window.OverlayLoader) OverlayLoader.refresh();
-      }
+      } else toast('Save failed', 'error');
     }));
     return wrap;
   }
@@ -401,7 +418,7 @@
           body: JSON.stringify({ name: m.name, values }),
         }).then(r => r.json());
         if (res && res.ok) toast(`Saved: ${m.name}`);
-        else if (res && res.errors) toast('Error: ' + res.errors.join('; '));
+        else if (res && res.errors) toast('Error: ' + res.errors.join('; '), 'error');
       });
       bar.appendChild(btn);
       item.appendChild(bar);
@@ -495,8 +512,8 @@
     return bar;
   }
 
-  function toast(msg) {
-    if (window.AppToast) window.AppToast(msg);
+  function toast(msg, kind) {
+    if (window.AppToast) window.AppToast(msg, kind);
     else console.log('[Settings]', msg);
   }
 

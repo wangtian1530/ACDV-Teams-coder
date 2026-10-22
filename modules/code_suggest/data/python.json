@@ -1,0 +1,30 @@
+{
+  "keywords": [
+    "def","return","if","elif","else","for","while","class","import","from","as",
+    "try","except","finally","with","lambda","yield","async","await","pass","break",
+    "continue","raise","global","nonlocal","assert","del","in","is","not","and","or",
+    "None","True","False"
+  ],
+  "builtins": [
+    "print","len","range","str","int","float","list","dict","set","tuple","type",
+    "isinstance","hasattr","getattr","setattr","open","input","sum","min","max","abs",
+    "sorted","enumerate","zip","map","filter","any","all","repr","format","super",
+    "property","staticmethod","classmethod","object","Exception","ValueError",
+    "TypeError","KeyError","IndexError","RuntimeError","FileNotFoundError"
+  ],
+  "snippets": [
+    { "trigger": "ifmain",  "insert": "if __name__ == '__main__':\n    ", "description": "main guard" },
+    { "trigger": "fori",    "insert": "for i in range(10):\n    ",        "description": "for i range" },
+    { "trigger": "ford",    "insert": "for item in items:\n    ",         "description": "for item in" },
+    { "trigger": "while",   "insert": "while condition:\n    ",           "description": "while loop" },
+    { "trigger": "trye",    "insert": "try:\n    \nexcept Exception as e:\n    ", "description": "try/except" },
+    { "trigger": "with",    "insert": "with open('file', 'r') as f:\n    ", "description": "with open" },
+    { "trigger": "cls",     "insert": "class Name:\n    def __init__(self):\n        ", "description": "class + init" },
+    { "trigger": "func",    "insert": "def name(args):\n    ",            "description": "function def" },
+    { "trigger": "afunc",   "insert": "async def name(args):\n    await ", "description": "async function" },
+    { "trigger": "lcomp",   "insert": "[x for x in items]",                "description": "list comprehension" },
+    { "trigger": "dcomp",   "insert": "{k: v for k, v in items}",          "description": "dict comprehension" },
+    { "trigger": "deco",    "insert": "@decorator\ndef name():\n    ",     "description": "decorator" },
+    { "trigger": "match",   "insert": "match value:\n    case pattern:\n        ", "description": "match/case (3.10+)" }
+  ]
+}

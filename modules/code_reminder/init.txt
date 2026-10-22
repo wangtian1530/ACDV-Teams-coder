@@ -1,0 +1,43 @@
+{
+  "name": "code_reminder",
+  "version": "1.0.0",
+  "description": "Nhắc nhở chất lượng code — TODO/FIXME/HACK, debug leftovers, dòng quá dài",
+  "critical": false,
+
+  "routes": [
+    { "method": "GET",  "path": "/api/code_reminder/ping",  "handler": "ping" },
+    { "method": "POST", "path": "/api/code_reminder/check", "handler": "check" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "show_info",
+      "label": "Reminder info",
+      "icon": "🔔",
+      "color": "warning",
+      "action": "run",
+      "params": {}
+    },
+    {
+      "id": "ping",
+      "label": "Ping module",
+      "icon": "📡",
+      "color": "info",
+      "action": "route",
+      "params": { "method": "GET", "path": "/api/code_reminder/ping" }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled":          { "type": "boolean", "default": true,        "label": "Enable reminders" },
+    "check_todo":       { "type": "boolean", "default": true,        "label": "Check TODO/FIXME/HACK/BUG" },
+    "check_debug":      { "type": "boolean", "default": true,        "label": "Check debug leftovers (print / console.* / breakpoint)" },
+    "check_style":      { "type": "boolean", "default": false,       "label": "Check long lines" },
+    "max_line_length":  { "type": "number",  "default": 120, "min": 60, "max": 300, "label": "Max line length" },
+    "default_severity": { "type": "select",  "default": "warning", "options": ["info","warning","error"], "label": "Default severity" }
+  },
+
+  "diagnostics": {
+    "files": ["*.py", "*.js", "*.ts", "*.jsx", "*.tsx", "*.sh"]
+  }
+}

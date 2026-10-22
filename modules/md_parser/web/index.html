@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD Code Extractor & Viewer</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --panel-bg: #252526;
+            --border-color: #333;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --accent-hover: #005999;
+            --success-color: #2ea44f;
+            --card-bg: #2d2d2d;
+            --header-bg: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            color: #4ec9b0;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        p.desc {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .section-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .section-box h3 {
+            font-size: 15px;
+            margin-top: 0;
+            color: #9cdcfe;
+        }
+
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+        }
+
+        .upload-btn {
+            border: 2px dashed var(--accent-color);
+            color: var(--accent-color);
+            background-color: var(--bg-color);
+            padding: 20px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+
+        .upload-btn:hover {
+            background-color: rgba(0, 122, 204, 0.1);
+        }
+
+        .upload-btn-wrapper input[type=file] {
+            font-size: 200px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            height: 95px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button.action-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button.action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        button.action-btn.small {
+            width: auto;
+            padding: 8px 14px;
+            white-space: nowrap;
+        }
+
+        .status-msg {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #4ec9b0;
+            word-break: break-all;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 25px 0;
+        }
+
+        /* ===== Danh sách file kết quả ===== */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .results-title {
+            font-size: 16px;
+            color: #4ec9b0;
+        }
+
+        .file-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .file-header {
+            background: var(--header-bg);
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #ce9178;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .file-icon {
+            flex-shrink: 0;
+        }
+
+        /* Ô tên file có thể chỉnh sửa */
+        .filename-input {
+            flex: 1 1 140px;
+            min-width: 0;
+            background: transparent;
+            color: #ce9178;
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: bold;
+            box-sizing: border-box;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .filename-input:hover {
+            border-color: var(--border-color);
+        }
+
+        .filename-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: var(--bg-color);
+            color: #e6c07b;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        pre {
+            margin: 0;
+            padding: 12px;
+            overflow-x: auto;
+            background: var(--bg-color);
+            color: #9cdcfe;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 350px;
+        }
+
+        .copy-btn {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: #238636;
+        }
+
+        .download-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📂 MD Code Extractor & Viewer</h2>
+        <p class="desc">Tải lên file Markdown hoặc dán trực tiếp nội dung để hệ thống tự động bóc tách tên file và mã nguồn.</p>
+
+        <!-- Bố cục 2 cột trên PC, 1 cột trên Mobile -->
+        <div class="grid-layout">
+            <!-- Cách 1: Tải file -->
+            <div class="section-box">
+                <h3>Cách 1: Tải lên file .md</h3>
+                <div class="upload-btn-wrapper">
+                    <div class="upload-btn">📁 Chọn file Markdown từ thiết bị</div>
+                    <input type="file" id="fileInput" accept=".md,.txt,.json,.js" onchange="handleFileSelect(event)">
+                </div>
+                <div id="fileStatus" class="status-msg">Chưa chọn file nào.</div>
+            </div>
+
+            <!-- Cách 2: Dán văn bản -->
+            <div class="section-box">
+                <h3>Cách 2: Dán văn bản Markdown</h3>
+                <textarea id="mdContent" placeholder="Dán nội dung markdown chứa mã nguồn vào đây..."></textarea>
+                <button class="action-btn" onclick="parseFromTextarea()">🚀 Bóc Tách Ngay</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script>
+        // Lưu trữ toàn bộ file đã bóc tách để phục vụ copy / download
+        let currentFiles = [];
+
+        /* ================== ĐỌC DỮ LIỆU ĐẦU VÀO ================== */
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileStatus').innerText = `⏳ Đang đọc: ${file.name}...`;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                document.getElementById('fileStatus').innerText = `✅ Đã đọc xong: ${file.name}`;
+                sendToServer(content);
+            };
+            reader.onerror = function () {
+                alert('Không thể đọc được file này!');
+                document.getElementById('fileStatus').innerText = '❌ Lỗi đọc file.';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseFromTextarea() {
+            const content = document.getElementById('mdContent').value.trim();
+            if (!content) {
+                alert('Lỗi: Ô nội dung Markdown đang trống!');
+                return;
+            }
+            sendToServer(content);
+        }
+
+        async function sendToServer(content) {
+            try {
+                const response = await fetch('/api/md_parser/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    renderResults(data.files);
+                } else {
+                    alert('Lỗi từ server: ' + (data.error || 'Không rõ nguyên nhân'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối đến server backend.');
+            }
+        }
+
+        /* ================== HIỂN THỊ KẾT QUẢ ================== */
+
+        function renderResults(files) {
+            // clone để không ảnh hưởng dữ liệu gốc, cho phép sửa tên file
+            currentFiles = (files || []).map(f => ({
+                filename: f.filename || 'file_snippet.txt',
+                code: f.code || ''
+            }));
+
+            const container = document.getElementById('resultsContainer');
+
+            if (currentFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="results-title">🎯 Không tìm thấy file cấu trúc:</div>
+                    <p style="color: #f48771;">Không tìm thấy khối code hoặc tên file hợp lệ trong nội dung.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">🎯 Tìm thấy ${currentFiles.length} file cấu trúc:</div>
+                    <button class="action-btn small" onclick="downloadAll()">⬇️ Tải tất cả</button>
+                </div>`;
+
+            currentFiles.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'file-card';
+
+                card.innerHTML = `
+                    <div class="file-header">
+                        <span class="file-icon">📄</span>
+                        <input
+                            type="text"
+                            class="filename-input"
+                            id="filename-${index}"
+                            value="${escapeHtml(file.filename)}"
+                            spellcheck="false"
+                            title="Có thể sửa tên file trước khi tải về"
+                            oninput="updateFilename(${index}, this.value)"
+                        >
+                        <div class="btn-group">
+                            <button class="copy-btn" onclick="copyCode(this, ${index})">📋 Sao chép</button>
+                            <button class="download-btn" onclick="downloadFile(${index})">⬇️ Tải</button>
+                        </div>
+                    </div>
+                    <pre><code>${escapeHtml(file.code)}</code></pre>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateFilename(index, value) {
+            if (currentFiles[index]) {
+                currentFiles[index].filename = value;
+            }
+        }
+
+        /* ================== COPY ================== */
+
+        function copyCode(btn, index) {
+            const file = currentFiles[index];
+            if (!file) return;
+
+            navigator.clipboard.writeText(file.code).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = '✅ Đã chép!';
+                setTimeout(() => { btn.innerText = originalText; }, 2000);
+            }).catch(err => {
+                console.error('Lỗi copy: ', err);
+                alert('Trình duyệt chặn quyền Clipboard!');
+            });
+        }
+
+        /* ================== DOWNLOAD ================== */
+
+        // Lấy tên file hiện tại trên input (người dùng có thể đã sửa)
+        function getCurrentFilename(index) {
+            const input = document.getElementById(`filename-${index}`);
+            const raw = input ? input.value : (currentFiles[index] ? currentFiles[index].filename : '');
+            return raw;
+        }
+
+        // Chuẩn hóa tên file an toàn cho mọi hệ điều hành
+        function sanitizeFilename(name) {
+            return (name || '')
+                .trim()
+                .replace(/[\\/:*?"<>|]/g, '_')   // ký tự không hợp lệ
+                .replace(/\s+/g, ' ')
+                .replace(/^\.+/, '')             // bỏ dấu chấm đầu (file ẩn)
+                .slice(0, 120);
+        }
+
+        // Đoán MIME type theo phần mở rộng
+        function getMimeType(filename) {
+            const ext = (filename.split('.').pop() || '').toLowerCase();
+            const map = {
+                js: 'text/javascript', mjs: 'text/javascript', cjs: 'text/javascript',
+                jsx: 'text/javascript', ts: 'text/typescript', tsx: 'text/typescript',
+                json: 'application/json',
+                html: 'text/html', htm: 'text/html',
+                css: 'text/css', scss: 'text/x-scss', less: 'text/x-less',
+                md: 'text/markdown', markdown: 'text/markdown',
+                py: 'text/x-python',
+                java: 'text/x-java-source',
+                c: 'text/x-c', h: 'text/x-c', cpp: 'text/x-c++', hpp: 'text/x-c++',
+                cs: 'text/plain', php: 'application/x-httpd-php',
+                xml: 'application/xml', svg: 'image/svg+xml',
+                yml: 'text/yaml', yaml: 'text/yaml',
+                sh: 'application/x-sh', bash: 'application/x-sh',
+                sql: 'application/sql',
+                go: 'text/x-go', rs: 'text/x-rust', rb: 'text/x-ruby',
+                vue: 'text/plain', svelte: 'text/plain',
+                txt: 'text/plain'
+            };
+            return map[ext] || 'text/plain';
+        }
+
+        // Tạo Blob và kích hoạt tải xuống
+        function triggerDownload(filename, content) {
+            const blob = new Blob([content], { type: getMimeType(filename) + ';charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+        }
+
+        function downloadFile(index) {
+            const file = currentFiles[index];
+            if (!file) {
+                alert('Không tìm thấy dữ liệu file này!');
+                return;
+            }
+
+            const input = document.getElementById(`filename-${index}`);
+
+            let name = sanitizeFilename(getCurrentFilename(index));
+            if (!name) {
+                name = `file_${index + 1}.txt`;
+            }
+            // Nếu người dùng nhập tên không có phần mở rộng -> thêm .txt
+            if (!/\.[A-Za-z0-9]{1,10}$/.test(name)) {
+                name += '.txt';
+            }
+
+            // Đồng bộ lại tên đã chuẩn hóa lên input + bộ nhớ
+            if (input) input.value = name;
+            currentFiles[index].filename = name;
+
+            triggerDownload(name, file.code);
+        }
+
+        function downloadAll() {
+            if (!currentFiles.length) return;
+
+            // Tải tuần tự với khoảng nghỉ để trình duyệt không chặn popup download
+            currentFiles.forEach((_, index) => {
+                setTimeout(() => downloadFile(index), index * 400);
+            });
+        }
+
+        /* ================== TIỆN ÍCH ================== */
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

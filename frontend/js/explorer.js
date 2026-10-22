@@ -18,6 +18,24 @@ const Explorer = {
         li.innerHTML = `<span>📦</span><span>${p.name}</span>`;
         li.onclick = () => this.openProject(p.name);
 
+        // ⭐ NEW: download ZIP button
+        const dlBtn = document.createElement("button");
+        dlBtn.className = "icon-btn small project-dl";
+        dlBtn.title = "Download project as ZIP";
+        dlBtn.textContent = "⬇";
+        dlBtn.style.marginLeft = "auto";
+        dlBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (window.App && typeof App.exportProject === "function") {
+            App.exportProject(p.name);
+          }
+        };
+        // Chặn sự kiện bubble lên li để tránh trigger long-press delete
+        ["touchstart", "touchend", "mousedown", "mouseup"].forEach(evt => {
+          dlBtn.addEventListener(evt, (e) => e.stopPropagation());
+        });
+        li.appendChild(dlBtn);
+
         let timer;
         li.addEventListener("touchstart", () => {
           timer = setTimeout(() => {

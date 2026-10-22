@@ -1,8 +1,11 @@
 class EditorManager {
   constructor() {
     this.cm = null;
-    this.tabs = [];           // {project, path, name, content, dirty}
+    this.tabs = [];           // {project, path, name, content, doc, dirty}
     this.activeIdx = -1;
+    this.globalSettings = null;
+    this._loadedThemes = new Set(["dracula"]);
+    this._lastMerge = 0;
     this.els = {
       container: document.getElementById("editor"),
       tabs: document.getElementById("editorTabs"),
@@ -11,7 +14,11 @@ class EditorManager {
   }
 
   init() {
-    this.cm = CodeMirror.fromTextArea(this.els.container, {
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+
+    // ⭐ v1.3.1: CodeMirror options
+    const cmOpts = {
       lineNumbers: true,
       theme: "dracula",
       matchBrackets: true,
@@ -19,21 +26,289 @@ class EditorManager {
       styleActiveLine: true,
       indentUnit: 4,
       tabSize: 4,
-      lineWrapping: true,
+      lineWrapping: false,
       viewportMargin: Infinity,
-    });
+      autofocus: false,
+
+      // ⭐ v1.3.1: code folding
+      foldGutter: true,
+      gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+      extraKeys: {
+        "Ctrl-Q": (cm) => cm.foldCode(cm.getCursor()),
+        "Ctrl-Shift-[": () => this.foldAll(),
+        "Ctrl-Shift-]": () => this.unfoldAll(),
+      },
+    };
+
+    // ⭐ v1.3.1: Android fix
+    if (isAndroid) {
+      cmOpts.inputStyle = "contenteditable";
+      cmOpts.spellcheck = false;
+      cmOpts.autocorrect = "off";
+      cmOpts.autocapitalize = "off";
+      cmOpts.electricChars = false;
+    }
+
+    this.cm = CodeMirror.fromTextArea(this.els.container, cmOpts);
     this.cm.getWrapperElement().style.display = "none";
 
+    this._applyInputAttributes(isAndroid);
+
+    if (isAndroid) {
+      this._fixAndroidLineMerge();
+    }
+
+    this.loadSettings();
+
+    const foldBtn = document.getElementById("foldBtn");
+    if (foldBtn) {
+      foldBtn.addEventListener("click", () => this.toggleFoldAll());
+    }
+
+    // ⭐ v1.3.3: dirty-state chính xác theo so sánh content
+    // (undo về trạng thái đã lưu → dirty = false → dấu ● biến mất)
     this.cm.on("change", () => {
-      if (this.activeIdx < 0) return;
-      const tab = this.tabs[this.activeIdx];
-      if (!tab.dirty) {
-        tab.dirty = true;
-        this.renderTabs();
+      if (this.activeIdx >= 0) {
+        const tab = this.tabs[this.activeIdx];
+        const current = this.cm.getValue();
+        const isDirty = current !== tab.content;
+        if (tab.dirty !== isDirty) {
+          tab.dirty = isDirty;
+          this.renderTabs();
+        }
+      }
+      this._updateUndoRedoButtons();
+    });
+
+    // ⭐ v1.3.3: cập nhật trạng thái nút undo/redo khi cursor di chuyển
+    // (không cần thiết lắm nhưng cho cảm giác responsive)
+    this.cm.on("cursorActivity", () => this._updateUndoRedoButtons());
+
+    this._updateUndoRedoButtons();
+  }
+
+  // ============================================================== //
+  //  ⭐ v1.3.3: Undo / Redo (VS Code style)
+  // ============================================================== //
+  undo() {
+    if (!this.cm) return;
+    try { this.cm.undo(); } catch (e) { /* ignore */ }
+    this._updateUndoRedoButtons();
+  }
+
+  redo() {
+    if (!this.cm) return;
+    try { this.cm.redo(); } catch (e) { /* ignore */ }
+    this._updateUndoRedoButtons();
+  }
+
+  canUndo() {
+    if (!this.cm) return false;
+    try { return this.cm.historySize().undo > 0; } catch (e) { return false; }
+  }
+
+  canRedo() {
+    if (!this.cm) return false;
+    try { return this.cm.historySize().redo > 0; } catch (e) { return false; }
+  }
+
+  _updateUndoRedoButtons() {
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+    if (undoBtn) undoBtn.disabled = !this.canUndo();
+    if (redoBtn) redoBtn.disabled = !this.canRedo();
+  }
+
+  // ============================================================== //
+  //  ⭐ FIX (v1.3.2): DOM attributes cho input field
+  // ============================================================== //
+  _applyInputAttributes(isAndroid) {
+    try {
+      const input = this.cm.getInputField && this.cm.getInputField();
+      if (!input) return;
+      input.setAttribute("autocomplete", "off");
+      if (isAndroid) {
+        input.setAttribute("autocorrect", "off");
+        input.setAttribute("autocapitalize", "off");
+        input.setAttribute("spellcheck", "false");
+        try { input.style.fontSize = "16px"; } catch (e) {}
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // ============================================================== //
+  //  ⭐ FIX (v1.3.2): Android contenteditable — backspace không xoá dòng
+  // ============================================================== //
+  _fixAndroidLineMerge() {
+    const cm = this.cm;
+    const input = cm.getInputField && cm.getInputField();
+    if (!input) return;
+
+    const now = () => (window.performance && performance.now) ? performance.now() : Date.now();
+
+    const mergeBackward = (e) => {
+      if (e.defaultPrevented) return;
+      const t = now();
+      if (t - this._lastMerge < 100) return;
+      const sels = cm.listSelections();
+      if (sels.length !== 1 || !sels[0].empty) return;
+      const cur = cm.getCursor();
+      if (cur.ch === 0 && cur.line > 0) {
+        e.preventDefault();
+        this._lastMerge = t;
+        try { cm.execCommand("delCharBefore"); } catch (err) { /* ignore */ }
+      }
+    };
+
+    const mergeForward = (e) => {
+      if (e.defaultPrevented) return;
+      const t = now();
+      if (t - this._lastMerge < 100) return;
+      const sels = cm.listSelections();
+      if (sels.length !== 1 || !sels[0].empty) return;
+      const cur = cm.getCursor();
+      const lineText = cm.getLine(cur.line) || "";
+      if (cur.ch >= lineText.length && cur.line < cm.lineCount() - 1) {
+        e.preventDefault();
+        this._lastMerge = t;
+        try {
+          cm.replaceRange(
+            "",
+            { line: cur.line, ch: lineText.length },
+            { line: cur.line + 1, ch: 0 }
+          );
+        } catch (err) { /* ignore */ }
+      }
+    };
+
+    if ("onbeforeinput" in input) {
+      input.addEventListener("beforeinput", (e) => {
+        if (!e.inputType) return;
+        if (e.inputType === "deleteContentBackward") mergeBackward(e);
+        else if (e.inputType === "deleteContentForward") mergeForward(e);
+      }, true);
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.isComposing) return;
+      const isBackspace = e.key === "Backspace" || e.keyCode === 8;
+      const isDelete = e.key === "Delete" || e.keyCode === 46;
+      if (isBackspace) mergeBackward(e);
+      else if (isDelete) mergeForward(e);
+    }, true);
+  }
+
+  // ============================================================== //
+  //  ⭐ v1.3.1: Settings sync
+  // ============================================================== //
+  async loadSettings() {
+    try {
+      const res = await fetch("/api/settings").then(r => r.json());
+      if (res && res.ok) {
+        this.globalSettings = res.settings;
+        this.applySettings();
+      }
+    } catch (e) {
+      console.warn("[Editor] settings load failed", e);
+    }
+  }
+
+  onSettingsChanged(newSettings) {
+    if (!newSettings || typeof newSettings !== "object") return;
+    this.globalSettings = newSettings;
+    this.applySettings();
+  }
+
+  applySettings() {
+    if (!this.cm || !this.globalSettings) return;
+    const ed = this.globalSettings.editor || {};
+    if (typeof ed.font_size === "number") {
+      this.cm.getWrapperElement().style.fontSize = ed.font_size + "px";
+    }
+    if (typeof ed.tab_size === "number") {
+      this.cm.setOption("tabSize", ed.tab_size);
+      this.cm.setOption("indentUnit", ed.tab_size);
+    }
+    if (typeof ed.line_wrap === "boolean") {
+      this.cm.setOption("lineWrapping", ed.line_wrap);
+    }
+    const theme = this.globalSettings.theme || "dracula";
+    this._applyTheme(theme);
+    setTimeout(() => {
+      try { if (this.cm) this.cm.refresh(); } catch (e) {}
+    }, 30);
+  }
+
+  _applyTheme(name) {
+    if (!this.cm) return;
+    const known = ["default", "dracula", "material", "monokai", "solarized", "eclipse"];
+    let theme = String(name || "dracula").toLowerCase();
+    if (!known.includes(theme)) theme = "dracula";
+
+    if (theme !== "default" && !this._loadedThemes.has(theme)) {
+      try {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href =
+          "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/" +
+          theme + ".min.css";
+        link.dataset.cmTheme = theme;
+        link.onload = () => {
+          try { this.cm && this.cm.refresh(); } catch (e) {}
+        };
+        document.head.appendChild(link);
+        this._loadedThemes.add(theme);
+      } catch (e) { /* ignore */ }
+    }
+    try {
+      this.cm.setOption("theme", theme);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ============================================================== //
+  //  ⭐ v1.3.1: Code folding
+  // ============================================================== //
+  foldAll() {
+    if (!this.cm) return;
+    const total = this.cm.lineCount();
+    this.cm.operation(() => {
+      for (let i = 0; i < total; i++) {
+        try { this.cm.foldCode({ line: i, ch: 0 }); } catch (e) {}
       }
     });
   }
 
+  unfoldAll() {
+    if (!this.cm) return;
+    const marks = this.cm.getAllMarks();
+    this.cm.operation(() => {
+      for (const m of marks) {
+        const cls = (m.widgetNode && m.widgetNode.className) || "";
+        if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
+          try { m.clear(); } catch (e) {}
+        }
+      }
+    });
+  }
+
+  toggleFoldAll() {
+    if (!this.cm) return;
+    const marks = this.cm.getAllMarks();
+    let hasFold = false;
+    for (const m of marks) {
+      const cls = (m.widgetNode && m.widgetNode.className) || "";
+      if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
+        hasFold = true;
+        break;
+      }
+    }
+    if (hasFold) this.unfoldAll();
+    else this.foldAll();
+  }
+
+  // ============================================================== //
+  //  Editor core
+  // ============================================================== //
   _mode(path) {
     const p = (path || "").toLowerCase();
     if (p.endsWith(".py")) return "python";
@@ -51,10 +326,13 @@ class EditorManager {
       this.activate(existing);
       return;
     }
+    // ⭐ v1.3.3: mỗi tab có CodeMirror.Doc riêng để giữ undo history
+    const doc = CodeMirror.Doc(content || "", this._mode(path));
     this.tabs.push({
       project, path,
       name: path.split("/").pop(),
-      content: content || "",
+      content: content || "",   // = "last saved content" (để check dirty)
+      doc: doc,
       dirty: false,
     });
     this.activeIdx = this.tabs.length - 1;
@@ -64,9 +342,8 @@ class EditorManager {
 
   activate(idx) {
     if (idx < 0 || idx >= this.tabs.length || idx === this.activeIdx) return;
-    if (this.activeIdx >= 0) {
-      this.tabs[this.activeIdx].content = this.cm.getValue();
-    }
+    // ⭐ v1.3.3: KHÔNG còn save tab.content = cm.getValue() nữa
+    // Doc giữ state thật, content chỉ là "last saved"
     this.activeIdx = idx;
     this._load();
     this.renderTabs();
@@ -76,17 +353,23 @@ class EditorManager {
     if (this.activeIdx < 0) {
       this.cm.getWrapperElement().style.display = "none";
       this.els.empty.classList.remove("hidden");
+      this._updateUndoRedoButtons();
       return;
     }
     this.els.empty.classList.add("hidden");
     this.cm.getWrapperElement().style.display = "";
     const tab = this.tabs[this.activeIdx];
-    this.cm.setOption("mode", this._mode(tab.path));
-    this.cm.setValue(tab.content || "");
-    this.cm.clearHistory();
-    setTimeout(() => this.cm.refresh(), 20);
 
-    // ⭐ v1.3.0: re-render diagnostics markers for the newly active file
+    // ⭐ v1.3.3: swapDoc bảo toàn undo history của từng tab (giống VS Code)
+    // (không dùng setValue/clearHistory như trước — sẽ xoá history)
+    if (!tab.doc) {
+      tab.doc = CodeMirror.Doc(tab.content || "", this._mode(tab.path));
+    }
+    this.cm.swapDoc(tab.doc);
+
+    setTimeout(() => this.cm.refresh(), 20);
+    this._updateUndoRedoButtons();
+
     setTimeout(() => {
       if (window.DiagnosticsUI && this.activeIdx >= 0) {
         const t = this.tabs[this.activeIdx];
@@ -142,9 +425,10 @@ class EditorManager {
     const content = this.cm.getValue();
     try {
       await API.writeFile(tab.project, tab.path, content);
-      tab.content = content;
+      tab.content = content;   // ⭐ đánh dấu "last saved"
       tab.dirty = false;
       this.renderTabs();
+      this._updateUndoRedoButtons();
       App.log(`✓ Saved ${tab.path}`, "success");
     } catch (e) {
       App.log(`✗ Save failed: ${e.message}`, "error");
@@ -155,7 +439,6 @@ class EditorManager {
     return this.activeIdx >= 0 ? this.tabs[this.activeIdx] : null;
   }
 
-  // ⭐ v1.3.0: for DiagnosticsUI.cmForPath()
   getCm(project, path) {
     const tab = this.currentTab();
     if (!tab) return null;
@@ -163,7 +446,6 @@ class EditorManager {
     return null;
   }
 
-  // ⭐ v1.3.0: for DiagnosticsUI.jumpTo()
   async openFileAtLine(project, path, line, column) {
     let idx = this.tabs.findIndex(t => t.project === project && t.path === path);
     if (idx < 0) {
@@ -191,7 +473,7 @@ class EditorManager {
         cm.scrollIntoView({ line: ln, ch }, 80);
         cm.addLineClass(ln, "background", "cm-flash-line");
         setTimeout(() => cm.removeLineClass(ln, "background", "cm-flash-line"), 900);
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     }, 50);
   }
 }

@@ -4,10 +4,12 @@ class WSClient {
     this.handlers = new Map();
     this.reconnectDelay = 1000;
     this.maxDelay = 10000;
+    this.allowReconnect = true;   // ⭐ v1.3.5: set false để dừng auto-reconnect (khi shutdown)
     this.url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
   }
 
   connect() {
+    if (!this.allowReconnect) return;
     try {
       this.socket = new WebSocket(this.url);
     } catch (e) { console.error(e); return; }
@@ -18,6 +20,7 @@ class WSClient {
     };
     this.socket.onclose = () => {
       this._emit("close");
+      if (!this.allowReconnect) return;
       setTimeout(() => this.connect(), this.reconnectDelay);
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxDelay);
     };
@@ -29,6 +32,11 @@ class WSClient {
         if (msg.type) this._emit(msg.type, msg);
       } catch (e) { /* ignore */ }
     };
+  }
+
+  disconnect() {
+    this.allowReconnect = false;
+    try { if (this.socket) this.socket.close(); } catch (e) {}
   }
 
   send(obj) {

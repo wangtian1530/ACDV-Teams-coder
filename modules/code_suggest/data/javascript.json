@@ -1,0 +1,31 @@
+{
+  "keywords": [
+    "var","let","const","function","return","if","else","for","while","do","switch",
+    "case","default","break","continue","class","extends","super","new","this","try",
+    "catch","finally","throw","typeof","instanceof","in","of","delete","void","yield",
+    "async","await","import","export","from","as","null","undefined","true","false"
+  ],
+  "builtins": [
+    "console.log","console.error","console.warn","console.info","console.table",
+    "Array","Object","String","Number","Boolean","Math","Date","RegExp","JSON",
+    "Promise","Map","Set","Symbol","parseInt","parseFloat","isNaN","isFinite",
+    "setTimeout","setInterval","clearTimeout","clearInterval","fetch",
+    "document","window","require","module","exports","process","Buffer",
+    "querySelector","querySelectorAll","addEventListener"
+  ],
+  "snippets": [
+    { "trigger": "arrow",   "insert": "() => {\n  \n}",                              "description": "arrow fn" },
+    { "trigger": "fori",    "insert": "for (let i = 0; i < n; i++) {\n  \n}",         "description": "for i loop" },
+    { "trigger": "forof",   "insert": "for (const item of items) {\n  \n}",           "description": "for of" },
+    { "trigger": "ifelse",  "insert": "if (condition) {\n  \n} else {\n  \n}",        "description": "if/else" },
+    { "trigger": "trycatch","insert": "try {\n  \n} catch (err) {\n  \n}",            "description": "try/catch" },
+    { "trigger": "cls",     "insert": "class Name {\n  constructor() {\n    \n  }\n}", "description": "class" },
+    { "trigger": "func",    "insert": "function name(args) {\n  \n}",                 "description": "function" },
+    { "trigger": "afunc",   "insert": "async function name() {\n  await \n}",         "description": "async function" },
+    { "trigger": "prom",    "insert": "new Promise((resolve, reject) => {\n  \n})",   "description": "Promise" },
+    { "trigger": "imfn",    "insert": "import { name } from 'module'",                "description": "import named" },
+    { "trigger": "expdef",  "insert": "export default ",                              "description": "export default" },
+    { "trigger": "fetch",   "insert": "fetch(url).then(r => r.json()).then(data => {\n  \n})", "description": "fetch" },
+    { "trigger": "clg",     "insert": "console.log()",                                "description": "console.log" }
+  ]
+}

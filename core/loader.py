@@ -1,12 +1,13 @@
 """Module loader + ZIP installer + ModuleBase interface.
 
-v1.3.0:
-  - ModuleBase gains error-interceptor hooks (on_any_error, on_http_error,
-    on_ws_route_error, on_ws_action_error).
-  - Detects both overlay.css/js and override.css/js in modules/<name>/web/.
-  - register_module now rejects routes that collide with core (protected).
+v1.3.1:
+  - ModuleBase gains error-interceptor hooks.
+  - Overlay detection: ưu tiên data/ (cho file lớn) trước web/.
+    Đường dẫn data/ dùng prefix `_data_/` để server.py phân biệt.
+  - register_module rejects routes collision với core (protected).
 """
 import os
+import io
 import json
 import zipfile
 import shutil
@@ -45,27 +46,19 @@ class ModuleBase:
 
     # --- diagnostics ---
     def diagnose(self, project, path, content):
-        """Override to report problems. Return list of dicts:
-        {severity, line, column, end_line, end_column, message, code}
-        """
         return []
 
-    # --- ⭐ v1.3.0: error interception hooks ---
+    # --- error interception hooks ---
     def on_any_error(self, ctx):
-        """Called on ANY error before source-specific handlers.
-        Return None to pass through; return dict to handle."""
         return None
 
     def on_http_error(self, ctx):
-        """ctx['source'] == 'http', has method/path/request."""
         return None
 
     def on_ws_route_error(self, ctx):
-        """ctx['source'] == 'ws_route'."""
         return None
 
     def on_ws_action_error(self, ctx):
-        """ctx['source'] == 'ws_action', has module/button_id/params."""
         return None
 
     def handle_route(self, handler_name, request):
@@ -119,15 +112,26 @@ class ModuleLoader:
         metadata.setdefault("diagnostics", None)
         metadata.setdefault("overlay", {})
 
-        # web UI + overlay detection (support both naming conventions)
+        # web UI detection
         web_dir = os.path.join(mod_path, "web")
+        data_dir = os.path.join(mod_path, "data")
         metadata["has_web_ui"] = os.path.isfile(os.path.join(web_dir, "index.html"))
         metadata["web_ui_path"] = f"/module/{name}/" if metadata["has_web_ui"] else None
+
+        # ⭐ v1.3.1: Overlay detection — data/ ưu tiên (file lớn), fallback web/
+        # data/ dùng prefix `_data_/` để server.py route đúng thư mục.
         for css_name in ("overlay.css", "override.css"):
+            if os.path.isfile(os.path.join(data_dir, css_name)):
+                metadata["overlay"]["css"] = f"_data_/{css_name}"
+                break
             if os.path.isfile(os.path.join(web_dir, css_name)):
                 metadata["overlay"]["css"] = css_name
                 break
+
         for js_name in ("overlay.js", "override.js"):
+            if os.path.isfile(os.path.join(data_dir, js_name)):
+                metadata["overlay"]["js"] = f"_data_/{js_name}"
+                break
             if os.path.isfile(os.path.join(web_dir, js_name)):
                 metadata["overlay"]["js"] = js_name
                 break
@@ -164,7 +168,6 @@ class ModuleLoader:
                 files = ["*"]
             self.engine.diagnostics.register_provider(name, files)
 
-        # ⭐ register_module handles route collisions gracefully
         self.engine.register_module(instance)
 
         overlay_txt = ""
@@ -240,6 +243,55 @@ class ModuleLoader:
 
         self.load_module(module_name)
         return metadata
+
+    # ---------------------------------------------------------------- #
+    #  ⭐ Export module as ZIP
+    # ---------------------------------------------------------------- #
+    def export_module_zip(self, name):
+        """Export module thành ZIP bytes (base dir = <name>/).
+
+        - Bao gồm: main.py, init.txt, web/, data/, và bất kỳ file nào khác.
+        - Bỏ: __pycache__, *.pyc.
+        - Round-trip: ZIP này có thể cài lại qua install_from_zip()
+          (sau khi đã uninstall module hiện tại).
+        """
+        if not name:
+            raise Exception("Missing module name")
+        if "/" in name or "\\" in name or name in (".", ".."):
+            raise Exception("Invalid module name")
+
+        mod_dir = os.path.abspath(os.path.join(self.modules_dir, name))
+        modules_root = os.path.abspath(self.modules_dir)
+        if mod_dir != modules_root and not mod_dir.startswith(modules_root + os.sep):
+            raise Exception("Path escape")
+        if not os.path.isdir(mod_dir):
+            raise Exception("Module not found")
+
+        buf = io.BytesIO()
+        count = 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(mod_dir):
+                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", ".git", ".svn"))
+                for fname in sorted(files):
+                    if fname.endswith(".pyc"):
+                        continue
+                    full = os.path.join(root, fname)
+                    try:
+                        rel = os.path.relpath(full, mod_dir)
+                    except Exception:
+                        continue
+                    arcname = (name + "/" + rel).replace("\\", "/")
+                    try:
+                        zf.write(full, arcname=arcname)
+                        count += 1
+                    except (OSError, IOError):
+                        continue
+
+        return {
+            "data": buf.getvalue(),
+            "files": count,
+            "size": buf.tell(),
+        }
 
     def uninstall(self, name):
         if name in self.engine.modules:

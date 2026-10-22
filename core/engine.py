@@ -1,10 +1,23 @@
-"""Core Engine — boot sequence, module registry, critical-fail policy, error dispatch."""
+"""Core Engine — boot sequence, module registry, critical-fail policy, error dispatch.
+
+v1.3.5:
+  - API restart/shutdown (`/api/system/*`), gate bởi `enable_system_controls`.
+  - Module watcher thread tự detect module mới/xoá trong `modules/`.
+  - Broadcast `modules_changed` qua WS khi watcher có thay đổi.
+
+v1.3.6:
+  - ⭐ Export ZIP: `/api/projects/export`, `/api/modules/export`.
+  - ⭐ Welcome screen: `/api/readme` serve README.md cho frontend.
+"""
 import os
+import sys
 import time
 import json
+import base64
 import signal
 import threading
 import traceback
+import subprocess
 
 from .loader import ModuleLoader
 from .sandbox import Sandbox
@@ -14,6 +27,7 @@ from .project_manager import ProjectManager
 from .runner import ProcessRunner
 from .settings import SettingsManager
 from .diagnostics import DiagnosticsManager
+from .terminal import TerminalManager
 
 
 class CoreEngine:
@@ -29,10 +43,16 @@ class CoreEngine:
         self.loader = ModuleLoader(self)
         self.settings = SettingsManager(base_dir, self)
         self.diagnostics = DiagnosticsManager(self)
+        self.terminal = TerminalManager(self)
         self.server = None
         self.running = False
         self.critical_fail = False
         self._diag_cache = {}
+
+        # ⭐ v1.3.5: module watcher state
+        self._module_mtimes = {}          # name -> mtime của main.py
+        self._watcher_thread = None
+        self._watcher_stop = False
 
     def boot(self):
         print("=" * 60)
@@ -69,8 +89,6 @@ class CoreEngine:
         os.makedirs(os.path.join(self.base_dir, "projects"), exist_ok=True)
         self.settings.initialize()
 
-        # ⭐ v1.3.0: ALL core routes registered with `add_core` — protected
-        # from module override. Modules attempting to override get rejected.
         A = self.router.add_core
 
         A("GET",  "/api/status",                self._api_status)
@@ -78,11 +96,13 @@ class CoreEngine:
         A("POST", "/api/modules/install",       self._api_install)
         A("POST", "/api/modules/uninstall",     self._api_uninstall)
         A("POST", "/api/modules/reload",        self._api_reload)
+        A("POST", "/api/modules/export",        self._api_module_export)   # ⭐ NEW
 
         A("GET",  "/api/projects",              self._api_projects_list)
         A("POST", "/api/projects/create",       self._api_projects_create)
         A("POST", "/api/projects/upload",       self._api_projects_upload)
         A("POST", "/api/projects/delete",       self._api_projects_delete)
+        A("POST", "/api/projects/export",       self._api_projects_export)  # ⭐ NEW
         A("POST", "/api/projects/tree",         self._api_projects_tree)
         A("POST", "/api/projects/file/read",    self._api_projects_file_read)
         A("POST", "/api/projects/file/write",   self._api_projects_file_write)
@@ -99,19 +119,24 @@ class CoreEngine:
         A("POST", "/api/projects/logs/read",    self._api_logs_read)
         A("POST", "/api/projects/logs/delete",  self._api_logs_delete)
 
-        # ⭐ v1.2.2: Settings
         A("GET",  "/api/settings",              self._api_settings_get)
         A("POST", "/api/settings",              self._api_settings_update)
         A("POST", "/api/settings/modules",      self._api_settings_modules)
         A("POST", "/api/settings/module/get",   self._api_settings_module_get)
         A("POST", "/api/settings/module/set",   self._api_settings_module_set)
         A("GET",  "/api/overlay",               self._api_overlay_get)
+        A("GET",  "/api/readme",                self._api_readme)         # ⭐ NEW
 
-        # ⭐ v1.2.2: Diagnostics
         A("POST", "/api/diagnostics/check",     self._api_diagnostics_check)
         A("POST", "/api/diagnostics/file",      self._api_diagnostics_file)
         A("GET",  "/api/diagnostics/all",       self._api_diagnostics_all)
         A("POST", "/api/diagnostics/clear",     self._api_diagnostics_clear)
+
+        A("GET",  "/api/terminal/sessions",     self._api_terminal_sessions)
+
+        # ⭐ v1.3.5: system controls
+        A("POST", "/api/system/restart",        self._api_system_restart)
+        A("POST", "/api/system/shutdown",       self._api_system_shutdown)
 
     def _apply_overrides(self):
         od = os.path.join(self.base_dir, "overrides")
@@ -133,6 +158,12 @@ class CoreEngine:
 
     def _load_modules(self):
         self.loader.scan_and_load_all()
+        # ⭐ v1.3.5: ghi lại mtime sau khi load để watcher không tự reload
+        for name in self.modules.keys():
+            self._update_module_mtime(name)
+        # ⭐ v1.3.5: khởi động watcher
+        if self.config.get("auto_detect_modules", True):
+            self._start_module_watcher()
 
     def _recover_sessions(self):
         for name, mod in list(self.modules.items()):
@@ -154,7 +185,6 @@ class CoreEngine:
             if not path or not handler:
                 print(f"[Loader] ⚠ '{name}': invalid route {route}")
                 continue
-            # ⭐ v1.3.0: reject module routes that collide with protected core routes
             if self.router.is_protected(method, path):
                 print(f"[Loader] ⚠ '{name}': route {method} {path} rejected "
                       f"(core-protected)")
@@ -180,24 +210,7 @@ class CoreEngine:
         except Exception:
             pass
 
-    # ================================================================ #
-    #  ⭐ v1.3.0: ERROR DISPATCH CHAIN (VS Code-like)
-    # ================================================================ #
     def dispatch_error(self, ctx):
-        """Dispatch an error through module interceptors.
-
-        ctx = {
-            "source": "http" | "ws_route" | "ws_action",
-            "method", "path", "request",       # http / ws_route
-            "module", "button_id", "params",   # ws_action
-            "error", "traceback"
-        }
-
-        Returns:
-            None  -> not handled, caller should return 500/error
-            dict  -> handled, use as response body
-        """
-        # --- Pass 1: on_any_error (global log) ---
         for name, mod in list(self.modules.items()):
             fn = getattr(mod, "on_any_error", None)
             if not callable(fn):
@@ -211,7 +224,6 @@ class CoreEngine:
             except Exception as e:
                 print(f"[ErrorDispatch] {name}.on_any_error failed: {e}")
 
-        # --- Pass 2: source-specific ---
         source = ctx.get("source", "")
         handler_name = {
             "http":       "on_http_error",
@@ -236,12 +248,6 @@ class CoreEngine:
         return None
 
     def _normalize_error_result(self, result):
-        """Module returns can be:
-        - None                    -> not handled
-        - {"handled": False, ...} -> not handled
-        - {"handled": True, "response": {...}} -> handled, use response
-        - {...}                   -> handled, use as-is
-        """
         if not isinstance(result, dict):
             return result
         if "handled" in result:
@@ -250,9 +256,6 @@ class CoreEngine:
             return result.get("response") or result
         return result
 
-    # ================================================================ #
-    #  ⭐ v1.3.0: get module settings (used by server.py WS handlers)
-    # ================================================================ #
     def get_module_settings(self, name):
         if name not in self.modules:
             return {}
@@ -261,12 +264,190 @@ class CoreEngine:
         except Exception:
             return {}
 
-    # ============================ Status ============================
+    # ================================================================ #
+    #  ⭐ v1.3.5: Module watcher
+    # ================================================================ #
+    def _module_paths(self, name):
+        mod_dir = os.path.join(self.base_dir, "modules", name)
+        return {
+            "dir": mod_dir,
+            "main": os.path.join(mod_dir, "main.py"),
+            "init": os.path.join(mod_dir, "init.txt"),
+        }
+
+    def _update_module_mtime(self, name):
+        paths = self._module_paths(name)
+        if not os.path.isfile(paths["main"]):
+            return
+        try:
+            mt_main = os.path.getmtime(paths["main"])
+            mt_init = (os.path.getmtime(paths["init"])
+                       if os.path.isfile(paths["init"]) else 0)
+            self._module_mtimes[name] = (mt_main, mt_init)
+        except OSError:
+            pass
+
+    def _start_module_watcher(self):
+        interval = float(self.config.get("module_watch_interval", 2))
+        interval = max(1.0, min(interval, 30.0))
+
+        def _loop():
+            print(f"[Watcher] module watcher started (interval={interval}s)")
+            while not self._watcher_stop and self.running:
+                try:
+                    self._scan_modules_changes()
+                except Exception as e:
+                    print(f"[Watcher] scan error: {e}")
+                # ngủ theo từng bước nhỏ để phản ứng nhanh với shutdown
+                slept = 0.0
+                while slept < interval and not self._watcher_stop and self.running:
+                    time.sleep(0.2)
+                    slept += 0.2
+            print("[Watcher] stopped")
+
+        self._watcher_thread = threading.Thread(target=_loop, daemon=True)
+        self._watcher_thread.start()
+
+    def _scan_modules_changes(self):
+        modules_dir = os.path.join(self.base_dir, "modules")
+        if not os.path.isdir(modules_dir):
+            return
+
+        try:
+            entries = os.listdir(modules_dir)
+        except OSError:
+            return
+
+        current = {}
+        for name in entries:
+            mod_dir = os.path.join(modules_dir, name)
+            if not os.path.isdir(mod_dir):
+                continue
+            main_py = os.path.join(mod_dir, "main.py")
+            if not os.path.isfile(main_py):
+                continue
+            try:
+                current[name] = os.path.getmtime(main_py)
+            except OSError:
+                continue
+
+        # ---- Module mới xuất hiện ----
+        for name in current:
+            if name in self.modules:
+                continue
+            print(f"[Watcher] ⚡ new module detected: {name}")
+            try:
+                self.loader.load_module(name)
+                self._update_module_mtime(name)
+                self._broadcast({
+                    "type": "modules_changed",
+                    "action": "added",
+                    "module": name,
+                })
+            except Exception as e:
+                print(f"[Watcher] ✗ load '{name}' failed: {e}")
+                traceback.print_exc()
+
+        # ---- Module bị xoá khỏi disk ----
+        for name in list(self.modules.keys()):
+            if name in current:
+                continue
+            print(f"[Watcher] ⚡ module removed: {name}")
+            try:
+                if name in self.modules:
+                    try:
+                        self.modules[name].on_shutdown()
+                    except Exception:
+                        pass
+                self.diagnostics.unregister_provider(name)
+                self.settings.unregister_module(name)
+                self.modules.pop(name, None)
+                self._module_mtimes.pop(name, None)
+                self._broadcast({
+                    "type": "modules_changed",
+                    "action": "removed",
+                    "module": name,
+                })
+            except Exception as e:
+                print(f"[Watcher] ✗ unload '{name}' failed: {e}")
+
+    # ================================================================ #
+    #  ⭐ v1.3.5: System controls (restart / shutdown)
+    # ================================================================ #
+    def _system_controls_enabled(self):
+        return bool(self.config.get("enable_system_controls", True))
+
+    def _api_system_restart(self, req):
+        if not self._system_controls_enabled():
+            return {"ok": False, "error": "system controls disabled"}
+        self._broadcast({"type": "system_restarting"})
+
+        def _do():
+            time.sleep(0.5)
+            print("[Core] ♻ restarting …")
+            try:
+                self.shutdown()
+            except Exception as e:
+                print(f"[Core] shutdown before restart error: {e}")
+            # flush trước khi exec (buffer của Python mất khi execv)
+            try:
+                sys.stdout.flush()
+                sys.stderr.flush()
+            except Exception:
+                pass
+            main_py = os.path.join(self.base_dir, "main.py")
+            args = [sys.executable, main_py] + sys.argv[1:]
+            try:
+                os.execv(sys.executable, args)
+            except Exception as e:
+                print(f"[Restart] os.execv failed: {e}")
+                # fallback Windows / môi trường lạ
+                try:
+                    subprocess.Popen(
+                        args,
+                        cwd=self.base_dir,
+                        stdin=subprocess.DEVNULL,
+                    )
+                    os._exit(0)
+                except Exception as e2:
+                    print(f"[Restart] fallback spawn failed: {e2}")
+                    os._exit(1)
+
+        threading.Thread(target=_do, daemon=True).start()
+        return {"ok": True, "message": "restarting"}
+
+    def _api_system_shutdown(self, req):
+        if not self._system_controls_enabled():
+            return {"ok": False, "error": "system controls disabled"}
+        self._broadcast({"type": "system_shutdown"})
+
+        def _do():
+            time.sleep(0.5)
+            print("[Core] ⏻ shutting down …")
+            try:
+                self.shutdown()
+            except Exception as e:
+                print(f"[Core] shutdown error: {e}")
+            try:
+                sys.stdout.flush()
+                sys.stderr.flush()
+            except Exception:
+                pass
+            os._exit(0)
+
+        threading.Thread(target=_do, daemon=True).start()
+        return {"ok": True, "message": "shutting down"}
+
+    # ================================================================ #
+    #  API handlers
+    # ================================================================ #
     def _api_status(self, req):
         return {
             "status": "critical" if self.critical_fail else "ok",
             "version": self.config.get("version"),
             "uptime_modules": list(self.modules.keys()),
+            "system_controls": self._system_controls_enabled(),
+            "auto_detect_modules": bool(self.config.get("auto_detect_modules", True)),
         }
 
     def _api_modules(self, req):
@@ -275,7 +456,7 @@ class CoreEngine:
     def _api_install(self, req):
         try:
             if "zip_base64" in req:
-                import base64, tempfile
+                import tempfile
                 data = base64.b64decode(req["zip_base64"])
                 with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as f:
                     f.write(data)
@@ -286,6 +467,14 @@ class CoreEngine:
                     os.unlink(tmp)
             else:
                 meta = self.loader.install_from_zip(req.get("file_path"))
+            # ⭐ v1.3.5: cập nhật mtime để watcher không load lại
+            if meta and meta.get("name"):
+                self._update_module_mtime(meta["name"])
+                self._broadcast({
+                    "type": "modules_changed",
+                    "action": "added",
+                    "module": meta["name"],
+                })
             return {"ok": True, "module": meta}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -296,6 +485,12 @@ class CoreEngine:
             return {"ok": False, "error": "missing name"}
         try:
             self.loader.uninstall(name)
+            self._module_mtimes.pop(name, None)
+            self._broadcast({
+                "type": "modules_changed",
+                "action": "removed",
+                "module": name,
+            })
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -311,11 +506,33 @@ class CoreEngine:
             self.diagnostics.unregister_provider(name)
             self.settings.unregister_module(name)
             self.loader.load_module(name)
+            self._update_module_mtime(name)
+            self._broadcast({
+                "type": "modules_changed",
+                "action": "reloaded",
+                "module": name,
+            })
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ============================ Projects ============================
+    # ⭐ NEW: export module ZIP
+    def _api_module_export(self, req):
+        name = req.get("name")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        try:
+            result = self.loader.export_module_zip(name)
+            return {
+                "ok": True,
+                "filename": f"{name}.zip",
+                "size": result["size"],
+                "files": result["files"],
+                "zip_base64": base64.b64encode(result["data"]).decode("ascii"),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def _api_projects_list(self, req):
         return self.projects.list_projects()
 
@@ -341,6 +558,23 @@ class CoreEngine:
                 if k[0] == name:
                     del self._diag_cache[k]
             return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ⭐ NEW: export project ZIP
+    def _api_projects_export(self, req):
+        name = req.get("name")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        try:
+            result = self.projects.export_zip(name)
+            return {
+                "ok": True,
+                "filename": f"{name}.zip",
+                "size": result["size"],
+                "files": result["files"],
+                "zip_base64": base64.b64encode(result["data"]).decode("ascii"),
+            }
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -417,7 +651,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ============== Run ==============
     def _api_projects_run(self, req):
         try:
             project = req.get("project")
@@ -446,7 +679,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ============== Logs ==============
     def _api_logs_list(self, req):
         try:
             project = req.get("project") or ""
@@ -496,7 +728,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ============== ⭐ Settings ==============
     def _api_settings_get(self, req):
         return {"ok": True, "settings": self.settings.get_global()}
 
@@ -577,7 +808,21 @@ class CoreEngine:
             })
         return {"ok": True, "safe_mode": safe_mode, "overlays": overlays}
 
-    # ============== ⭐ Diagnostics ==============
+    # ⭐ NEW: serve README.md for Welcome screen
+    def _api_readme(self, req):
+        readme_path = os.path.join(self.base_dir, "README.md")
+        if not os.path.isfile(readme_path):
+            return {"ok": False, "error": "README.md not found at project root"}
+        try:
+            st = os.stat(readme_path)
+            if st.st_size > 2 * 1024 * 1024:
+                return {"ok": False, "error": "README too large (> 2MB)"}
+            with open(readme_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            return {"ok": True, "content": content, "size": st.st_size}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def _schedule_diagnostics(self, project, path, content):
         def _run():
             try:
@@ -639,12 +884,30 @@ class CoreEngine:
             self._broadcast({"type": "diagnostics_cleared"})
         return {"ok": True}
 
-    # ============== Lifecycle ==============
+    def _api_terminal_sessions(self, req):
+        with self.terminal.lock:
+            sessions = [
+                {
+                    "id": tid,
+                    "pid": s.proc.pid if s.proc else None,
+                    "cwd": s.cwd,
+                    "cols": s.cols,
+                    "rows": s.rows,
+                }
+                for tid, s in self.terminal.sessions.items()
+            ]
+        return {"ok": True, "sessions": sessions}
+
     def shutdown(self):
         print("[Core] shutting down …")
         self.running = False
+        self._watcher_stop = True
         try:
             self.runner.stop(force=True)
+        except Exception:
+            pass
+        try:
+            self.terminal.close_all()
         except Exception:
             pass
         for mod in list(self.modules.values()):

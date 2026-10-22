@@ -8,30 +8,60 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <button class="icon-btn" id="menuBtn" title="Menu">☰</button>
       <div class="brand">
-        <svg class="brand-logo" width="22" height="22" viewBox="0 0 100 100" aria-hidden="true">
+        <svg class="brand-logo" width="50" height="30" viewBox="0 0 100 100" aria-hidden="true">
           <polygon points="50,5 90,27 90,73 50,95 10,73 10,27"
                    fill="#0e639c" stroke="#4af" stroke-width="3"/>
           <text x="50" y="62" text-anchor="middle" fill="#fff"
-                font-size="32" font-weight="bold" font-family="sans-serif">A</text>
+                font-size="32" font-weight="bold" font-family="sans-serif">ACoder</text>
         </svg>
         <span class="brand-name">ACDV-Teams Coder</span>
       </div>
       <div class="top-actions">
         <span class="status-dot" id="connDot" title="Disconnected"></span>
+
         <button class="icon-btn" id="runBtn" title="Run current file (Ctrl+Enter)">▶</button>
         <button class="icon-btn hidden" id="stopRunBtn" title="Stop process">■</button>
-        <button class="icon-btn" id="logsBtn" title="View logs">📜</button>
-        <button class="icon-btn" id="problemsBtn" title="Problems">⚠</button>
         <button class="icon-btn" id="saveBtn" title="Save (Ctrl+S)">💾</button>
-        <button class="icon-btn" id="helpBtn" title="Hướng dẫn / About">?</button>
-        <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
-        <button class="icon-btn" id="newProjectBtn" title="New project">＋</button>
+
+        <button class="icon-btn desktop-only" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶</button>
+        <button class="icon-btn desktop-only" id="redoBtn" title="Redo (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷</button>
+        <button class="icon-btn desktop-only" id="logsBtn" title="View logs">📜</button>
+        <button class="icon-btn desktop-only" id="problemsBtn" title="Problems">⚠</button>
+        <button class="icon-btn desktop-only" id="terminalBtn" title="Toggle terminal (Ctrl+`)">⌨</button>
+        <button class="icon-btn desktop-only" id="foldBtn" title="Fold / Unfold all code (Ctrl+Shift+[ / ])">⇕</button>
+        <button class="icon-btn desktop-only" id="helpBtn" title="Hướng dẫn / About">?</button>
+        <button class="icon-btn desktop-only" id="settingsBtn" title="Settings">⚙</button>
+        <button class="icon-btn desktop-only" id="newProjectBtn" title="New project">＋</button>
+
+        <button class="icon-btn desktop-only" id="restartBtn" title="Restart server">🔄</button>
+        <button class="icon-btn desktop-only" id="shutdownBtn" title="Shutdown server">⏻</button>
+
+        <button class="icon-btn mobile-only" id="moreBtn" title="More">⋯</button>
+      </div>
+
+      <div class="top-menu hidden" id="topMenu">
+        <button class="top-menu-item" data-target="undoBtn"><span class="mi-icon">↶</span><span class="mi-label">Undo</span></button>
+        <button class="top-menu-item" data-target="redoBtn"><span class="mi-icon">↷</span><span class="mi-label">Redo</span></button>
+        <div class="top-menu-divider"></div>
+        <button class="top-menu-item" data-target="logsBtn"><span class="mi-icon">📜</span><span class="mi-label">Logs</span></button>
+        <button class="top-menu-item" data-target="problemsBtn"><span class="mi-icon">⚠</span><span class="mi-label">Problems</span></button>
+        <button class="top-menu-item" data-target="terminalBtn"><span class="mi-icon">⌨</span><span class="mi-label">Terminal</span></button>
+        <button class="top-menu-item" data-target="foldBtn"><span class="mi-icon">⇕</span><span class="mi-label">Fold / Unfold</span></button>
+        <div class="top-menu-divider"></div>
+        <button class="top-menu-item" data-target="helpBtn"><span class="mi-icon">?</span><span class="mi-label">Help</span></button>
+        <button class="top-menu-item" data-target="settingsBtn"><span class="mi-icon">⚙</span><span class="mi-label">Settings</span></button>
+        <button class="top-menu-item" data-target="newProjectBtn"><span class="mi-icon">＋</span><span class="mi-label">New Project</span></button>
+        <div class="top-menu-divider"></div>
+        <button class="top-menu-item" data-target="restartBtn"><span class="mi-icon">🔄</span><span class="mi-label">Restart Server</span></button>
+        <button class="top-menu-item" data-target="shutdownBtn"><span class="mi-icon">⏻</span><span class="mi-label">Shutdown</span></button>
       </div>
     </header>
 
@@ -81,11 +111,18 @@
       <div class="editor-tabs" id="editorTabs"></div>
 
       <div class="editor-wrap">
+        <!-- ⭐ Welcome screen: render README.md khi chưa mở tab nào -->
         <div class="editor-empty" id="editorEmpty">
-          <div class="empty-inner">
-            <h2>ACDV-Teams Coder</h2>
-            <p>Chọn hoặc tạo project để bắt đầu</p>
-            <button class="btn primary" id="emptyNewProjectBtn">＋ New Project</button>
+          <div class="welcome-screen">
+            <div class="welcome-header">
+              <h2>👋 Chào mừng đến với ACDV-Teams Coder</h2>
+              <button class="btn primary" id="emptyNewProjectBtn">＋ New Project</button>
+              <button class="icon-btn small" id="refreshReadmeBtn" title="Tải lại README.md">⟳</button>
+              <p>Đọc hướng dẫn bên dưới để làm chủ công cụ, hoặc bắt đầu ngay.</p>
+            </div>
+            <div class="welcome-readme" id="welcomeReadme">
+              <div class="welcome-loading">Đang tải README.md…</div>
+            </div>
           </div>
         </div>
         <textarea id="editor" class="editor hidden"></textarea>
@@ -97,6 +134,7 @@
             <button class="ptab active" data-ptab="output">Output</button>
             <button class="ptab" data-ptab="run">Run</button>
             <button class="ptab" data-ptab="problems">⚠ Problems</button>
+            <button class="ptab" data-ptab="terminal">⌨ Terminal</button>
           </div>
           <div class="panel-actions">
             <button class="icon-btn small" id="clearOutputBtn">Clear</button>
@@ -112,6 +150,16 @@
         </div>
         <div class="panel-pane hidden" id="pane-problems">
           <div id="problemsList"></div>
+        </div>
+        <div class="panel-pane hidden" id="pane-terminal">
+          <div class="terminal-header">
+            <span class="terminal-status" id="terminalStatus">● Not connected</span>
+            <div class="terminal-actions">
+              <button class="icon-btn small" id="terminalRestartBtn" title="Restart terminal">⟳</button>
+              <button class="icon-btn small" id="terminalKillBtn" title="Kill session">🗑</button>
+            </div>
+          </div>
+          <div id="terminalContainer"></div>
         </div>
       </div>
     </main>
@@ -166,7 +214,6 @@
     </div>
   </div>
 
-  <!-- ⭐ v1.3.0: Settings modal (About tab được render bởi settings.js) -->
   <div id="settingsModal" class="modal" style="display:none;">
     <div class="modal-content settings-modal">
       <div class="modal-header">
@@ -192,6 +239,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
+
+  <!-- ⭐ Markdown renderer cho Welcome screen -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
   <script src="/js/api.js"></script>
   <script src="/js/ws.js"></script>
   <script src="/js/explorer.js"></script>
@@ -199,6 +259,7 @@
   <script src="/js/overlay.js"></script>
   <script src="/js/diagnostics.js"></script>
   <script src="/js/settings.js"></script>
+  <script src="/js/terminal.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

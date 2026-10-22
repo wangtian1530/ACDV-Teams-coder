@@ -1,0 +1,29 @@
+{
+  "name": "md_parser",
+  "version": "1.0.0",
+  "description": "Module upload file Markdown để bóc tách tên file và mã nguồn tự động",
+  "critical": false,
+
+  "routes": [
+    { "method": "POST", "path": "/api/md_parser/parse", "handler": "parse_markdown" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "open_ui",
+      "label": "MD Code Extractor",
+      "icon": "📂",
+      "color": "info",
+      "action": "open_tab",
+      "params": { "url": "/module/md_parser/" }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled": { "type": "boolean", "default": true, "label": "Bật Module MD Parser" }
+  },
+
+  "diagnostics": {
+    "files": []
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "check_todo": true,
+  "check_debug": true,
+  "check_style": true,
+  "max_line_length": 120,
+  "default_severity": "warning"
+}

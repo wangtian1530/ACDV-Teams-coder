@@ -1,8 +1,8 @@
 {
-  "theme": "dark",
+  "theme": "dracula",
   "editor": {
-    "font_size": 10,
-    "tab_size": 4,
+    "font_size": 1,
+    "tab_size": 2,
     "line_wrap": false,
     "auto_save": false
   },
@@ -13,6 +13,11 @@
   },
   "overlays": {
     "safe_mode": false,
-    "per_module": {}
+    "per_module": {
+      "code_suggest": {
+        "css": true,
+        "js": true
+      }
+    }
   }
 }

@@ -1,0 +1,26 @@
+{
+  "keywords": [
+    "if","then","else","elif","fi","for","while","do","done","case","esac","in",
+    "function","return","exit","break","continue","local","export","readonly",
+    "declare","unset","until"
+  ],
+  "builtins": [
+    "echo","printf","read","cd","pwd","ls","cat","grep","sed","awk","find","xargs",
+    "sort","uniq","wc","head","tail","cut","tr","tee","mkdir","rm","cp","mv","touch",
+    "chmod","chown","ln","tar","gzip","curl","wget","ssh","scp","sudo","apt","yum",
+    "brew","git","docker","kubectl","ps","kill","killall","sleep","test","true",
+    "false","source","eval","exec","shift","getopts","trap","wait"
+  ],
+  "snippets": [
+    { "trigger": "shebang", "insert": "#!/bin/bash\nset -euo pipefail\n\n",              "description": "shebang + strict" },
+    { "trigger": "ifblock", "insert": "if [ condition ]; then\n  \nfi",                  "description": "if/then/fi" },
+    { "trigger": "forloop", "insert": "for item in items; do\n  \ndone",                 "description": "for loop" },
+    { "trigger": "whilelp", "insert": "while [ condition ]; do\n  \ndone",               "description": "while loop" },
+    { "trigger": "func",    "insert": "name() {\n  \n}",                                 "description": "function" },
+    { "trigger": "cases",   "insert": "case \"$var\" in\n  pattern)\n    \n    ;;\n  *)\n    \n    ;;\nesac", "description": "case" },
+    { "trigger": "trap",    "insert": "trap 'echo \"error on line $LINENO\"' ERR",       "description": "trap ERR" },
+    { "trigger": "readfile","insert": "while IFS= read -r line; do\n  \ndone < file.txt","description": "read file" },
+    { "trigger": "args",    "insert": "\"$@\"",                                          "description": "all args" },
+    { "trigger": "getopts", "insert": "while getopts \":h\" opt; do\n  case $opt in\n    h) ;;\n    \\?) ;;\n  esac\ndone", "description": "getopts" }
+  ]
+}

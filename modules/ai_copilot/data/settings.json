@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "api_key": "AI_API_KEY YOUR_KEY_HERE",
+  "model": "gemini-3.8-flash"
+}
