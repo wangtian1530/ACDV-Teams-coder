@@ -1,7 +1,7 @@
 class EditorManager {
   constructor() {
     this.cm = null;
-    this.tabs = [];           // {project, path, name, content, doc, dirty}
+    this.tabs = [];
     this.activeIdx = -1;
     this.globalSettings = null;
     this._loadedThemes = new Set(["dracula"]);
@@ -17,7 +17,7 @@ class EditorManager {
     const ua = navigator.userAgent || "";
     const isAndroid = /Android/i.test(ua);
 
-    // ⭐ v1.3.1: CodeMirror options
+    // ⭐ v1.4.1: extraKeys + foldGutter config
     const cmOpts = {
       lineNumbers: true,
       theme: "dracula",
@@ -30,7 +30,6 @@ class EditorManager {
       viewportMargin: Infinity,
       autofocus: false,
 
-      // ⭐ v1.3.1: code folding
       foldGutter: true,
       gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
       extraKeys: {
@@ -40,7 +39,6 @@ class EditorManager {
       },
     };
 
-    // ⭐ v1.3.1: Android fix
     if (isAndroid) {
       cmOpts.inputStyle = "contenteditable";
       cmOpts.spellcheck = false;
@@ -65,8 +63,6 @@ class EditorManager {
       foldBtn.addEventListener("click", () => this.toggleFoldAll());
     }
 
-    // ⭐ v1.3.3: dirty-state chính xác theo so sánh content
-    // (undo về trạng thái đã lưu → dirty = false → dấu ● biến mất)
     this.cm.on("change", () => {
       if (this.activeIdx >= 0) {
         const tab = this.tabs[this.activeIdx];
@@ -80,15 +76,92 @@ class EditorManager {
       this._updateUndoRedoButtons();
     });
 
-    // ⭐ v1.3.3: cập nhật trạng thái nút undo/redo khi cursor di chuyển
-    // (không cần thiết lắm nhưng cho cảm giác responsive)
     this.cm.on("cursorActivity", () => this._updateUndoRedoButtons());
 
     this._updateUndoRedoButtons();
   }
 
+  // ⭐ v1.4.1: Chọn fold range finder theo mode hiện tại
+  _getFoldRangeFinder() {
+    const mode = (this.cm && this.cm.getMode() && this.cm.getMode().name) || "";
+    const fold = (window.CodeMirror && window.CodeMirror.fold) || {};
+    if (mode.indexOf("python") >= 0 && fold.indent) return fold.indent;
+    if (mode.indexOf("javascript") >= 0 && fold.brace) return fold.brace;
+    if (mode.indexOf("css") >= 0 && fold.brace) return fold.brace;
+    if (mode.indexOf("htmlmixed") >= 0 && fold.brace) return fold.brace;
+    if (mode.indexOf("xml") >= 0 && fold.brace) return fold.brace;
+    if (fold.brace) return fold.brace;
+    if (fold.indent) return fold.indent;
+    return null;
+  }
+
+  // ⭐ v1.4.1 FIX: Fold từ CUỐI về ĐẦU để line index không bị shift
+  foldAll() {
+    if (!this.cm) return;
+    const cm = this.cm;
+    const total = cm.lineCount();
+    const finder = this._getFoldRangeFinder();
+
+    cm.operation(() => {
+      for (let i = total - 1; i >= 0; i--) {
+        try {
+          if (finder) {
+            cm.foldCode({ line: i, ch: 0 }, finder, "fold");
+          } else {
+            cm.foldCode({ line: i, ch: 0 });
+          }
+        } catch (e) { /* skip line không fold được */ }
+      }
+    });
+    setTimeout(() => { try { cm.refresh(); } catch (e) {} }, 30);
+  }
+
+  // ⭐ v1.4.1 FIX: Unfold toàn bộ bằng cách clear tất cả fold marks
+  unfoldAll() {
+    if (!this.cm) return;
+    const cm = this.cm;
+    cm.operation(() => {
+      const marks = cm.getAllMarks();
+      for (const m of marks) {
+        const cls = (m.widgetNode && m.widgetNode.className) || "";
+        if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
+          try { m.clear(); } catch (e) {}
+        }
+      }
+      // Fallback: quét từng line
+      try {
+        for (let i = 0; i < cm.lineCount(); i++) {
+          const marksAtLine = cm.findMarksAt({ line: i, ch: 0 });
+          for (const m of marksAtLine) {
+            const cls = (m.widgetNode && m.widgetNode.className) || "";
+            if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
+              try { m.clear(); } catch (e) {}
+            }
+          }
+        }
+      } catch (e) { /* ignore */ }
+    });
+    setTimeout(() => { try { cm.refresh(); } catch (e) {} }, 30);
+  }
+
+  toggleFoldAll() {
+    if (!this.cm) return;
+    const cm = this.cm;
+    const marks = cm.getAllMarks();
+    let hasFold = false;
+    for (const m of marks) {
+      const cls = (m.widgetNode && m.widgetNode.className) || "";
+      if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
+        hasFold = true;
+        break;
+      }
+    }
+    if (hasFold) this.unfoldAll();
+    else this.foldAll();
+  }
+
   // ============================================================== //
-  //  ⭐ v1.3.3: Undo / Redo (VS Code style)
+  //  Undo / Redo
   // ============================================================== //
   undo() {
     if (!this.cm) return;
@@ -119,9 +192,6 @@ class EditorManager {
     if (redoBtn) redoBtn.disabled = !this.canRedo();
   }
 
-  // ============================================================== //
-  //  ⭐ FIX (v1.3.2): DOM attributes cho input field
-  // ============================================================== //
   _applyInputAttributes(isAndroid) {
     try {
       const input = this.cm.getInputField && this.cm.getInputField();
@@ -136,9 +206,6 @@ class EditorManager {
     } catch (e) { /* ignore */ }
   }
 
-  // ============================================================== //
-  //  ⭐ FIX (v1.3.2): Android contenteditable — backspace không xoá dòng
-  // ============================================================== //
   _fixAndroidLineMerge() {
     const cm = this.cm;
     const input = cm.getInputField && cm.getInputField();
@@ -198,9 +265,6 @@ class EditorManager {
     }, true);
   }
 
-  // ============================================================== //
-  //  ⭐ v1.3.1: Settings sync
-  // ============================================================== //
   async loadSettings() {
     try {
       const res = await fetch("/api/settings").then(r => r.json());
@@ -265,50 +329,6 @@ class EditorManager {
     } catch (e) { /* ignore */ }
   }
 
-  // ============================================================== //
-  //  ⭐ v1.3.1: Code folding
-  // ============================================================== //
-  foldAll() {
-    if (!this.cm) return;
-    const total = this.cm.lineCount();
-    this.cm.operation(() => {
-      for (let i = 0; i < total; i++) {
-        try { this.cm.foldCode({ line: i, ch: 0 }); } catch (e) {}
-      }
-    });
-  }
-
-  unfoldAll() {
-    if (!this.cm) return;
-    const marks = this.cm.getAllMarks();
-    this.cm.operation(() => {
-      for (const m of marks) {
-        const cls = (m.widgetNode && m.widgetNode.className) || "";
-        if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
-          try { m.clear(); } catch (e) {}
-        }
-      }
-    });
-  }
-
-  toggleFoldAll() {
-    if (!this.cm) return;
-    const marks = this.cm.getAllMarks();
-    let hasFold = false;
-    for (const m of marks) {
-      const cls = (m.widgetNode && m.widgetNode.className) || "";
-      if (cls.indexOf("CodeMirror-foldmarker") >= 0) {
-        hasFold = true;
-        break;
-      }
-    }
-    if (hasFold) this.unfoldAll();
-    else this.foldAll();
-  }
-
-  // ============================================================== //
-  //  Editor core
-  // ============================================================== //
   _mode(path) {
     const p = (path || "").toLowerCase();
     if (p.endsWith(".py")) return "python";
@@ -326,12 +346,11 @@ class EditorManager {
       this.activate(existing);
       return;
     }
-    // ⭐ v1.3.3: mỗi tab có CodeMirror.Doc riêng để giữ undo history
     const doc = CodeMirror.Doc(content || "", this._mode(path));
     this.tabs.push({
       project, path,
       name: path.split("/").pop(),
-      content: content || "",   // = "last saved content" (để check dirty)
+      content: content || "",
       doc: doc,
       dirty: false,
     });
@@ -342,8 +361,6 @@ class EditorManager {
 
   activate(idx) {
     if (idx < 0 || idx >= this.tabs.length || idx === this.activeIdx) return;
-    // ⭐ v1.3.3: KHÔNG còn save tab.content = cm.getValue() nữa
-    // Doc giữ state thật, content chỉ là "last saved"
     this.activeIdx = idx;
     this._load();
     this.renderTabs();
@@ -360,8 +377,6 @@ class EditorManager {
     this.cm.getWrapperElement().style.display = "";
     const tab = this.tabs[this.activeIdx];
 
-    // ⭐ v1.3.3: swapDoc bảo toàn undo history của từng tab (giống VS Code)
-    // (không dùng setValue/clearHistory như trước — sẽ xoá history)
     if (!tab.doc) {
       tab.doc = CodeMirror.Doc(tab.content || "", this._mode(tab.path));
     }
@@ -425,7 +440,7 @@ class EditorManager {
     const content = this.cm.getValue();
     try {
       await API.writeFile(tab.project, tab.path, content);
-      tab.content = content;   // ⭐ đánh dấu "last saved"
+      tab.content = content;
       tab.dirty = false;
       this.renderTabs();
       this._updateUndoRedoButtons();

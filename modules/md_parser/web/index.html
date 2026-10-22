@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MD Code Extractor & Viewer</title>
+    <title>MD Code Extractor & Viewer — ACDV-Teams Module</title>
     <style>
         :root {
             --bg-color: #1e1e1e;
@@ -15,6 +15,8 @@
             --success-color: #2ea44f;
             --card-bg: #2d2d2d;
             --header-bg: #333333;
+            --gold: #e6c07b;
+            --brand: #ffb454;
         }
 
         body {
@@ -26,34 +28,38 @@
             box-sizing: border-box;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        .container { max-width: 980px; margin: 0 auto; }
 
         h2 {
             color: #4ec9b0;
             font-size: 20px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        p.desc {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 20px;
+        .brand-badge {
+            background: linear-gradient(135deg, #ff7b00, #ffb454);
+            color: #1a1a1a;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 0 12px rgba(255, 180, 84, 0.35);
         }
+
+        p.desc { font-size: 13px; color: #888; margin-bottom: 20px; }
 
         .grid-layout {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
         }
-
-        @media (min-width: 768px) {
-            .grid-layout {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
+        @media (min-width: 768px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
 
         .section-box {
             background: var(--panel-bg);
@@ -62,230 +68,235 @@
             border-radius: 8px;
             box-sizing: border-box;
         }
+        .section-box h3 { font-size: 15px; margin-top: 0; color: #9cdcfe; }
 
-        .section-box h3 {
-            font-size: 15px;
-            margin-top: 0;
-            color: #9cdcfe;
-        }
-
-        .upload-btn-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: block;
-            width: 100%;
-        }
-
+        .upload-btn-wrapper { position: relative; overflow: hidden; display: block; width: 100%; }
         .upload-btn {
             border: 2px dashed var(--accent-color);
             color: var(--accent-color);
             background-color: var(--bg-color);
             padding: 20px 10px;
             border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-            cursor: pointer;
-            box-sizing: border-box;
-            transition: background 0.2s;
+            font-size: 13px; font-weight: bold;
+            width: 100%; text-align: center; cursor: pointer;
+            box-sizing: border-box; transition: background 0.2s;
         }
-
-        .upload-btn:hover {
-            background-color: rgba(0, 122, 204, 0.1);
-        }
-
+        .upload-btn:hover { background-color: rgba(0, 122, 204, 0.1); }
         .upload-btn-wrapper input[type=file] {
-            font-size: 200px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-            height: 100%;
-            width: 100%;
+            font-size: 200px; position: absolute; left: 0; top: 0;
+            opacity: 0; cursor: pointer; height: 100%; width: 100%;
         }
 
         textarea {
-            width: 100%;
-            height: 95px;
-            background: var(--bg-color);
-            color: var(--text-color);
+            width: 100%; height: 95px;
+            background: var(--bg-color); color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 4px;
-            resize: vertical;
-            font-family: monospace;
-            font-size: 12px;
-            box-sizing: border-box;
-            margin-bottom: 10px;
+            padding: 10px; border-radius: 4px; resize: vertical;
+            font-family: monospace; font-size: 12px;
+            box-sizing: border-box; margin-bottom: 10px;
         }
 
         button.action-btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            width: 100%;
-            transition: background 0.2s;
+            background: var(--accent-color); color: white;
+            border: none; padding: 10px 15px; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 13px;
+            width: 100%; transition: background 0.2s, transform 0.1s;
         }
+        button.action-btn:hover { background: var(--accent-hover); }
+        button.action-btn:active { transform: scale(0.98); }
+        button.action-btn.small { width: auto; padding: 8px 14px; white-space: nowrap; }
 
-        button.action-btn:hover {
-            background: var(--accent-hover);
+        button.zip-btn {
+            background: linear-gradient(135deg, #ff7b00, #ffb454);
+            color: #1a1a1a; font-weight: 900;
+            box-shadow: 0 2px 10px rgba(255, 180, 84, 0.35);
         }
+        button.zip-btn:hover { background: linear-gradient(135deg, #ffa500, #ffd580); }
+        button.zip-btn:disabled { opacity: 0.5; cursor: wait; }
 
-        button.action-btn.small {
-            width: auto;
-            padding: 8px 14px;
-            white-space: nowrap;
-        }
+        .status-msg { margin-top: 8px; font-size: 12px; color: #4ec9b0; word-break: break-all; }
 
-        .status-msg {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #4ec9b0;
-            word-break: break-all;
-        }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 25px 0; }
 
-        hr {
-            border: 0;
-            border-top: 1px solid var(--border-color);
-            margin: 25px 0;
-        }
-
-        /* ===== Danh sách file kết quả ===== */
         .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 10px; flex-wrap: wrap; margin-bottom: 15px;
         }
+        .results-title { font-size: 16px; color: #4ec9b0; font-weight: bold; }
+        .results-meta  { font-size: 12px; color: #888; margin-top: 3px; }
 
-        .results-title {
-            font-size: 16px;
-            color: #4ec9b0;
+        .folder-tree {
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 10px 12px; margin-bottom: 15px;
+            font-family: monospace; font-size: 12px; color: #c586c0;
+            line-height: 1.7; max-height: 180px; overflow-y: auto;
         }
+        .folder-tree .tree-root { color: var(--brand); font-weight: bold; }
+        .folder-tree .tree-item { color: #9cdcfe; }
+        .folder-tree .tree-file { color: var(--gold); }
 
         .file-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 15px;
-            overflow: hidden;
+            border-radius: 6px; margin-bottom: 15px; overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-
         .file-header {
-            background: var(--header-bg);
-            padding: 8px 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            font-family: monospace;
-            font-weight: bold;
-            color: #ce9178;
-            font-size: 13px;
-            flex-wrap: wrap;
+            background: var(--header-bg); padding: 8px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 8px; font-family: monospace; font-weight: bold;
+            font-size: 13px; flex-wrap: wrap;
         }
-
-        .file-icon {
-            flex-shrink: 0;
-        }
-
-        /* Ô tên file có thể chỉnh sửa */
+        .file-icon { flex-shrink: 0; }
         .filename-input {
-            flex: 1 1 140px;
-            min-width: 0;
-            background: transparent;
-            color: #ce9178;
-            border: 1px dashed transparent;
-            border-radius: 4px;
-            padding: 4px 6px;
-            font-family: monospace;
-            font-size: 13px;
-            font-weight: bold;
+            flex: 1 1 200px; min-width: 0;
+            background: transparent; color: #ce9178;
+            border: 1px dashed transparent; border-radius: 4px;
+            padding: 4px 6px; font-family: monospace;
+            font-size: 13px; font-weight: bold;
             box-sizing: border-box;
             transition: border-color 0.2s, background 0.2s;
         }
-
-        .filename-input:hover {
-            border-color: var(--border-color);
-        }
-
+        .filename-input:hover { border-color: var(--border-color); }
         .filename-input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            background: var(--bg-color);
-            color: #e6c07b;
+            outline: none; border-color: var(--accent-color);
+            background: var(--bg-color); color: var(--gold);
         }
 
-        .btn-group {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
+        .btn-group { display: flex; gap: 6px; flex-shrink: 0; }
 
         pre {
-            margin: 0;
-            padding: 12px;
-            overflow-x: auto;
-            background: var(--bg-color);
-            color: #9cdcfe;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 350px;
+            margin: 0; padding: 12px; overflow-x: auto;
+            background: var(--bg-color); color: #9cdcfe;
+            font-family: monospace; font-size: 12px; max-height: 350px;
         }
 
         .copy-btn {
-            background: var(--success-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
+            background: var(--success-color); color: white;
+            border: none; padding: 5px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
             transition: background 0.2s;
-            flex-shrink: 0;
         }
-
-        .copy-btn:hover {
-            background: #238636;
-        }
+        .copy-btn:hover { background: #238636; }
 
         .download-btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
+            background: var(--accent-color); color: white;
+            border: none; padding: 5px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
             transition: background 0.2s;
-            flex-shrink: 0;
+        }
+        .download-btn:hover { background: var(--accent-hover); }
+
+        .footer-brand {
+            text-align: center; margin-top: 30px; padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 11px; color: #666;
+        }
+        .footer-brand strong { color: var(--brand); }
+
+        /* ================== MODAL (hiện đại) ================== */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .modal-backdrop.show { display: flex; opacity: 1; }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 28px 24px 20px;
+            max-width: 440px; width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-backdrop.show .modal-card { transform: translateY(0) scale(1); }
+
+        .modal-card.success { border-color: rgba(46, 164, 79, 0.5); box-shadow: 0 20px 60px rgba(46, 164, 79, 0.15); }
+        .modal-card.error   { border-color: rgba(244, 135, 113, 0.5); box-shadow: 0 20px 60px rgba(244, 135, 113, 0.15); }
+        .modal-card.warning { border-color: rgba(220, 220, 170, 0.5); box-shadow: 0 20px 60px rgba(220, 220, 170, 0.15); }
+        .modal-card.info    { border-color: rgba(0, 122, 204, 0.5);  box-shadow: 0 20px 60px rgba(0, 122, 204, 0.15); }
+
+        .modal-icon {
+            font-size: 48px; line-height: 1;
+            margin-bottom: 14px; display: inline-block;
+        }
+        .modal-icon.success { color: var(--success-color); }
+        .modal-icon.error   { color: #f48771; }
+        .modal-icon.warning { color: #dcdcaa; }
+        .modal-icon.info    { color: #4ec9b0; }
+
+        .modal-title {
+            font-size: 17px; font-weight: bold;
+            color: var(--text-color); margin-bottom: 10px;
         }
 
-        .download-btn:hover {
-            background: var(--accent-hover);
+        .modal-message {
+            font-size: 13px; color: #b0b0b0;
+            line-height: 1.6; margin-bottom: 22px;
+            word-break: break-word; text-align: left;
+        }
+        .modal-message code {
+            background: var(--bg-color);
+            padding: 1px 5px; border-radius: 3px;
+            color: var(--gold); font-size: 12px;
+        }
+        .modal-message pre {
+            margin: 8px 0 0; padding: 10px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px; overflow: auto;
+            font-size: 11px; text-align: left; color: #ce9178;
+        }
+
+        .modal-actions {
+            display: flex; gap: 10px;
+            justify-content: center; flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            padding: 9px 24px; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: bold; font-size: 13px;
+            transition: all 0.15s;
+        }
+        .modal-btn.primary   { background: var(--accent-color); color: white; }
+        .modal-btn.primary:hover   { background: var(--accent-hover); }
+        .modal-btn.danger    { background: #c72e2e; color: white; }
+        .modal-btn.danger:hover    { background: #a02424; }
+        .modal-btn.secondary { background: #444; color: var(--text-color); }
+        .modal-btn.secondary:hover { background: #555; }
+
+        @media (max-width: 480px) {
+            .modal-card { padding: 22px 18px 16px; }
+            .modal-icon { font-size: 40px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>📂 MD Code Extractor & Viewer</h2>
-        <p class="desc">Tải lên file Markdown hoặc dán trực tiếp nội dung để hệ thống tự động bóc tách tên file và mã nguồn.</p>
+        <h2>
+            📂 MD Code Extractor & Viewer
+            <span class="brand-badge">ACDV-Teams Module</span>
+        </h2>
+        <p class="desc">
+            Tải lên file Markdown hoặc dán nội dung — hệ thống tự động bóc tách <b>tên file + cấu trúc thư mục cha→con</b>,
+            tái tạo cây thư mục và đóng gói thành <b>file ZIP</b> để tải xuống 1 phát.
+        </p>
 
-        <!-- Bố cục 2 cột trên PC, 1 cột trên Mobile -->
         <div class="grid-layout">
-            <!-- Cách 1: Tải file -->
             <div class="section-box">
                 <h3>Cách 1: Tải lên file .md</h3>
                 <div class="upload-btn-wrapper">
@@ -295,7 +306,6 @@
                 <div id="fileStatus" class="status-msg">Chưa chọn file nào.</div>
             </div>
 
-            <!-- Cách 2: Dán văn bản -->
             <div class="section-box">
                 <h3>Cách 2: Dán văn bản Markdown</h3>
                 <textarea id="mdContent" placeholder="Dán nội dung markdown chứa mã nguồn vào đây..."></textarea>
@@ -304,30 +314,104 @@
         </div>
 
         <hr>
-
         <div id="resultsContainer"></div>
+
+        <div class="footer-brand">
+            ⚡ Powered by <strong>ACDV-Teams Module</strong> v1.2.0 — MD Code Extractor &amp; Zip Builder
+        </div>
+    </div>
+
+    <!-- ============ MODAL ============ -->
+    <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+        <div class="modal-card" id="modalCard">
+            <div class="modal-icon" id="modalIcon">ℹ️</div>
+            <div class="modal-title" id="modalTitle">Thông báo</div>
+            <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-actions" id="modalActions"></div>
+        </div>
     </div>
 
     <script>
-        // Lưu trữ toàn bộ file đã bóc tách để phục vụ copy / download
         let currentFiles = [];
+        let modalAutoCloseTimer = null;
 
-        /* ================== ĐỌC DỮ LIỆU ĐẦU VÀO ================== */
+        /* ================== MODAL ================== */
+        function showModal({ type = 'info', title = 'Thông báo', message = '', autoClose = 0, buttons = null }) {
+            const backdrop = document.getElementById('modalBackdrop');
+            const card = document.getElementById('modalCard');
+            const iconEl = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const actionsEl = document.getElementById('modalActions');
 
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+
+            iconEl.textContent = icons[type] || icons.info;
+            iconEl.className = 'modal-icon ' + type;
+            card.className = 'modal-card ' + type;
+            titleEl.textContent = title;
+            msgEl.innerHTML = message;
+
+            actionsEl.innerHTML = '';
+            const btns = buttons || [{ label: 'OK', class: 'primary', onClick: closeModal }];
+            btns.forEach(b => {
+                const btn = document.createElement('button');
+                btn.className = 'modal-btn ' + (b.class || 'primary');
+                btn.textContent = b.label;
+                btn.onclick = () => { if (b.onClick) b.onClick(); else closeModal(); };
+                actionsEl.appendChild(btn);
+            });
+
+            backdrop.classList.add('show');
+
+            if (modalAutoCloseTimer) clearTimeout(modalAutoCloseTimer);
+            if (autoClose > 0) {
+                modalAutoCloseTimer = setTimeout(closeModal, autoClose);
+            }
+
+            setTimeout(() => {
+                const primary = actionsEl.querySelector('.modal-btn.primary');
+                if (primary) primary.focus();
+            }, 100);
+        }
+
+        function closeModal() {
+            if (modalAutoCloseTimer) { clearTimeout(modalAutoCloseTimer); modalAutoCloseTimer = null; }
+            document.getElementById('modalBackdrop').classList.remove('show');
+        }
+
+        const showSuccess = (msg, title = 'Thành công') => showModal({ type: 'success', title, message: msg, autoClose: 2500 });
+        const showError   = (msg, title = 'Lỗi')       => showModal({ type: 'error', title, message: msg });
+        const showWarning = (msg, title = 'Cảnh báo')  => showModal({ type: 'warning', title, message: msg });
+        const showInfo    = (msg, title = 'Thông báo') => showModal({ type: 'info', title, message: msg, autoClose: 3000 });
+
+        document.addEventListener('keydown', (e) => {
+            const backdrop = document.getElementById('modalBackdrop');
+            if (!backdrop || !backdrop.classList.contains('show')) return;
+            if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                const primary = backdrop.querySelector('.modal-btn.primary');
+                if (primary) primary.click();
+            }
+        });
+
+        document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+            if (e.target.id === 'modalBackdrop') closeModal();
+        });
+
+        /* ================== ĐỌC ĐẦU VÀO ================== */
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             document.getElementById('fileStatus').innerText = `⏳ Đang đọc: ${file.name}...`;
-
             const reader = new FileReader();
-            reader.onload = function (e) {
-                const content = e.target.result;
+            reader.onload = (e) => {
                 document.getElementById('fileStatus').innerText = `✅ Đã đọc xong: ${file.name}`;
-                sendToServer(content);
+                sendToServer(e.target.result);
             };
-            reader.onerror = function () {
-                alert('Không thể đọc được file này!');
+            reader.onerror = () => {
+                showError('Không thể đọc được file này!');
                 document.getElementById('fileStatus').innerText = '❌ Lỗi đọc file.';
             };
             reader.readAsText(file);
@@ -335,10 +419,7 @@
 
         function parseFromTextarea() {
             const content = document.getElementById('mdContent').value.trim();
-            if (!content) {
-                alert('Lỗi: Ô nội dung Markdown đang trống!');
-                return;
-            }
+            if (!content) { showWarning('Ô nội dung Markdown đang trống!'); return; }
             sendToServer(content);
         }
 
@@ -347,25 +428,52 @@
                 const response = await fetch('/api/md_parser/parse', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: content })
+                    body: JSON.stringify({ content })
                 });
                 const data = await response.json();
-
-                if (data.ok) {
-                    renderResults(data.files);
-                } else {
-                    alert('Lỗi từ server: ' + (data.error || 'Không rõ nguyên nhân'));
+                if (data.ok) renderResults(data.files);
+                else {
+                    const dbg = data.debug
+                        ? `<pre>${escapeHtml(JSON.stringify(data.debug, null, 2))}</pre>`
+                        : '';
+                    showError(`${escapeHtml(data.error || 'Không rõ nguyên nhân')}${dbg}`);
                 }
             } catch (err) {
                 console.error(err);
-                alert('Không thể kết nối đến server backend.');
+                showError('Không thể kết nối đến server backend.');
             }
         }
 
-        /* ================== HIỂN THỊ KẾT QUẢ ================== */
+        /* ================== XÂY CÂY THƯ MỤC ================== */
+        function buildTree(files) {
+            const root = { __files: [], __dirs: {} };
+            files.forEach(f => {
+                const parts = (f.filename || 'file.txt').split('/');
+                let node = root;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const dir = parts[i];
+                    if (!node.__dirs[dir]) node.__dirs[dir] = { __files: [], __dirs: {} };
+                    node = node.__dirs[dir];
+                }
+                node.__files.push(parts[parts.length - 1]);
+            });
+            return root;
+        }
 
+        function renderTree(node, prefix = '') {
+            let html = '';
+            Object.keys(node.__dirs).sort().forEach(dir => {
+                html += `<div class="tree-item">${prefix}📁 <b>${escapeHtml(dir)}</b>/</div>`;
+                html += renderTree(node.__dirs[dir], prefix + '&nbsp;&nbsp;&nbsp;&nbsp;');
+            });
+            node.__files.sort().forEach(fn => {
+                html += `<div class="tree-file">${prefix}📄 ${escapeHtml(fn)}</div>`;
+            });
+            return html;
+        }
+
+        /* ================== RENDER KẾT QUẢ ================== */
         function renderResults(files) {
-            // clone để không ảnh hưởng dữ liệu gốc, cho phép sửa tên file
             currentFiles = (files || []).map(f => ({
                 filename: f.filename || 'file_snippet.txt',
                 code: f.code || ''
@@ -380,157 +488,222 @@
                 return;
             }
 
+            const folderSet = new Set();
+            currentFiles.forEach(f => {
+                const parts = f.filename.split('/');
+                let acc = '';
+                for (let i = 0; i < parts.length - 1; i++) {
+                    acc += (acc ? '/' : '') + parts[i];
+                    folderSet.add(acc);
+                }
+            });
+
             container.innerHTML = `
                 <div class="results-header">
-                    <div class="results-title">🎯 Tìm thấy ${currentFiles.length} file cấu trúc:</div>
-                    <button class="action-btn small" onclick="downloadAll()">⬇️ Tải tất cả</button>
+                    <div>
+                        <div class="results-title">🎯 Tìm thấy ${currentFiles.length} file</div>
+                        <div class="results-meta">
+                            📁 ${folderSet.size} thư mục &nbsp;|&nbsp; ⚡ ACDV-Teams Module
+                        </div>
+                    </div>
+                    <button class="action-btn small zip-btn" id="zipBtn" onclick="downloadZip()">
+                        📦 Tải tất cả (ZIP)
+                    </button>
+                </div>
+                <div class="folder-tree">
+                    <div class="tree-root">📦 acdv-teams-bundle/</div>
+                    ${renderTree(buildTree(currentFiles))}
                 </div>`;
 
             currentFiles.forEach((file, index) => {
                 const card = document.createElement('div');
                 card.className = 'file-card';
-
                 card.innerHTML = `
                     <div class="file-header">
                         <span class="file-icon">📄</span>
-                        <input
-                            type="text"
-                            class="filename-input"
-                            id="filename-${index}"
-                            value="${escapeHtml(file.filename)}"
-                            spellcheck="false"
-                            title="Có thể sửa tên file trước khi tải về"
-                            oninput="updateFilename(${index}, this.value)"
-                        >
+                        <input type="text" class="filename-input" id="filename-${index}"
+                            value="${escapeHtml(file.filename)}" spellcheck="false"
+                            title="Có thể sửa đường dẫn + tên file"
+                            oninput="updateFilename(${index}, this.value)">
                         <div class="btn-group">
                             <button class="copy-btn" onclick="copyCode(this, ${index})">📋 Sao chép</button>
                             <button class="download-btn" onclick="downloadFile(${index})">⬇️ Tải</button>
                         </div>
                     </div>
-                    <pre><code>${escapeHtml(file.code)}</code></pre>
-                `;
+                    <pre><code>${escapeHtml(file.code)}</code></pre>`;
                 container.appendChild(card);
             });
         }
 
         function updateFilename(index, value) {
-            if (currentFiles[index]) {
-                currentFiles[index].filename = value;
-            }
+            if (currentFiles[index]) currentFiles[index].filename = value;
         }
 
         /* ================== COPY ================== */
-
         function copyCode(btn, index) {
             const file = currentFiles[index];
             if (!file) return;
-
             navigator.clipboard.writeText(file.code).then(() => {
-                const originalText = btn.innerText;
+                const original = btn.innerText;
                 btn.innerText = '✅ Đã chép!';
-                setTimeout(() => { btn.innerText = originalText; }, 2000);
+                setTimeout(() => { btn.innerText = original; }, 2000);
             }).catch(err => {
                 console.error('Lỗi copy: ', err);
-                alert('Trình duyệt chặn quyền Clipboard!');
+                showError('Trình duyệt chặn quyền Clipboard!');
             });
         }
 
-        /* ================== DOWNLOAD ================== */
-
-        // Lấy tên file hiện tại trên input (người dùng có thể đã sửa)
-        function getCurrentFilename(index) {
-            const input = document.getElementById(`filename-${index}`);
-            const raw = input ? input.value : (currentFiles[index] ? currentFiles[index].filename : '');
-            return raw;
-        }
-
-        // Chuẩn hóa tên file an toàn cho mọi hệ điều hành
+        /* ================== SANITIZE + MIME ================== */
         function sanitizeFilename(name) {
-            return (name || '')
-                .trim()
-                .replace(/[\\/:*?"<>|]/g, '_')   // ký tự không hợp lệ
-                .replace(/\s+/g, ' ')
-                .replace(/^\.+/, '')             // bỏ dấu chấm đầu (file ẩn)
-                .slice(0, 120);
+            return (name || '').trim()
+                .replace(/\\/g, '/')
+                .replace(/^(\.{1,2}\/)+/, '')
+                .replace(/[<>:"|?*\x00-\x1f]/g, '_')
+                .replace(/\/+/g, '/')
+                .slice(0, 200);
+        }
+        function sanitizeSegment(seg) {
+            return seg.replace(/[<>:"|?*\x00-\x1f]/g, '_').replace(/^\.+/, '').trim();
+        }
+        function sanitizeFullPath(name) {
+            return sanitizeFilename(name).split('/')
+                .map(sanitizeSegment)
+                .filter(s => s && s !== '.' && s !== '..')
+                .slice(-8).join('/');
         }
 
-        // Đoán MIME type theo phần mở rộng
         function getMimeType(filename) {
             const ext = (filename.split('.').pop() || '').toLowerCase();
             const map = {
                 js: 'text/javascript', mjs: 'text/javascript', cjs: 'text/javascript',
                 jsx: 'text/javascript', ts: 'text/typescript', tsx: 'text/typescript',
-                json: 'application/json',
-                html: 'text/html', htm: 'text/html',
+                json: 'application/json', html: 'text/html', htm: 'text/html',
                 css: 'text/css', scss: 'text/x-scss', less: 'text/x-less',
                 md: 'text/markdown', markdown: 'text/markdown',
-                py: 'text/x-python',
-                java: 'text/x-java-source',
+                py: 'text/x-python', java: 'text/x-java-source',
                 c: 'text/x-c', h: 'text/x-c', cpp: 'text/x-c++', hpp: 'text/x-c++',
                 cs: 'text/plain', php: 'application/x-httpd-php',
                 xml: 'application/xml', svg: 'image/svg+xml',
                 yml: 'text/yaml', yaml: 'text/yaml',
                 sh: 'application/x-sh', bash: 'application/x-sh',
-                sql: 'application/sql',
-                go: 'text/x-go', rs: 'text/x-rust', rb: 'text/x-ruby',
-                vue: 'text/plain', svelte: 'text/plain',
+                sql: 'application/sql', go: 'text/x-go', rs: 'text/x-rust',
+                rb: 'text/x-ruby', vue: 'text/plain', svelte: 'text/plain',
                 txt: 'text/plain'
             };
             return map[ext] || 'text/plain';
         }
 
-        // Tạo Blob và kích hoạt tải xuống
         function triggerDownload(filename, content) {
             const blob = new Blob([content], { type: getMimeType(filename) + ';charset=utf-8' });
             const url = URL.createObjectURL(blob);
-
             const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
+            a.href = url; a.download = filename;
             a.rel = 'noopener';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 1500);
+        }
+
+        function getCurrentFilename(index) {
+            const input = document.getElementById(`filename-${index}`);
+            return input ? input.value : (currentFiles[index] ? currentFiles[index].filename : '');
         }
 
         function downloadFile(index) {
             const file = currentFiles[index];
-            if (!file) {
-                alert('Không tìm thấy dữ liệu file này!');
-                return;
-            }
-
+            if (!file) { showError('Không tìm thấy dữ liệu file này!'); return; }
             const input = document.getElementById(`filename-${index}`);
-
-            let name = sanitizeFilename(getCurrentFilename(index));
-            if (!name) {
-                name = `file_${index + 1}.txt`;
-            }
-            // Nếu người dùng nhập tên không có phần mở rộng -> thêm .txt
-            if (!/\.[A-Za-z0-9]{1,10}$/.test(name)) {
-                name += '.txt';
-            }
-
-            // Đồng bộ lại tên đã chuẩn hóa lên input + bộ nhớ
+            let name = sanitizeFullPath(getCurrentFilename(index));
+            if (!name) name = `file_${index + 1}.txt`;
+            if (!/\.[A-Za-z0-9]{1,10}$/.test(name)) name += '.txt';
             if (input) input.value = name;
             currentFiles[index].filename = name;
-
-            triggerDownload(name, file.code);
+            triggerDownload(name.split('/').pop(), file.code);
         }
 
-        function downloadAll() {
-            if (!currentFiles.length) return;
+        /* ================== TẢI TẤT CẢ (ZIP) ================== */
+        async function downloadZip() {
+            if (!currentFiles.length) { showWarning('Chưa có file nào để nén!'); return; }
 
-            // Tải tuần tự với khoảng nghỉ để trình duyệt không chặn popup download
-            currentFiles.forEach((_, index) => {
-                setTimeout(() => downloadFile(index), index * 400);
+            const payloadFiles = currentFiles.map((f, i) => {
+                const input = document.getElementById(`filename-${i}`);
+                let name = sanitizeFullPath(input ? input.value : f.filename);
+                if (!name) name = `snippets/file_${i + 1}.txt`;
+                if (!/\.[A-Za-z0-9]{1,10}$/.test(name)) name += '.txt';
+                if (input) input.value = name;
+                f.filename = name;
+                return { filename: name, code: f.code };
             });
+
+            const payloadStr = JSON.stringify({ files: payloadFiles });
+            const sizeKB = (payloadStr.length / 1024).toFixed(1);
+            console.log(`[ZIP] Payload size: ${sizeKB} KB`);
+
+            if (payloadStr.length > 4.5 * 1024 * 1024) {
+                showWarning(
+                    `Dữ liệu khá lớn (<b>${sizeKB} KB</b>), có thể vượt giới hạn ~5MB của server. ` +
+                    `Hãy thử bóc tách ít file hơn hoặc chia nhỏ nội dung.`,
+                    'Cảnh báo kích thước'
+                );
+            }
+
+            const zipBtn = document.getElementById('zipBtn');
+            const origText = zipBtn ? zipBtn.innerHTML : '';
+            if (zipBtn) { zipBtn.disabled = true; zipBtn.innerHTML = '⏳ Đang nén...'; }
+
+            try {
+                const res = await fetch('/api/md_parser/download_zip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payloadStr
+                });
+
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (parseErr) {
+                    throw new Error(`Server trả về không phải JSON (HTTP ${res.status}): ${rawText.slice(0, 200)}`);
+                }
+
+                if (!data.ok) {
+                    const dbg = data.debug
+                        ? `<pre>${escapeHtml(JSON.stringify(data.debug, null, 2))}</pre>`
+                        : '';
+                    showError(
+                        `${escapeHtml(data.error || 'Không rõ nguyên nhân')}${dbg}`,
+                        'Lỗi nén ZIP'
+                    );
+                    return;
+                }
+
+                const binary = atob(data.zip_base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const blob = new Blob([bytes], { type: 'application/zip' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = data.filename || 'acdv-teams-bundle.zip';
+                a.rel = 'noopener';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+                showSuccess(
+                    `Đã đóng gói <b>${data.total}</b> file (${(data.size / 1024).toFixed(1)} KB).<br>` +
+                    `Tên: <code>${escapeHtml(data.filename)}</code><br>` +
+                    `Branding: <code>${escapeHtml(data.branding || 'ACDV-Teams Module')}</code>`,
+                    '📦 Tải ZIP thành công'
+                );
+            } catch (err) {
+                console.error(err);
+                showError(`Không thể tạo ZIP: ${escapeHtml(err.message || String(err))}`, 'Lỗi kết nối');
+            } finally {
+                if (zipBtn) { zipBtn.disabled = false; zipBtn.innerHTML = origText; }
+            }
         }
 
-        /* ================== TIỆN ÍCH ================== */
-
+        /* ================== UTILS ================== */
         function escapeHtml(text) {
             return String(text)
                 .replace(/&/g, "&amp;")

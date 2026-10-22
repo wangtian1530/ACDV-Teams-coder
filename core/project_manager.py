@@ -1,9 +1,4 @@
-"""Project manager: CRUD projects + file operations inside projects.
-
-Mỗi project nằm trong projects/<name>/ và hoàn toàn cô lập với các project
-khác cũng như với core engine. Toàn bộ đường dẫn được kiểm tra anti-escape
-tương tự sandbox của modules.
-"""
+"""Project manager: CRUD projects + file operations inside projects."""
 import os
 import io
 import json
@@ -19,9 +14,6 @@ class ProjectManager:
         self.projects_dir = os.path.join(base_dir, "projects")
         os.makedirs(self.projects_dir, exist_ok=True)
 
-    # ---------------------------------------------------------------- #
-    #  Helpers
-    # ---------------------------------------------------------------- #
     def _safe_path(self, project, path=""):
         if not project or "/" in project or "\\" in project or project in (".", ".."):
             raise Exception("Invalid project name")
@@ -44,9 +36,6 @@ class ProjectManager:
     def _meta_path(self, project):
         return os.path.join(self.projects_dir, project, ".project.json")
 
-    # ---------------------------------------------------------------- #
-    #  Projects CRUD
-    # ---------------------------------------------------------------- #
     def list_projects(self):
         out = []
         if not os.path.isdir(self.projects_dir):
@@ -110,9 +99,6 @@ class ProjectManager:
                     "</head>\n<body>\n  <h1>Hello, ACDV!</h1>\n</body>\n</html>\n")
         return ("README.md", "# New project\n")
 
-    # ---------------------------------------------------------------- #
-    #  ⭐ Upload từ ZIP (v1.1.0)
-    # ---------------------------------------------------------------- #
     def create_from_zip(self, name, zip_base64):
         """Tạo project từ ZIP base64. Tự động giải nén + strip root folder."""
         if not name:
@@ -124,11 +110,9 @@ class ProjectManager:
         if os.path.exists(target):
             raise Exception("Project already exists")
 
-        # ---- Decode base64 ----
         if not zip_base64:
             raise Exception("Missing zip_base64")
         try:
-            # Strip data URL prefix if present
             if isinstance(zip_base64, str) and zip_base64.startswith("data:"):
                 zip_base64 = zip_base64.split(",", 1)[1]
             raw = base64.b64decode(zip_base64)
@@ -147,7 +131,6 @@ class ProjectManager:
             if not names:
                 raise Exception("ZIP contains no entries")
 
-            # ---- Validate mọi entry (chống zip-slip) ----
             for n in names:
                 norm = n.replace("\\", "/")
                 if norm.startswith("/"):
@@ -155,7 +138,6 @@ class ProjectManager:
                 if ".." in norm.split("/"):
                     raise Exception(f"Path traversal not allowed: {n}")
 
-            # ---- Strip common root folder nếu có ----
             top_dirs = set()
             for n in names:
                 norm = n.replace("\\", "/").strip("/")
@@ -213,7 +195,6 @@ class ProjectManager:
                 shutil.rmtree(target, ignore_errors=True)
                 raise
 
-        # ---- Meta ----
         meta = {
             "name": name,
             "created_at": time.time(),
@@ -224,15 +205,8 @@ class ProjectManager:
 
         return {**meta, "files_extracted": extracted, "files_skipped": skipped}
 
-    # ---------------------------------------------------------------- #
-    #  ⭐ Export ZIP
-    # ---------------------------------------------------------------- #
     def export_zip(self, name):
-        """Export project thành ZIP bytes (base dir = <name>/).
-
-        - Bỏ `.project.json` (metadata nội bộ) và `__pycache__`.
-        - Round-trip: ZIP này có thể upload lại qua `create_from_zip()`.
-        """
+        """Export project thành ZIP bytes (base dir = <name>/)."""
         if not name:
             raise Exception("Missing project name")
         if "/" in name or "\\" in name or name in (".", ".."):
@@ -273,9 +247,6 @@ class ProjectManager:
         if os.path.isdir(target):
             shutil.rmtree(target)
 
-    # ---------------------------------------------------------------- #
-    #  File tree
-    # ---------------------------------------------------------------- #
     def tree(self, project, path=""):
         root = self._safe_path(project, path)
         if not os.path.exists(root):
@@ -312,9 +283,6 @@ class ProjectManager:
                 })
         return dirs + files
 
-    # ---------------------------------------------------------------- #
-    #  File operations
-    # ---------------------------------------------------------------- #
     def read_file(self, project, path):
         target = self._safe_path(project, path)
         if not os.path.isfile(target):

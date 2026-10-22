@@ -18,7 +18,6 @@ const Explorer = {
         li.innerHTML = `<span>📦</span><span>${p.name}</span>`;
         li.onclick = () => this.openProject(p.name);
 
-        // ⭐ NEW: download ZIP button
         const dlBtn = document.createElement("button");
         dlBtn.className = "icon-btn small project-dl";
         dlBtn.title = "Download project as ZIP";
@@ -30,7 +29,6 @@ const Explorer = {
             App.exportProject(p.name);
           }
         };
-        // Chặn sự kiện bubble lên li để tránh trigger long-press delete
         ["touchstart", "touchend", "mousedown", "mouseup"].forEach(evt => {
           dlBtn.addEventListener(evt, (e) => e.stopPropagation());
         });
@@ -94,7 +92,6 @@ const Explorer = {
         : "◦";
       item.innerHTML = `<span class="chev">${icon}</span><span>${node.name}</span>`;
 
-      // ⭐ Run button next to runnable files
       if (node.type === "file") {
         const ext = (node.name.split(".").pop() || "").toLowerCase();
         if (["py", "js", "sh", "bash"].includes(ext)) {

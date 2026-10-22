@@ -38,7 +38,6 @@ class SettingsManager:
     def initialize(self):
         self._load_global()
 
-    # ---------- helpers ----------
     def _deep_merge(self, base, override):
         out = copy.deepcopy(base)
         if not isinstance(override, dict):
@@ -50,7 +49,6 @@ class SettingsManager:
                 out[k] = v
         return out
 
-    # ---------- global ----------
     def _load_global(self):
         if os.path.isfile(self.path):
             try:
@@ -79,7 +77,6 @@ class SettingsManager:
             self._save_global()
             return copy.deepcopy(self.global_settings)
 
-    # ---------- per module ----------
     def register_module_schema(self, module_name, schema):
         self.module_schemas[module_name] = schema or {}
 

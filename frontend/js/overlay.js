@@ -7,7 +7,6 @@
   }
 
   async function refresh() {
-    // Clean old overlay tags
     document.querySelectorAll('link[data-overlay], script[data-overlay]')
       .forEach(el => el.remove());
     const banner = document.getElementById('overlayBanner');

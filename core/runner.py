@@ -29,9 +29,6 @@ class ProcessRunner:
         except Exception:
             pass
 
-    # ================================================================ #
-    #  PID tracking (for orphan reaping after crash)
-    # ================================================================ #
     def _read_pids(self):
         try:
             if not os.path.isfile(self._pids_file):
@@ -59,7 +56,6 @@ class ProcessRunner:
         self._write_pids(entries)
 
     def reap_orphans(self):
-        """Called at boot — kill any process group left from previous crash."""
         entries = self._read_pids()
         for e in entries:
             pgid = e.get("pgid")
@@ -69,7 +65,7 @@ class ProcessRunner:
             try:
                 if pgid and os.name == "posix":
                     try:
-                        os.killpg(pgid, 0)  # probe
+                        os.killpg(pgid, 0)
                         os.killpg(pgid, signal.SIGKILL)
                         print(f"[Runner] ♻ reaped orphan pgid={pgid} pid={pid}")
                         continue
@@ -86,9 +82,6 @@ class ProcessRunner:
                 pass
         self._write_pids([])
 
-    # ================================================================ #
-    #  Helpers
-    # ================================================================ #
     def _cmd_for(self, filepath):
         ext = os.path.splitext(filepath)[1].lower()
         if ext == ".py":
@@ -115,12 +108,8 @@ class ProcessRunner:
         except Exception:
             return False
 
-    # ================================================================ #
-    #  Run
-    # ================================================================ #
     def run(self, project_dir, project_name, rel_path):
         with self.lock:
-            # Clean stale entry
             if self.current and not self._is_alive(self.current):
                 try: self.current["log"].close()
                 except Exception: pass
@@ -209,9 +198,6 @@ class ProcessRunner:
 
         return info
 
-    # ================================================================ #
-    #  Stream (batched, resilient)
-    # ================================================================ #
     def _stream(self, proc, log_file, info):
         pending, last_flush = [], time.time()
 
@@ -248,7 +234,6 @@ class ProcessRunner:
                 pass
         finally:
             flush()
-            # Wait for exit (bounded)
             try:
                 proc.wait(timeout=2)
             except Exception:
@@ -265,7 +250,6 @@ class ProcessRunner:
             except Exception: pass
             self._untrack_pid(info["pid"])
 
-            # ⭐ CRITICAL: clear state BEFORE broadcast (broadcast may hang)
             with self.lock:
                 if self.current and self.current["proc"] is proc:
                     self.current = None
@@ -283,9 +267,6 @@ class ProcessRunner:
         except Exception:
             pass
 
-    # ================================================================ #
-    #  Kill primitives
-    # ================================================================ #
     def _sigterm(self, pid):
         try:
             if os.name == "posix":
@@ -319,9 +300,6 @@ class ProcessRunner:
         try: proc.stdout.close()
         except Exception: pass
 
-    # ================================================================ #
-    #  Stop / Status
-    # ================================================================ #
     def stop(self, force=False):
         with self.lock:
             cur = self.current

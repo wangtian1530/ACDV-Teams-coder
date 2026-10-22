@@ -3,8 +3,8 @@
   'use strict';
 
   const state = {
-    byFile: {},     // "project/path" -> [diag]
-    markers: {},    // "project/path" -> [cm.TextMarker]
+    byFile: {},
+    markers: {},
   };
 
   function key(project, path) { return project + '/' + path; }
@@ -160,7 +160,6 @@
       .catch(() => {});
   }
 
-  // ⭐ v1.3.0: editor.js needs this to re-render markers on tab switch
   function getDiagnostics(project, path) {
     return state.byFile[key(project, path)] || [];
   }

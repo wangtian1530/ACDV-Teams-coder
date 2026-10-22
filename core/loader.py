@@ -3,8 +3,10 @@
 v1.3.1:
   - ModuleBase gains error-interceptor hooks.
   - Overlay detection: ưu tiên data/ (cho file lớn) trước web/.
-    Đường dẫn data/ dùng prefix `_data_/` để server.py phân biệt.
   - register_module rejects routes collision với core (protected).
+
+v1.4.0:
+  - Không thay đổi core logic; storage được quản lý bởi ModuleStorage.
 """
 import os
 import io
@@ -119,7 +121,6 @@ class ModuleLoader:
         metadata["web_ui_path"] = f"/module/{name}/" if metadata["has_web_ui"] else None
 
         # ⭐ v1.3.1: Overlay detection — data/ ưu tiên (file lớn), fallback web/
-        # data/ dùng prefix `_data_/` để server.py route đúng thư mục.
         for css_name in ("overlay.css", "override.css"):
             if os.path.isfile(os.path.join(data_dir, css_name)):
                 metadata["overlay"]["css"] = f"_data_/{css_name}"
@@ -137,6 +138,7 @@ class ModuleLoader:
                 break
 
         os.makedirs(os.path.join(mod_path, "data"), exist_ok=True)
+        os.makedirs(os.path.join(mod_path, "storage"), exist_ok=True)
 
         unique_name = f"acdv_mod_{name}"
         spec = importlib.util.spec_from_file_location(unique_name, main_path)
@@ -230,7 +232,7 @@ class ModuleLoader:
                 rel = norm[len(root):] if root and norm.startswith(root) else norm
                 if not rel:
                     continue
-                if rel.startswith("data/") or rel.startswith("web/") or rel in ("init.txt", "main.py"):
+                if rel.startswith("data/") or rel.startswith("web/") or rel.startswith("storage/") or rel in ("init.txt", "main.py"):
                     dest = os.path.join(target_dir, rel)
                 else:
                     dest = os.path.join(target_dir, "data", rel)
@@ -248,13 +250,7 @@ class ModuleLoader:
     #  ⭐ Export module as ZIP
     # ---------------------------------------------------------------- #
     def export_module_zip(self, name):
-        """Export module thành ZIP bytes (base dir = <name>/).
-
-        - Bao gồm: main.py, init.txt, web/, data/, và bất kỳ file nào khác.
-        - Bỏ: __pycache__, *.pyc.
-        - Round-trip: ZIP này có thể cài lại qua install_from_zip()
-          (sau khi đã uninstall module hiện tại).
-        """
+        """Export module thành ZIP bytes (base dir = <name>/)."""
         if not name:
             raise Exception("Missing module name")
         if "/" in name or "\\" in name or name in (".", ".."):
@@ -271,7 +267,7 @@ class ModuleLoader:
         count = 0
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for root, dirs, files in os.walk(mod_dir):
-                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", ".git", ".svn"))
+                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", ".git", ".svn", ".tmp_uploads"))
                 for fname in sorted(files):
                     if fname.endswith(".pyc"):
                         continue

@@ -1,0 +1,20 @@
+
+===== RUN 2026-10-23 00:35:29 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/yy/bot.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/yy
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/yy/bot.py"[0m, line [35m26[0m, in [35m<module>[0m
+    from handlers import (
+    ...<2 lines>...
+    )
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/yy/handlers.py"[0m, line [35m12[0m, in [35m<module>[0m
+    from formatters import (
+    ...<3 lines>...
+    )
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/yy/formatters.py"[0m, line [35m12[0m
+    return ([1;31mstr(s)""[0m
+            [1;31m^^^^^^^^[0m
+[1;35mSyntaxError[0m: [35minvalid syntax. Perhaps you forgot a comma?[0m
+
+[exit code: 1]

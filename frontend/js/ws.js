@@ -4,7 +4,7 @@ class WSClient {
     this.handlers = new Map();
     this.reconnectDelay = 1000;
     this.maxDelay = 10000;
-    this.allowReconnect = true;   // ⭐ v1.3.5: set false để dừng auto-reconnect (khi shutdown)
+    this.allowReconnect = true;
     this.url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
   }
 

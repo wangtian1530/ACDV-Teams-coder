@@ -2,7 +2,7 @@
   "theme": "dracula",
   "editor": {
     "font_size": 1,
-    "tab_size": 2,
+    "tab_size": 1,
     "line_wrap": false,
     "auto_save": false
   },
@@ -13,11 +13,6 @@
   },
   "overlays": {
     "safe_mode": false,
-    "per_module": {
-      "code_suggest": {
-        "css": true,
-        "js": true
-      }
-    }
+    "per_module": {}
   }
 }

@@ -1,13 +1,11 @@
 """Core Engine — boot sequence, module registry, critical-fail policy, error dispatch.
 
-v1.3.5:
-  - API restart/shutdown (`/api/system/*`), gate bởi `enable_system_controls`.
-  - Module watcher thread tự detect module mới/xoá trong `modules/`.
-  - Broadcast `modules_changed` qua WS khi watcher có thay đổi.
-
-v1.3.6:
-  - ⭐ Export ZIP: `/api/projects/export`, `/api/modules/export`.
-  - ⭐ Welcome screen: `/api/readme` serve README.md cho frontend.
+v1.4.0:
+  - ⭐ ModuleStorage: quota 512MB per-module, upload chunk, export ZIP.
+  - ⭐ API: /api/modules/storage/* (list, upload_chunk, download, delete, clear, export_zip, usage).
+  - ⭐ Broadcast storage_warning khi module gần đầy quota.
+  - ⭐ Restart refresh UI: broadcast system_restarted sau khi boot xong.
+  - ⭐ /api/boot cho loading overlay.
 """
 import os
 import sys
@@ -28,6 +26,7 @@ from .runner import ProcessRunner
 from .settings import SettingsManager
 from .diagnostics import DiagnosticsManager
 from .terminal import TerminalManager
+from .module_storage import ModuleStorage, QuotaExceeded, StorageViolation
 
 
 class CoreEngine:
@@ -44,15 +43,19 @@ class CoreEngine:
         self.settings = SettingsManager(base_dir, self)
         self.diagnostics = DiagnosticsManager(self)
         self.terminal = TerminalManager(self)
+        self.storage = ModuleStorage(base_dir, config)
+        self.storage.engine = self
         self.server = None
         self.running = False
         self.critical_fail = False
         self._diag_cache = {}
 
-        # ⭐ v1.3.5: module watcher state
-        self._module_mtimes = {}          # name -> mtime của main.py
+        self._module_mtimes = {}
         self._watcher_thread = None
         self._watcher_stop = False
+
+        self.boot_id = f"boot_{int(time.time() * 1000)}"
+        self._restart_pending = False
 
     def boot(self):
         print("=" * 60)
@@ -76,6 +79,19 @@ class CoreEngine:
         print("  ✓ SYSTEM READY")
         print("=" * 60)
 
+        if self._restart_pending:
+            def _broadcast_restarted():
+                time.sleep(1.0)
+                try:
+                    self._broadcast({
+                        "type": "system_restarted",
+                        "boot_id": self.boot_id,
+                        "version": self.config.get("version"),
+                    })
+                except Exception:
+                    pass
+            threading.Thread(target=_broadcast_restarted, daemon=True).start()
+
     def _start_network(self):
         host = self.config.get("host", "0.0.0.0")
         port = int(self.config.get("port", 8765))
@@ -92,17 +108,26 @@ class CoreEngine:
         A = self.router.add_core
 
         A("GET",  "/api/status",                self._api_status)
+        A("GET",  "/api/boot",                  self._api_boot_info)
         A("GET",  "/api/modules",               self._api_modules)
         A("POST", "/api/modules/install",       self._api_install)
         A("POST", "/api/modules/uninstall",     self._api_uninstall)
         A("POST", "/api/modules/reload",        self._api_reload)
-        A("POST", "/api/modules/export",        self._api_module_export)   # ⭐ NEW
+        A("POST", "/api/modules/export",        self._api_module_export)
+
+        A("POST", "/api/modules/storage/usage",         self._api_storage_usage)
+        A("POST", "/api/modules/storage/list",          self._api_storage_list)
+        A("POST", "/api/modules/storage/upload_chunk",  self._api_storage_upload_chunk)
+        A("POST", "/api/modules/storage/download",      self._api_storage_download)
+        A("POST", "/api/modules/storage/delete",        self._api_storage_delete)
+        A("POST", "/api/modules/storage/clear",         self._api_storage_clear)
+        A("POST", "/api/modules/storage/export_zip",    self._api_storage_export_zip)
 
         A("GET",  "/api/projects",              self._api_projects_list)
         A("POST", "/api/projects/create",       self._api_projects_create)
         A("POST", "/api/projects/upload",       self._api_projects_upload)
         A("POST", "/api/projects/delete",       self._api_projects_delete)
-        A("POST", "/api/projects/export",       self._api_projects_export)  # ⭐ NEW
+        A("POST", "/api/projects/export",       self._api_projects_export)
         A("POST", "/api/projects/tree",         self._api_projects_tree)
         A("POST", "/api/projects/file/read",    self._api_projects_file_read)
         A("POST", "/api/projects/file/write",   self._api_projects_file_write)
@@ -125,7 +150,7 @@ class CoreEngine:
         A("POST", "/api/settings/module/get",   self._api_settings_module_get)
         A("POST", "/api/settings/module/set",   self._api_settings_module_set)
         A("GET",  "/api/overlay",               self._api_overlay_get)
-        A("GET",  "/api/readme",                self._api_readme)         # ⭐ NEW
+        A("GET",  "/api/readme",                self._api_readme)
 
         A("POST", "/api/diagnostics/check",     self._api_diagnostics_check)
         A("POST", "/api/diagnostics/file",      self._api_diagnostics_file)
@@ -134,9 +159,17 @@ class CoreEngine:
 
         A("GET",  "/api/terminal/sessions",     self._api_terminal_sessions)
 
-        # ⭐ v1.3.5: system controls
         A("POST", "/api/system/restart",        self._api_system_restart)
         A("POST", "/api/system/shutdown",       self._api_system_shutdown)
+
+    def _api_boot_info(self, req):
+        return {
+            "ok": True,
+            "boot_id": self.boot_id,
+            "version": self.config.get("version"),
+            "modules": list(self.modules.keys()),
+            "storage_quota": self.storage.default_quota,
+        }
 
     def _apply_overrides(self):
         od = os.path.join(self.base_dir, "overrides")
@@ -158,10 +191,8 @@ class CoreEngine:
 
     def _load_modules(self):
         self.loader.scan_and_load_all()
-        # ⭐ v1.3.5: ghi lại mtime sau khi load để watcher không tự reload
         for name in self.modules.keys():
             self._update_module_mtime(name)
-        # ⭐ v1.3.5: khởi động watcher
         if self.config.get("auto_detect_modules", True):
             self._start_module_watcher()
 
@@ -265,7 +296,137 @@ class CoreEngine:
             return {}
 
     # ================================================================ #
-    #  ⭐ v1.3.5: Module watcher
+    #  Storage API handlers
+    # ================================================================ #
+    def _api_storage_usage(self, req):
+        name = req.get("name")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            return {"ok": True, "usage": self.storage.usage(name)}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_list(self, req):
+        name = req.get("name")
+        sub = req.get("sub_dir", "")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            files = self.storage.list_files(name, sub)
+            return {
+                "ok": True,
+                "files": files,
+                "usage": self.storage.usage(name),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_upload_chunk(self, req):
+        name = req.get("name")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            result = self.storage.upload_chunk(
+                name,
+                req.get("path", ""),
+                int(req.get("chunk_index", 0)),
+                int(req.get("total_chunks", 1)),
+                req.get("chunk_b64", ""),
+                int(req.get("total_size", 0)),
+                req.get("upload_id"),
+            )
+            if result.get("completed"):
+                warn = self.storage.check_and_warn(name)
+                if warn:
+                    self._broadcast({
+                        "type": "storage_warning",
+                        "module": name,
+                        "usage": warn["usage"],
+                        "message": warn["message"],
+                        "severity": warn["severity"],
+                    })
+            return result
+        except QuotaExceeded as e:
+            self._broadcast({
+                "type": "storage_warning",
+                "module": name,
+                "usage": self.storage.usage(name),
+                "message": str(e),
+                "severity": "error",
+            })
+            return {"ok": False, "error": str(e), "quota_exceeded": True}
+        except (StorageViolation, Exception) as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_download(self, req):
+        name = req.get("name")
+        path = req.get("path")
+        if not name or not path:
+            return {"ok": False, "error": "missing name or path"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            data = self.storage.read_file(name, path)
+            return {
+                "ok": True,
+                "filename": path.split("/")[-1] or "download.bin",
+                "size": len(data),
+                "content_b64": base64.b64encode(data).decode("ascii"),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_delete(self, req):
+        name = req.get("name")
+        path = req.get("path")
+        if not name or not path:
+            return {"ok": False, "error": "missing name or path"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            return self.storage.delete_file(name, path)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_clear(self, req):
+        name = req.get("name")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            return self.storage.clear_all(name)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def _api_storage_export_zip(self, req):
+        name = req.get("name")
+        sub = req.get("sub_dir", "")
+        if not name:
+            return {"ok": False, "error": "missing name"}
+        if name not in self.modules:
+            return {"ok": False, "error": "module not found"}
+        try:
+            result = self.storage.export_zip(name, sub)
+            return {
+                "ok": True,
+                "filename": f"{name}_storage.zip",
+                "size": result["size"],
+                "files": result["files"],
+                "zip_base64": base64.b64encode(result["data"]).decode("ascii"),
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # ================================================================ #
+    #  Module watcher
     # ================================================================ #
     def _module_paths(self, name):
         mod_dir = os.path.join(self.base_dir, "modules", name)
@@ -298,7 +459,6 @@ class CoreEngine:
                     self._scan_modules_changes()
                 except Exception as e:
                     print(f"[Watcher] scan error: {e}")
-                # ngủ theo từng bước nhỏ để phản ứng nhanh với shutdown
                 slept = 0.0
                 while slept < interval and not self._watcher_stop and self.running:
                     time.sleep(0.2)
@@ -331,7 +491,6 @@ class CoreEngine:
             except OSError:
                 continue
 
-        # ---- Module mới xuất hiện ----
         for name in current:
             if name in self.modules:
                 continue
@@ -348,7 +507,6 @@ class CoreEngine:
                 print(f"[Watcher] ✗ load '{name}' failed: {e}")
                 traceback.print_exc()
 
-        # ---- Module bị xoá khỏi disk ----
         for name in list(self.modules.keys()):
             if name in current:
                 continue
@@ -361,6 +519,7 @@ class CoreEngine:
                         pass
                 self.diagnostics.unregister_provider(name)
                 self.settings.unregister_module(name)
+                self.storage.cleanup_module(name)
                 self.modules.pop(name, None)
                 self._module_mtimes.pop(name, None)
                 self._broadcast({
@@ -372,7 +531,7 @@ class CoreEngine:
                 print(f"[Watcher] ✗ unload '{name}' failed: {e}")
 
     # ================================================================ #
-    #  ⭐ v1.3.5: System controls (restart / shutdown)
+    #  System controls
     # ================================================================ #
     def _system_controls_enabled(self):
         return bool(self.config.get("enable_system_controls", True))
@@ -380,6 +539,7 @@ class CoreEngine:
     def _api_system_restart(self, req):
         if not self._system_controls_enabled():
             return {"ok": False, "error": "system controls disabled"}
+        self._restart_pending = True
         self._broadcast({"type": "system_restarting"})
 
         def _do():
@@ -389,7 +549,6 @@ class CoreEngine:
                 self.shutdown()
             except Exception as e:
                 print(f"[Core] shutdown before restart error: {e}")
-            # flush trước khi exec (buffer của Python mất khi execv)
             try:
                 sys.stdout.flush()
                 sys.stderr.flush()
@@ -401,7 +560,6 @@ class CoreEngine:
                 os.execv(sys.executable, args)
             except Exception as e:
                 print(f"[Restart] os.execv failed: {e}")
-                # fallback Windows / môi trường lạ
                 try:
                     subprocess.Popen(
                         args,
@@ -448,10 +606,19 @@ class CoreEngine:
             "uptime_modules": list(self.modules.keys()),
             "system_controls": self._system_controls_enabled(),
             "auto_detect_modules": bool(self.config.get("auto_detect_modules", True)),
+            "boot_id": self.boot_id,
         }
 
     def _api_modules(self, req):
-        return {n: m.metadata for n, m in self.modules.items()}
+        out = {}
+        for n, m in self.modules.items():
+            meta = dict(m.metadata)
+            try:
+                meta["storage_usage"] = self.storage.usage(n)
+            except Exception:
+                meta["storage_usage"] = None
+            out[n] = meta
+        return out
 
     def _api_install(self, req):
         try:
@@ -467,7 +634,6 @@ class CoreEngine:
                     os.unlink(tmp)
             else:
                 meta = self.loader.install_from_zip(req.get("file_path"))
-            # ⭐ v1.3.5: cập nhật mtime để watcher không load lại
             if meta and meta.get("name"):
                 self._update_module_mtime(meta["name"])
                 self._broadcast({
@@ -484,6 +650,7 @@ class CoreEngine:
         if not name:
             return {"ok": False, "error": "missing name"}
         try:
+            self.storage.cleanup_module(name)
             self.loader.uninstall(name)
             self._module_mtimes.pop(name, None)
             self._broadcast({
@@ -516,7 +683,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ⭐ NEW: export module ZIP
     def _api_module_export(self, req):
         name = req.get("name")
         if not name:
@@ -561,7 +727,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ⭐ NEW: export project ZIP
     def _api_projects_export(self, req):
         name = req.get("name")
         if not name:
@@ -808,9 +973,8 @@ class CoreEngine:
             })
         return {"ok": True, "safe_mode": safe_mode, "overlays": overlays}
 
-    # ⭐ NEW: serve README.md for Welcome screen
     def _api_readme(self, req):
-        readme_path = os.path.join(self.base_dir, "README.md")
+        readme_path = os.path.join(self.base_dir, "wecom.md")
         if not os.path.isfile(readme_path):
             return {"ok": False, "error": "README.md not found at project root"}
         try:

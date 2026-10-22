@@ -389,3 +389,30 @@ CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
 [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
 
 [exit code: 0]
+
+===== RUN 2026-10-23 00:20:07 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]
+
+===== RUN 2026-10-23 00:35:10 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]
+
+===== RUN 2026-10-23 00:40:43 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+{'status': 'success', 'total': 2, 'page': 1, 'limit': 20, 'totalPages': 1, 'data': [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]}
+[{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
+
+[exit code: 0]

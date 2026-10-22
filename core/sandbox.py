@@ -26,7 +26,6 @@ class Sandbox:
         rel = (path or "").lstrip("/")
         target = os.path.abspath(os.path.join(data_dir, rel))
 
-        # Anti-escape: must be strictly inside data_dir
         if target != data_dir and not target.startswith(data_dir + os.sep):
             raise SandboxViolation(f"Path escape attempt: {path!r}")
         return target

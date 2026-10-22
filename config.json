@@ -1,6 +1,6 @@
 {
   "name": "ACDV-Teams Coder",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "host": "0.0.0.0",
   "port": 8765,
   "log_level": "info",
@@ -8,6 +8,13 @@
   "auto_detect_modules": true,
   "module_watch_interval": 2,
   "enable_system_controls": true,
+  "module_storage_quota": 536870912,
+  "ssl": {
+    "enabled": false,
+    "cert_file": "core/data/certs/cert.pem",
+    "key_file": "core/data/certs/key.pem",
+    "auto_generate": true
+  },
   "terminal": {
     "shell": null,
     "max_sessions": 8

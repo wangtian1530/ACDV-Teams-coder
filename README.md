@@ -1,13 +1,13 @@
-📘 README.md — ACDV-Teams Coder v1.3.6
+📘 README.md — ACDV-Teams Coder v1.4.0
 
 ```markdown
 # ACDV-Teams Coder
 
-Local web IDE — Python stdlib backend, CodeMirror frontend, module extension system, terminal over WebSocket, per-tab undo/redo, export/import ZIP.
+Local web IDE — Python stdlib backend, CodeMirror frontend, module extension system, terminal over WebSocket, per-tab undo/redo, export/import ZIP, **module storage với quota 512MB**.
 
-**Version:** `1.3.6` · **Platform:** Python 3.8+ · **Deps:** none (stdlib only) · **Terminal:** xterm.js (CDN)
+**Version:** `1.4.0` · **Platform:** Python 3.8+ · **Deps:** none (stdlib only) · **Terminal:** xterm.js (CDN)
 
-> 📖 **Dev guide:** Đọc mục [§5 Module Contract](#5-module-contract) và [§6 Tạo module từ A→Z](#6-tạo-module-từ-az) trước khi viết module mới.
+> 📖 **Dev guide:** Đọc mục [§5 Module Contract](#5-module-contract) và [§6 Tạo module từ A→Z](#6-tạo-module-từ-az) trước khi viết module mới. Đặc biệt chú ý [§5.7 Module Storage](#57-module-storage-) — API mới cho phép module upload/download file với quota riêng.
 
 ---
 
@@ -18,18 +18,27 @@ Local web IDE — Python stdlib backend, CodeMirror frontend, module extension s
 3. [Cấu trúc thư mục](#3-cấu-trúc-thư-mục)
 4. [Architecture](#4-architecture)
 5. [Module Contract](#5-module-contract) ⭐
+   - [5.1 init.txt](#51-inittxt--metadata-json)
+   - [5.2 main.py](#52-mainpy--class-module)
+   - [5.3 Diagnostic shape](#53-diagnostic-shape)
+   - [5.4 Error interceptor](#54-error-interceptor-return-shape)
+   - [5.5 Overlay CSS/JS](#55-overlay-cssjs--web-vs-data)
+   - [5.6 Sandbox](#56-sandbox)
+   - [5.7 Module Storage](#57-module-storage-) 🆕
 6. [Tạo module từ A→Z](#6-tạo-module-từ-az) ⭐
 7. [API Reference](#7-api-reference)
 8. [WebSocket Protocol](#8-websocket-protocol)
 9. [Frontend / Editor](#9-frontend--editor)
-10. [Undo / Redo](#10-undo--redo) ⭐ v1.3.3
-11. [Terminal](#11-terminal) ⭐ v1.3.2
-12. [Export / Import ZIP](#12-export--import-zip) ⭐ v1.3.6
-13. [Dev workflow](#13-dev-workflow)
-14. [Testing cheat-sheet](#14-testing-cheat-sheet)
-15. [Troubleshooting](#15-troubleshooting)
-16. [Known issues / Roadmap](#16-known-issues--roadmap)
-17. [Legal](#17-legal)
+10. [Undo / Redo](#10-undo--redo)
+11. [Terminal](#11-terminal)
+12. [Export / Import ZIP](#12-export--import-zip)
+13. [Module Storage (v1.4.0)](#13-module-storage-v140-) 🆕
+14. [Loading & Restart (v1.4.0)](#14-loading--restart-v140-) 🆕
+15. [Dev workflow](#15-dev-workflow)
+16. [Testing cheat-sheet](#16-testing-cheat-sheet)
+17. [Troubleshooting](#17-troubleshooting)
+18. [Known issues / Roadmap](#18-known-issues--roadmap)
+19. [Legal](#19-legal)
 
 ---
 
@@ -38,9 +47,9 @@ Local web IDE — Python stdlib backend, CodeMirror frontend, module extension s
 | Layer | State |
 |---|---|
 | Core engine + router + server | ✅ Ổn định |
-| Project manager + ZIP upload | ✅ Ổn định |
+| Project manager + ZIP upload/export | ✅ Ổn định |
 | Process runner (`.py`/`.js`/`.sh`) | ✅ Ổn định (process-group kill) |
-| Module loader + ZIP install | ✅ Ổn định |
+| Module loader + ZIP install/export | ✅ Ổn định |
 | Diagnostics (VS Code style) | ✅ Ổn định |
 | Settings (global + per-module) | ✅ v1.3.2 — WS broadcast + apply ngay |
 | Overlay CSS/JS (`web/` + `data/`) | ✅ v1.3.1 — file lớn đọc từ `data/` |
@@ -52,13 +61,17 @@ Local web IDE — Python stdlib backend, CodeMirror frontend, module extension s
 | Android editor | ✅ v1.3.2 — fix backspace xoá dòng cuối |
 | Settings hot apply | ✅ v1.3.2 — không cần reload trang |
 | Theme switcher | ✅ v1.3.2 — dracula / default / material / monokai / solarized / eclipse |
-| **Undo / Redo per-tab** | ✅ **v1.3.3** — giống VS Code, history bảo toàn khi đổi tab |
-| **Dirty flag chính xác** | ✅ **v1.3.3** — undo về trạng thái đã lưu → dấu ● biến mất |
+| Undo / Redo per-tab | ✅ v1.3.3 — giống VS Code, history bảo toàn khi đổi tab |
+| Dirty flag chính xác | ✅ v1.3.3 — undo về trạng thái đã lưu → dấu ● biến mất |
 | Editor line wrap | ✅ v1.3.1 — mặc định **tắt**, đọc từ settings |
 | Terminal (xterm.js + PTY) | ✅ v1.3.2 — Ctrl+`, gắn với WS client |
 | Module watcher (auto-detect) | ✅ v1.3.5 — tự load/unload module khi filesystem thay đổi |
 | System controls (restart/shutdown) | ✅ v1.3.5 — `/api/system/*` |
-| **Export Project / Module ZIP** | ✅ **v1.3.6** — download ZIP round-trip, tương thích upload |
+| Export Project / Module ZIP | ✅ v1.3.6 — download ZIP round-trip, tương thích upload |
+| **Module Storage (quota 512MB)** | ✅ **v1.4.0** — upload chunk, download, export ZIP, cảnh báo quota |
+| **Loading overlay** | ✅ **v1.4.0** — hiện khi init / restart |
+| **Restart refresh UI** | ✅ **v1.4.0** — tự reload trang sau restart |
+| **Storage warning toast** | ✅ **v1.4.0** — WS broadcast khi ≥ 90% / ≥ 98% |
 | Demo module | ✅ `modules/demo_module/` |
 | Code reminder module | ✅ `modules/code_reminder/` |
 
@@ -71,7 +84,7 @@ cd /path/to/acdv-coder
 python3 main.py
 ```
 
-Mở: http://localhost:8765
+Mở: http://localhost:8765 (hoặc https nếu SSL bật)
 
 Troubleshoot nhanh
 
@@ -101,46 +114,52 @@ rm core/data/settings.json
 ```
 acdv-coder/
 ├── main.py                    # Entry point — KHÔNG được đè
-├── config.json                # host/port/version/terminal
+├── config.json                # host/port/version/terminal/storage quota
 ├── README.md
 │
 ├── core/                      # Backend (Python stdlib)
-│   ├── engine.py              # CoreEngine: boot, routes, error dispatch
-│   ├── server.py              # HTTP + WS server (raw socket)
+│   ├── engine.py              # CoreEngine: boot, routes, error dispatch, storage API
+│   ├── server.py              # HTTP + WS server (raw socket, TLS support)
 │   ├── router.py              # (method, path) → handler, core-protected
 │   ├── loader.py              # ModuleBase + ModuleLoader (ZIP install + export)
-│   ├── sandbox.py             # Per-module fs jail
+│   ├── sandbox.py             # Per-module fs jail (data/)
+│   ├── module_storage.py      # ⭐ v1.4.0: ModuleStorage (quota 512MB, chunked upload)
 │   ├── project_manager.py     # Project CRUD + file ops + ZIP upload/export
 │   ├── runner.py              # ProcessRunner (subprocess + kill group)
 │   ├── settings.py            # Global + per-module settings
 │   ├── diagnostics.py         # DiagnosticsManager
-│   ├── terminal.py            # ⭐ v1.3.2 TerminalManager (PTY + WS)
-│   └── data/                  # Auto-created: logs/, settings.json, .run_pids.json
+│   ├── terminal.py            # TerminalManager (PTY + WS)
+│   └── data/                  # Auto-created: logs/, settings.json, .run_pids.json, certs/
 │
 ├── frontend/
 │   ├── index.html
 │   ├── css/style.css
 │   └── js/
-│       ├── api.js             # ⭐ v1.3.6: exportProject / exportModule
-│       ├── ws.js
-│       ├── explorer.js        # ⭐ v1.3.6: nút ⬇ trong project list
-│       ├── editor.js          # ⭐ v1.3.3: per-tab Doc + undo/redo + dirty chính xác
-│       ├── app.js             # ⭐ v1.3.6: exportProject/exportModule + nút ⬇ module list
-│       ├── diagnostics.js
-│       ├── settings.js        # ⭐ v1.3.2: theme options + hot apply
-│       ├── terminal.js        # ⭐ v1.3.2: xterm.js wrapper
-│       └── overlay.js
+│       ├── api.js             # REST client (bao gồm 7 storage methods)
+│       ├── ws.js              # WebSocket client
+│       ├── explorer.js        # Project list + file tree
+│       ├── editor.js          # Per-tab Doc + undo/redo + dirty chính xác
+│       ├── app.js             # Main app + loading overlay + storage warning toast
+│       ├── diagnostics.js     # Problems panel + inline markers
+│       ├── settings.js        # Settings UI + About tab
+│       ├── terminal.js        # xterm.js wrapper
+│       ├── overlay.js         # Overlay loader
+│       └── storage_ui.js      # ⭐ v1.4.0: Module Storage UI (upload chunked)
 │
 ├── modules/
-│   ├── demo_module/           # Template đầy đủ contract
+│   ├── demo_module/           # Template đầy đủ contract + storage example
 │   ├── code_reminder/         # Ví dụ: diagnostics module thực tế
 │   └── <your_module>/
 │       ├── init.txt           # Metadata (JSON)
 │       ├── main.py            # Class Module
-│       ├── data/              # Sandbox + overlay file lớn
-│       │   ├── overlay.css    # ⭐ v1.3.1: ưu tiên cao nhất
+│       ├── data/              # Sandbox + overlay file lớn + settings.json
+│       │   ├── overlay.css    # ưu tiên cao nhất (file lớn)
 │       │   ├── overlay.js
 │       │   └── settings.json  # Auto-created per-module settings
+│       ├── storage/           # ⭐ v1.4.0: Storage riêng (quota 512MB)
+│       │   ├── files/         # File upload (do user upload)
+│       │   ├── .storage.json  # Metadata (auto)
+│       │   └── .tmp_uploads/  # Chunk tạm (auto cleanup)
 │       └── web/
 │           ├── index.html     # (optional) custom UI page
 │           ├── overlay.css    # fallback (file nhỏ)
@@ -158,15 +177,17 @@ acdv-coder/
 ┌──────────────────────────────────────────────────────┐
 │  Browser (CodeMirror + xterm.js + vanilla JS)        │
 │  api.js → REST    ws.js → live updates + terminal    │
+│  storage_ui.js → module storage modal                │
 │  overlay.js injects module CSS/JS                    │
 └──────────────────┬───────────────────────────────────┘
                    │ HTTP + WS (raw socket, no framework)
 ┌──────────────────▼───────────────────────────────────┐
 │  CoreEngine (core/engine.py)                         │
 │  ├─ Router       (core-protected vs module routes)   │
-│  ├─ HttpWsServer (raw socket, WS frames)             │
+│  ├─ HttpWsServer (raw socket, WS frames, TLS)        │
 │  ├─ ModuleLoader (scan modules/, ZIP install/export) │
-│  ├─ Sandbox      (per-module fs jail)                │
+│  ├─ Sandbox      (per-module fs jail data/)          │
+│  ├─ ModuleStorage⭐ (per-module quota 512MB)         │
 │  ├─ ProcessRunner(subprocess + process-group kill)   │
 │  ├─ SettingsMgr  (global + per-module schema)        │
 │  ├─ Diagnostics  (collect problems from modules)     │
@@ -202,82 +223,97 @@ GET /module/<name>/overlay.css
   → loader.py detect: web/overlay.css
   → server serve web/overlay.css
 
-GET /module/<name>/_data_/overlay.css    ⭐ file lớn
+GET /module/<name>/_data_/overlay.css         (file lớn)
   → loader.py detect: data/overlay.css
   → server strip `_data_/` prefix
   → serve data/overlay.css
+
+GET /module/<name>/_storage_/files/xxx.bin    ⭐ v1.4.0
+  → server strip `_storage_/` prefix
+  → serve storage/files/xxx.bin
 ```
 
-Luồng Undo/Redo (⭐ v1.3.3)
+Luồng Undo/Redo
 
 ```
 Mỗi tab giữ một CodeMirror.Doc riêng (tab.doc)
   ↓
 Khi activate tab
-  → cm.swapDoc(tab.doc)
+  → cm.swapDoc(tab.doc)        ← KHÔNG dùng setValue
   → toàn bộ undo history của tab được bảo toàn
   ↓
-Ctrl+Z (focus trong editor)
-  → CodeMirror keymap tự xử lý (không qua App)
-  ↓
-Ctrl+Z (focus ngoài editor)
-  → App._isEditableTarget() = false
-  → App.editor.undo() → cm.undo()
-  ↓
-Nút ↶ / ↷ trên toolbar
-  → disable khi historySize().undo/redo === 0
+Ctrl+Z (focus trong editor) → CodeMirror keymap tự xử lý
+Ctrl+Z (focus ngoài editor) → App._isEditableTarget() = false → App.editor.undo()
   ↓
 Dirty flag = (cm.getValue() !== tab.content)
   → undo về trạng thái đã lưu → ● tự biến mất
 ```
 
-Luồng Terminal (⭐ v1.3.2)
+Luồng Terminal
 
 ```
 browser (xterm.js)
   → ws.send({type:"terminal_open", id, cols, rows, cwd})
-    → server._handle_ws_message
     → TerminalManager.open(id, ws, cols, rows, cwd_hint)
     → pty.openpty() + Popen(shell, start_new_session=True)
-    → reader thread đọc master_fd
-    → ws.send({type:"terminal_output", id, data})
+    → reader thread đọc master_fd → ws.send terminal_output
 
 keyboard input
-  → term.onData → ws.send({type:"terminal_input", id, data})
-  → TerminalManager.write(id, data) → os.write(master_fd, data)
+  → term.onData → ws.send terminal_input → TerminalManager.write(id, data)
 
-resize
-  → term.onResize → ws.send({type:"terminal_resize", id, cols, rows})
-  → TIOCSWINSZ + SIGWINCH
-
-WS disconnect
-  → server close_by_ws(ws) → kill toàn bộ session của client đó
+WS disconnect → close_by_ws(ws) → kill toàn bộ session của client đó
 ```
 
-Luồng Export ZIP (⭐ v1.3.6)
+Luồng Module Storage (⭐ v1.4.0)
 
 ```
-UI click ⬇ (project item hoặc module item)
-  → App.exportProject(name) / App.exportModule(name)
-  → API.exportProject(name) / API.exportModule(name)
-    → POST /api/projects/export   |  POST /api/modules/export
-      → ProjectManager.export_zip(name)         (walk thư mục → zipfile)
-      |  ModuleLoader.export_module_zip(name)   (walk thư mục → zipfile)
-      → trả {ok, filename, size, files, zip_base64}
-    → App._downloadBase64(b64, filename)
-      → atob → Uint8Array → Blob → <a download> click
-    → Browser tự động tải xuống
+UI click 💾 (module list)
+  → StorageUI.open(name)
+  → API.storageUsage(name) + API.storageList(name)
+  → Render usage bar + file list
+
+Upload file (chunked 4MB)
+  → FileReader.slice(start, end) → blob
+  → _blobToBase64(blob)
+  → API.storageUploadChunk({name, path, chunk_index, total_chunks, chunk_b64, total_size, upload_id})
+  → ModuleStorage.upload_chunk()
+    ├─ chunk 0: check quota (raise QuotaExceeded nếu > 98%)
+    ├─ ghi vào .tmp_uploads/<upload_id>/chunk_NNNNN
+    └─ chunk cuối: assemble → storage/files/<path> → cleanup tmp
+
+Download file
+  → API.storageDownload(name, path)
+  → ModuleStorage.read_file() (max 50MB)
+  → base64 → browser tải về
+
+Export ZIP
+  → API.storageExportZip(name)
+  → ModuleStorage.export_zip() → walk storage/files/ → zipfile
+  → base64 → download
+
+Quota warning
+  → sau upload completed: check_and_warn(name)
+  → nếu status != 'ok': broadcast {type:"storage_warning", module, usage, severity}
+  → app.js: hiển thị toast đỏ/vàng góc phải trên
 ```
 
-Luồng Import ZIP (existing)
+Luồng Loading & Restart (⭐ v1.4.0)
 
 ```
-UI file picker (📤)
-  → FileReader.readAsDataURL → base64
-  → API.uploadProject(name, b64)  |  API.installModule(b64)
-    → create_from_zip(name, b64)  |  install_from_zip(tmpfile)
-    → validate zip-slip + strip root folder
-    → extract → load_module / metadata
+App.init()
+  → _showLoading("Khởi tạo ứng dụng…")
+  → ... tải projects, README, modules ...
+  → _hideLoading() (sau 200ms)
+
+User click 🔄 Restart
+  → POST /api/system/restart
+  → engine._restart_pending = True
+  → broadcast {type:"system_restarting"}
+  → app.js: _showRestartOverlay()
+  → engine os.execv(main.py) → khởi động lại process
+  → boot() hoàn tất → broadcast {type:"system_restarted", boot_id}
+  → app.js: location.reload() (sau 800ms)
+  → UI mới hoàn chỉnh
 ```
 
 ---
@@ -292,6 +328,8 @@ UI file picker (📤)
   "version": "1.0.0",
   "description": "Mô tả ngắn",
   "critical": false,
+
+  "module_storage_quota": 134217728,
 
   "routes": [
     { "method": "GET",  "path": "/api/my_module/hello", "handler": "hello" },
@@ -330,11 +368,12 @@ UI file picker (📤)
 }
 ```
 
-Các field quan trọng:
-
 Field Bắt buộc Ý nghĩa
 name ✅ Tên module (unique, không có /, ..)
 version ✅ Semver
+description — Mô tả hiển thị trong settings UI
+critical — Nếu load fail → engine exit (mặc định false)
+module_storage_quota — Override quota (bytes). Mặc định dùng config.module_storage_quota (512MB)
 routes[] — Endpoint module tự khai báo
 ui_buttons[] — Nút hiển thị trong tab Modules
 settings_schema — Schema để render UI settings
@@ -454,12 +493,83 @@ def my_handler(self, req):
 
 API Sandbox: resolve, open, read, write, delete, list_dir.
 
-5.7. Ví dụ module đầy đủ
+5.7. Module Storage ⭐
 
-Xem 2 module mẫu:
+Mới v1.4.0 — mỗi module có storage riêng biệt với quota 512MB (config được).
 
-· modules/demo_module/ — template đơn giản, đủ contract
-· modules/code_reminder/ — ví dụ thực tế: regex scan TODO/FIXME, dedup pattern, custom diagnostics
+Vị trí
+
+```
+modules/<name>/storage/
+├── files/              ← file upload (accessible)
+├── .storage.json       ← metadata (auto)
+└── .tmp_uploads/       ← chunk tạm (auto cleanup)
+```
+
+Đặc điểm
+
+· Tách biệt hoàn toàn với data/ (sandbox) — dùng cho file user upload, không phải cache nội bộ.
+· Quota 512MB mặc định (config module_storage_quota).
+· Override per-module: khai báo module_storage_quota trong init.txt.
+· Cảnh báo tự động: ≥ 90% (warn), ≥ 98% (block upload + broadcast WS).
+· Upload chunked: file lớn chia 4MB/chunk, hỗ trợ tới 200MB/file.
+· Export ZIP: tải toàn bộ storage 1 click.
+· Path traversal safe: chống ../ escape.
+
+Python API (từ module)
+
+```python
+def on_load(self):
+    # ─── Quota info ────────────────────────────────────
+    usage = self.engine.storage.usage(self.name)
+    # → {"used": 12345, "quota": 536870912, "percent": 0.0023,
+    #    "status": "ok"|"warn"|"full", "free": 536858567}
+
+    # ─── Ghi/đọc file ──────────────────────────────────
+    self.engine.storage.write_file(self.name, "cache/data.json", '{"x":1}')
+    data = self.engine.storage.read_file(self.name, "cache/data.json")
+
+    # ─── List ───────────────────────────────────────────
+    files = self.engine.storage.list_files(self.name, "")
+    # → [{"name":"x.txt","path":"x.txt","type":"file","size":123,"mtime":...}, ...]
+
+    # ─── Delete ─────────────────────────────────────────
+    self.engine.storage.delete_file(self.name, "cache/data.json")
+
+    # ─── Clear all ──────────────────────────────────────
+    self.engine.storage.clear_all(self.name)
+
+    # ─── Export ZIP ─────────────────────────────────────
+    result = self.engine.storage.export_zip(self.name)
+    # → {"data": b"PK...", "files": 5, "size": 12345}
+```
+
+Quota exceptions
+
+```python
+from core.module_storage import QuotaExceeded, StorageViolation
+
+try:
+    self.engine.storage.write_file(self.name, "big.bin", data)
+except QuotaExceeded as e:
+    # Storage gần đầy — cần giải phóng
+    return {"ok": False, "error": str(e), "quota_exceeded": True}
+except StorageViolation as e:
+    # Path escape
+    return {"ok": False, "error": str(e)}
+```
+
+HTTP API (từ frontend / external)
+
+Xem §7 API Reference → Storage endpoints.
+
+UI có sẵn
+
+· Nút 💾 cạnh mỗi module trong tab Modules → mở Storage modal.
+· Mini storage bar (4px) cạnh tên module hiển thị % đã dùng.
+· Upload chunked + progress bar.
+· Download / delete từng file.
+· Export ZIP / Clear all.
 
 ---
 
@@ -468,7 +578,7 @@ Xem 2 module mẫu:
 Bước 1 — Khung thư mục
 
 ```bash
-mkdir -p modules/my_mod/web modules/my_mod/data
+mkdir -p modules/my_mod/web modules/my_mod/data modules/my_mod/storage
 cd modules/my_mod
 ```
 
@@ -480,6 +590,7 @@ Bước 2 — init.txt
   "version": "1.0.0",
   "description": "Module ví dụ",
   "critical": false,
+  "module_storage_quota": 134217728,
 
   "routes": [
     { "method": "GET",  "path": "/api/my_mod/ping", "handler": "ping" }
@@ -506,12 +617,27 @@ from core.loader import ModuleBase
 class Module(ModuleBase):
     def on_load(self):
         print(f"[{self.name}] loaded")
+        # ensure storage ready
+        self.engine.storage.storage_dir(self.name)
 
     def ping(self, req):
-        return { "ok": True, "pong": True }
+        usage = self.engine.storage.usage(self.name)
+        return { "ok": True, "pong": True, "storage": usage }
 
     def on_button_show_info(self, params):
-        return { "ok": True, "settings": self.get_settings() }
+        try:
+            self.engine.storage.write_file(
+                self.name, "cache/last_check.txt",
+                f"checked at {__import__('time').time()}"
+            )
+        except Exception as e:
+            return { "ok": False, "error": str(e) }
+
+        return {
+            "ok": True,
+            "settings": self.get_settings(),
+            "storage": self.engine.storage.usage(self.name),
+        }
 
     def diagnose(self, project, path, content):
         if not path.endswith(".py"):
@@ -554,13 +680,15 @@ curl http://localhost:8765/api/my_mod/ping
 
 # Verify overlay
 curl http://localhost:8765/api/overlay
+
+# Verify storage usage
+curl -X POST http://localhost:8765/api/modules/storage/usage \
+  -H 'Content-Type: application/json' -d '{"name":"my_mod"}'
 ```
 
-Xem UI: tab Modules → nút Info → tab Settings → Modules (render settings).
+Xem UI: tab Modules → nút 💾 (storage) / Info (module action) → tab Settings → Modules (render settings).
 
 Bước 6 — Package thành ZIP
-
-Có 2 cách:
 
 Cách A — Export từ UI (⭐ v1.3.6):
 
@@ -589,13 +717,25 @@ Loader tự:
 Core
 
 Endpoint Method Body Response
-/api/status GET — {status, version, uptime_modules}
-/api/modules GET — {<name>: metadata}
+/api/status GET — {status, version, boot_id, uptime_modules, system_controls}
+/api/boot GET — {ok, boot_id, version, modules, storage_quota} ⭐ v1.4.0
+/api/modules GET — {<name>: metadata} (kèm storage_usage)
 /api/modules/install POST {zip_base64} {ok, module}
-/api/modules/uninstall POST {name} {ok}
+/api/modules/uninstall POST {name} {ok} (xoá cả storage)
 /api/modules/reload POST {name} {ok}
-/api/modules/export POST {name} {ok, filename, size, files, zip_base64} ⭐ v1.3.6
+/api/modules/export POST {name} {ok, filename, size, files, zip_base64}
 /api/terminal/sessions GET — {ok, sessions: [{id, pid, cwd, cols, rows}]}
+
+Module Storage ⭐ v1.4.0
+
+Endpoint Method Body Response
+/api/modules/storage/usage POST {name} {ok, usage: {used, quota, percent, status, free}}
+/api/modules/storage/list POST {name, sub_dir?} {ok, files: [...], usage}
+/api/modules/storage/upload_chunk POST {name, path, chunk_index, total_chunks, chunk_b64, total_size, upload_id} {ok, completed, path?, size?, usage?}
+/api/modules/storage/download POST {name, path} {ok, filename, size, content_b64}
+/api/modules/storage/delete POST {name, path} {ok, usage}
+/api/modules/storage/clear POST {name} {ok, usage}
+/api/modules/storage/export_zip POST {name, sub_dir?} {ok, filename, size, files, zip_base64}
 
 Projects
 
@@ -604,7 +744,7 @@ Endpoint Method Body
 /api/projects/create POST {name, language}
 /api/projects/upload POST {name, zip_base64}
 /api/projects/delete POST {name}
-/api/projects/export POST {name} → {ok, filename, size, files, zip_base64} ⭐ v1.3.6
+/api/projects/export POST {name} → {ok, filename, size, files, zip_base64}
 /api/projects/tree POST {project}
 /api/projects/file/read POST {project, path}
 /api/projects/file/write POST {project, path, content}
@@ -627,7 +767,7 @@ Settings / Diagnostics / Overlay
 
 Endpoint Method Body
 /api/settings GET —
-/api/settings POST {<patch>} → broadcast settings_changed qua WS
+/api/settings POST {<patch>} → broadcast settings_changed
 /api/settings/modules POST {}
 /api/settings/module/get POST {name}
 /api/settings/module/set POST {name, values}
@@ -636,23 +776,25 @@ Endpoint Method Body
 /api/diagnostics/all GET —
 /api/diagnostics/clear POST {project?, path?}
 /api/overlay GET —
+/api/readme GET —
 
-System (⭐ v1.3.5)
+System
 
 Endpoint Method Body
-/api/system/restart POST {} → broadcast system_restarting, restart process
-/api/system/shutdown POST {} → broadcast system_shutdown, exit process
+/api/system/restart POST {} → broadcast system_restarting + system_restarted
+/api/system/shutdown POST {} → broadcast system_shutdown
 
 Gated bởi config.json → enable_system_controls (mặc định true).
 
 Module static
 
 ```
-GET /module/<name>/                  → web/index.html
-GET /module/<name>/overlay.css       → web/overlay.css
-GET /module/<name>/overlay.js        → web/overlay.js
-GET /module/<name>/*                 → web/*
-GET /module/<name>/_data_/*          → data/*    ⭐ v1.3.1
+GET /module/<name>/                    → web/index.html
+GET /module/<name>/overlay.css         → web/overlay.css
+GET /module/<name>/overlay.js          → web/overlay.js
+GET /module/<name>/*                   → web/*
+GET /module/<name>/_data_/*            → data/*
+GET /module/<name>/_storage_/*         → storage/files/*    ⭐ v1.4.0
 ```
 
 ---
@@ -670,7 +812,7 @@ Client → Server
 { "type": "route", "id": "req-1", "method": "POST", "path": "/api/status", "body": {} }
 { "type": "module_action", "module": "my_module", "button_id": "custom_do", "params": {"x": 1} }
 
-// ⭐ v1.3.2: terminal
+// terminal
 { "type": "terminal_open",   "id": "t_abc", "cols": 80, "rows": 24, "cwd": "projects/demo" }
 { "type": "terminal_input",  "id": "t_abc", "data": "ls\r" }
 { "type": "terminal_resize", "id": "t_abc", "cols": 100, "rows": 30 }
@@ -696,18 +838,26 @@ Server → Client
 { "type": "diagnostics_update",  "project", "path", "diagnostics": [...] }
 { "type": "diagnostics_cleared" }
 
-// Settings (⭐ v1.3.2: broadcast tới MỌI client để hot-apply)
+// Settings (broadcast tới MỌI client để hot-apply)
 { "type": "settings_changed",        "settings": {...} }
 { "type": "module_settings_changed", "module", "values": {...} }
 
-// ⭐ v1.3.5: module auto-detect
+// Module auto-detect
 { "type": "modules_changed", "action": "added|removed|reloaded", "module": "..." }
 
-// ⭐ v1.3.5: system controls
+// System controls
 { "type": "system_restarting" }
+{ "type": "system_restarted", "boot_id": "boot_1234567890", "version": "1.4.0" }  ⭐ v1.4.0
 { "type": "system_shutdown" }
 
-// ⭐ v1.3.2: terminal
+// ⭐ v1.4.0: Storage warning
+{ "type": "storage_warning",
+  "module": "my_mod",
+  "usage": {"used": 480000000, "quota": 536870912, "percent": 89.4, "status": "warn"},
+  "message": "⚠️ Module 'my_mod' storage đã dùng 89.4% ...",
+  "severity": "warning" | "error" }
+
+// Terminal
 { "type": "terminal_opened", "id": "t_abc" }
 { "type": "terminal_output", "id": "t_abc", "data": "..." }
 { "type": "terminal_exit",   "id": "t_abc", "code": 0 }
@@ -727,7 +877,7 @@ indentUnit 4
 inputStyle "contenteditable" trên Android Fix thụt lề + double-input
 electricChars false trên Android 
 foldGutter true 
-gutters ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+gutters ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] 
 
 9.2. Code folding
 
@@ -739,44 +889,24 @@ Fold riêng 1 block Click ▾ ở gutter bên trái
 
 Hỗ trợ mode Python (indent), JS/CSS/HTML (brace), comment-fold.
 
-9.3. Android keyboard fix (v1.3.2)
-
-Triệu chứng: Trên Android (Chrome/WebView), khi đã xoá hết một dòng, nhấn Backspace không merge với dòng trên (đặc biệt với inputStyle: "contenteditable").
-
-Nguyên nhân: CM5 với contenteditable không tự kích hoạt delCharBefore khi cursor ở ch === 0 trên soft keyboard.
-
-Fix (trong editor.js → _fixAndroidLineMerge):
-
-· Lắng nghe beforeinput (deleteContentBackward / deleteContentForward) — path chính của WebView hiện đại
-· Fallback keydown (Backspace/Delete) cho bàn phím cứng
-· Khi cursor ở ch === 0 và line > 0 → cm.execCommand("delCharBefore")
-· Khi cursor ở cuối dòng và line < lineCount-1 → replaceRange merge thủ công
-· Debounce 100ms để tránh fire đôi khi cả beforeinput và keydown cùng bắn
-
-Ngoài ra _applyInputAttributes() set đúng DOM attributes (autocorrect, autocapitalize, spellcheck, autocomplete, font-size: 16px để tránh zoom) — trước đây các option này bị bỏ qua vì không phải option hợp lệ của CodeMirror 5.
-
-9.4. Settings hot apply (v1.3.2)
-
-Triệu chứng trước: Save settings xong nhưng editor không thay đổi cho đến khi F5.
-
-Fix:
+9.3. Settings hot apply
 
 1. Server broadcast settings_changed qua WS mỗi lần POST /api/settings thành công
 2. app.js lắng nghe settings_changed → editor.onSettingsChanged(newSettings)
-3. settings.js chủ động gọi editor.onSettingsChanged() ngay sau saveSettings() (không đợi WS) — idempotent với WS handler
+3. settings.js chủ động gọi editor.onSettingsChanged() ngay sau saveSettings() (idempotent với WS handler)
 4. editor.onSettingsChanged() → applySettings() → cập nhật font_size, tab_size, line_wrap, theme
 
-Theme options hợp lệ (CM5): dracula, default, material, monokai, solarized, eclipse — CSS được lazy-load từ CDN khi chọn lần đầu. (Các option cũ light/dark không tồn tại trong CodeMirror 5 nên trước đây trông như "không hoạt động".)
+Theme options hợp lệ (CM5): dracula, default, material, monokai, solarized, eclipse.
 
-9.5. Settings structure
+9.4. Settings structure
 
 ```jsonc
 {
-  "theme": "dracula",            // dracula|default|material|monokai|solarized|eclipse
+  "theme": "dracula",
   "editor": {
     "font_size": 14,
     "tab_size": 4,
-    "line_wrap": false,          // v1.3.1: default OFF
+    "line_wrap": false,
     "auto_save": false
   },
   "diagnostics": {
@@ -793,17 +923,34 @@ Theme options hợp lệ (CM5): dracula, default, material, monokai, solarized, 
 }
 ```
 
-9.6. Overlay loader (overlay.js)
+9.5. Overlay loader
 
 · Fetch /api/overlay → inject <link> + <script> với ?t=<timestamp>
 · Skip nếu ?safe=1 trên URL hoặc settings.overlays.safe_mode = true
 · Hiển thị banner "🎨 N overlays active" — dismiss hoặc chuyển safe mode
 
+9.6. Loading overlay (⭐ v1.4.0)
+
+· Hiện khi App.init() bắt đầu (spinner + text "Khởi tạo ứng dụng…")
+· Text cập nhật theo tiến trình: "Tải projects…", "Tải README…", "Tải modules…"
+· Tự ẩn sau khi mọi thứ sẵn sàng (~200ms sau load xong)
+· Khi restart: overlay riêng (restartOverlay) với spinner 🔄
+
+9.7. Storage UI (⭐ v1.4.0)
+
+· Modal #storageModal — mở từ nút 💾 trong module list.
+· Usage bar: xanh (< 90%), vàng (≥ 90%), đỏ (≥ 98%).
+· Upload chunked: 4MB/chunk, progress bar realtime, hỗ trợ tới 200MB/file.
+· File list: icon 📄/📁, name, size, actions (⬇ download / 🗑 delete).
+· Export ZIP: tải toàn bộ storage.
+· Clear all: xoá tất cả file (confirm).
+· Mini bar (4px) cạnh tên module trong list — hiển thị % đã dùng.
+
 ---
 
 10. Undo / Redo
 
-⭐ v1.3.3 — Hoàn tác / làm lại giống VS Code, per-tab và bảo toàn history khi đổi tab.
+Hoàn tác / làm lại giống VS Code, per-tab và bảo toàn history khi đổi tab.
 
 10.1. Thao tác
 
@@ -814,7 +961,7 @@ Undo (mobile) Nút ↶ trên toolbar
 Redo (mobile) Nút ↷ trên toolbar
 Nút disable Tự disable khi hết history
 
-10.2. Cơ chế hoạt động
+10.2. Cơ chế
 
 Per-tab history — mỗi tab giữ một CodeMirror.Doc riêng:
 
@@ -824,15 +971,12 @@ const doc = CodeMirror.Doc(content, mode);
 tab.doc = doc;
 
 // Khi chuyển tab
-cm.swapDoc(tab.doc);  // ← KHÔNG dùng setValue + clearHistory nữa
+cm.swapDoc(tab.doc);  // ← KHÔNG dùng setValue + clearHistory
 ```
-
-→ Toàn bộ undo stack (kể cả selection state, cursor position, fold state) được bảo toàn nguyên vẹn khi đổi qua lại giữa các tab. Giống VS Code.
 
 Dirty flag chính xác:
 
 ```javascript
-// Không còn set dirty = true một lần là xong
 this.cm.on("change", () => {
   const current = this.cm.getValue();
   const isDirty = current !== tab.content;  // ← so sánh với "last saved"
@@ -840,25 +984,7 @@ this.cm.on("change", () => {
 });
 ```
 
-→ Undo hết về trạng thái đã lưu → dấu ● trên tab tự biến mất.
-
-Global hotkey (app.js):
-
-```javascript
-document.addEventListener("keydown", (e) => {
-  // ...các shortcut khác...
-  if (!mod) return;
-  if (this._isEditableTarget(e.target)) return;       // input/modal → bỏ qua
-  const cmInput = this.editor.cm.getInputField();
-  if (document.activeElement === cmInput) return;      // editor → CM5 tự xử lý
-  
-  const k = e.key.toLowerCase();
-  if (k === "z" && !e.shiftKey)                 this.editor.undo();
-  else if (k === "y" || (k === "z" && e.shiftKey)) this.editor.redo();
-});
-```
-
-→ Không double-undo: khi focus trong editor, CM5 keymap xử lý Ctrl+Z; khi focus ngoài editor (sidebar, panel output…), App xử lý. Hai path không chồng nhau.
+Global hotkey không double-undo với CM5 keymap.
 
 10.3. API (EditorManager)
 
@@ -871,21 +997,19 @@ editor.canRedo()        // → boolean
 
 10.4. Lưu ý
 
-· Save không clear history — giống VS Code, save xong vẫn undo được (nhưng nếu undo về sau save, dấu ● xuất hiện lại vì content khác last saved)
-· Đóng tab → mất history — tương tự VS Code (không có persistent history)
-· KHÔNG dùng cm.setValue() khi chuyển tab — sẽ xoá history. Bắt buộc dùng cm.swapDoc(doc)
+· Save không clear history — undo về trước save → dấu ● xuất hiện lại
+· Đóng tab → mất history (giống VS Code)
+· KHÔNG dùng cm.setValue() khi chuyển tab — sẽ xoá history
 
 ---
 
 11. Terminal
 
-⭐ v1.3.2 — Terminal tích hợp sẵn, chạy shell thật trên server qua WebSocket.
-
 11.1. Yêu cầu
 
 · POSIX: dùng PTY (pty.openpty) → hỗ trợ app interactive (vim, top, htop, less…)
 · Windows: fallback pipe (không có PTY, hạn chế app fullscreen)
-· Frontend: xterm.js 5.3 + addons fit, web-links (load từ CDN trong index.html)
+· Frontend: xterm.js 5.3 + addons fit, web-links (CDN trong index.html)
 
 11.2. Thao tác
 
@@ -910,7 +1034,7 @@ Copy / paste Chuột phải / Shift+Insert (native xterm)
 ```json
 {
   "terminal": {
-    "shell": null,          // null → $SHELL hoặc /bin/bash
+    "shell": null,
     "max_sessions": 8
   }
 }
@@ -927,13 +1051,13 @@ curl http://localhost:8765/api/terminal/sessions
 
 12. Export / Import ZIP
 
-⭐ v1.3.6 — Tự nén ZIP và tải về project / module, round-trip với chức năng upload hiện có.
+Tự nén ZIP và tải về project / module, round-trip với chức năng upload hiện có.
 
 12.1. Thao tác
 
 Đối tượng Cách
-Project Vào tab Projects → click nút ⬇ cạnh tên project → tải <name>.zip
-Module Vào tab Modules → click nút ⬇ cạnh tên module → tải <name>.zip
+Project Tab Projects → click nút ⬇ cạnh tên project → tải <name>.zip
+Module Tab Modules → click nút ⬇ cạnh tên module → tải <name>.zip
 
 Nút ⬇ nhỏ, tự disable khi đang export; có stopPropagation để không trigger long-press delete trên mobile.
 
@@ -942,12 +1066,12 @@ Nút ⬇ nhỏ, tự disable khi đang export; có stopPropagation để không 
 Project ZIP (base dir = <name>/):
 
 · ✅ Bao gồm: toàn bộ file trong project
-· ❌ Bỏ qua: .project.json (metadata nội bộ), __pycache__/, *.pyc, .git/, .svn/
+· ❌ Bỏ qua: .project.json, __pycache__/, *.pyc, .git/, .svn/
 
 Module ZIP (base dir = <name>/):
 
-· ✅ Bao gồm: main.py, init.txt, web/*, data/*, và bất kỳ file nào khác
-· ❌ Bỏ qua: __pycache__/, *.pyc, .git/, .svn/
+· ✅ Bao gồm: main.py, init.txt, web/*, data/*, storage/*, và bất kỳ file nào khác
+· ❌ Bỏ qua: __pycache__/, *.pyc, .git/, .svn/, .tmp_uploads/
 
 Cả 2 đều dùng zipfile.ZIP_DEFLATED (compress).
 
@@ -956,11 +1080,6 @@ Cả 2 đều dùng zipfile.ZIP_DEFLATED (compress).
 ```
 Export ZIP  →  Uninstall/Delete  →  Upload lại qua 📤  →  Restored 100%
 ```
-
-· Project ZIP: upload qua tab Projects → 📤 → create_from_zip() strip root folder tự động
-· Module ZIP: upload qua tab Modules → 📤 → install_from_zip() strip root folder tự động
-
-→ Đây là cách backup / clone / migrate project & module giữa các instance.
 
 12.4. API response shape
 
@@ -974,64 +1093,197 @@ POST /api/modules/export   { "name": "demo_module" }
   "filename": "demo.zip",
   "size": 12345,
   "files": 7,
-  "zip_base64": "UEsDBBQAAAAIA..."   // base64 của ZIP
-}
-```
-
-Frontend (App._downloadBase64):
-
-```javascript
-_downloadBase64(base64, filename) {
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const blob = new Blob([bytes], { type: "application/zip" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  "zip_base64": "UEsDBBQAAAAIA..."
 }
 ```
 
 12.5. Bảo mật
 
-· Tên project/module được validate qua _safe_path() / path prefix check → chống ../escape
+· Tên project/module được validate qua _safe_path() / prefix check → chống ../ escape
 · Walk bằng os.walk() + os.path.relpath() → arcname luôn nằm dưới <name>/
-· Symlinks: follow mặc định của os.walk (không có followlinks=True) — symlink tới ngoài base_dir sẽ không được include nếu trỏ ra ngoài trên một số OS; nếu cần strict, thêm os.path.islink(full) check
-· Không có giới hạn size khi export (chỉ giới hạn khi upload: file > 5MB bị từ chối khi đọc)
+· Symlinks: follow mặc định của os.walk (không followlinks=True)
 
-12.6. Cấu hình
+---
 
-Không cần cấu hình gì — hoạt động ngay sau khi update. Không thêm field vào config.json.
+13. Module Storage (v1.4.0) ⭐
 
-12.7. Test nhanh
+13.1. Tổng quan
 
-```bash
-# Export project → lưu vào /tmp/
-curl -X POST http://localhost:8765/api/projects/export \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"demo"}' \
-  | python3 -c "import sys,json,base64; d=json.load(sys.stdin); open('/tmp/demo.zip','wb').write(base64.b64decode(d['zip_base64'])); print('files:', d['files'], 'size:', d['size'])"
+Mỗi module có storage riêng — cho phép upload/download file độc lập, quota 512MB (config được).
 
-# Verify ZIP hợp lệ
-unzip -l /tmp/demo.zip
+Tính năng Mô tả
+Isolated modules/<name>/storage/ — tách biệt với data/ (sandbox)
+Quota 512MB mặc định, override được trong init.txt
+Warning ≥ 90% broadcast WS warn, ≥ 98% block upload
+Chunked upload File lớn chia 4MB/chunk, progress bar
+Export ZIP Tải toàn bộ storage 1 click
+Path safe Chống ../ escape, absolute path
 
-# Export module
-curl -X POST http://localhost:8765/api/modules/export \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"demo_module"}' \
-  | python3 -c "import sys,json,base64; d=json.load(sys.stdin); open('/tmp/demo_module.zip','wb').write(base64.b64decode(d['zip_base64'])); print('files:', d['files'])"
+13.2. Cấu trúc
 
-unzip -l /tmp/demo_module.zip
+```
+modules/<name>/storage/
+├── files/              ← file upload (accessible)
+│   ├── image.png
+│   └── cache/data.json
+├── .storage.json       ← metadata (auto)
+└── .tmp_uploads/       ← chunk tạm (auto cleanup sau assemble)
+```
+
+13.3. Config
+
+Global (config.json):
+
+```json
+{
+  "module_storage_quota": 536870912
+}
+```
+
+Per-module (init.txt):
+
+```json
+{
+  "module_storage_quota": 134217728
+}
+```
+
+134217728 = 128MB, 536870912 = 512MB.
+
+13.4. Ngưỡng cảnh báo
+
+Mức Điều kiện Hành vi
+ok < 90% Bình thường
+warn ≥ 90% Broadcast WS warning (vàng)
+full ≥ 98% Broadcast WS error (đỏ) + block upload
+
+13.5. Python API cho module
+
+```python
+# Usage info
+usage = self.engine.storage.usage(self.name)
+# → {"used": 12345, "quota": 536870912, "percent": 0.0023,
+#    "status": "ok"|"warn"|"full", "free": 536858567}
+
+# Write/read
+self.engine.storage.write_file(self.name, "cache/x.json", '{"a":1}')
+data = self.engine.storage.read_file(self.name, "cache/x.json")
+
+# List files
+files = self.engine.storage.list_files(self.name, "cache")
+
+# Delete
+self.engine.storage.delete_file(self.name, "cache/x.json")
+
+# Clear all
+self.engine.storage.clear_all(self.name)
+
+# Export ZIP
+result = self.engine.storage.export_zip(self.name)
+# → {"data": b"PK...", "files": 5, "size": 12345}
+
+# Raise
+from core.module_storage import QuotaExceeded, StorageViolation
+```
+
+13.6. HTTP API
+
+Xem §7 → Storage endpoints.
+
+13.7. Serve file trực tiếp
+
+File trong storage có thể serve qua URL tĩnh (với điều kiện file nằm trong storage/files/):
+
+```
+GET /module/<name>/_storage_/image.png
+  → server strip `_storage_/` → serve storage/files/image.png
+```
+
+⚠️ Không có auth — chỉ serve file user upload.
+
+13.8. Quota override pattern
+
+Module có thể check quota trước khi ghi file lớn:
+
+```python
+def upload_big_file(self, req):
+    try:
+        data = req.get("data", "")
+        usage = self.engine.storage.usage(self.name)
+        estimated_size = len(data)
+        if usage["used"] + estimated_size > usage["quota"] * 0.98:
+            return {
+                "ok": False,
+                "error": f"Quota gần đầy: {usage['used']}/{usage['quota']} bytes",
+                "usage": usage,
+            }
+        self.engine.storage.write_file(self.name, "big.bin", data)
+        return {"ok": True, "usage": self.engine.storage.usage(self.name)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 ```
 
 ---
 
-13. Dev workflow
+14. Loading & Restart (v1.4.0) ⭐
 
-Thêm route core (protected)
+14.1. Loading overlay
+
+· Hiện khi App.init() bắt đầu
+· Cập nhật text theo tiến trình: "Khởi tạo…", "Tải projects…", "Tải README…", "Tải modules…"
+· Ẩn sau khi mọi thứ sẵn sàng (~200ms)
+· Style: overlay tối + spinner xanh + text dim
+
+14.2. Restart flow
+
+```
+User click 🔄 Restart (confirm dialog)
+  ↓
+App._showRestartOverlay()  ← overlay 🔄
+  ↓
+POST /api/system/restart
+  ↓
+engine._restart_pending = True
+  ↓
+broadcast {type:"system_restarting"}
+  ↓
+os.execv(main.py) → process restart
+  ↓
+boot() hoàn tất
+  ↓
+broadcast {type:"system_restarted", boot_id}
+  ↓
+app.js: location.reload() (sau 800ms)
+  ↓
+UI mới hoàn chỉnh
+```
+
+14.3. Storage warning toast
+
+Khi nhận storage_warning qua WS:
+
+· warn (≥ 90%): toast vàng góc phải trên, tự ẩn sau 6s
+· error (≥ 98%): toast đỏ, tự ẩn sau 10s
+· Click toast → mở Storage UI của module
+
+14.4. Boot info endpoint
+
+```bash
+curl http://localhost:8765/api/boot
+# {
+#   "ok": true,
+#   "boot_id": "boot_1699999999999",
+#   "version": "1.4.0",
+#   "modules": ["demo_module", "code_reminder"],
+#   "storage_quota": 536870912
+# }
+```
+
+---
+
+15. Dev workflow
+
+15.1. Thêm route core (protected)
 
 Trong core/engine.py → _init_core():
 
@@ -1042,7 +1294,7 @@ A("GET", "/api/my_endpoint", self._api_my_endpoint)
 
 ⚠️ LUÔN dùng add_core — nếu dùng router.add, module có thể override.
 
-Add overlay cho module
+15.2. Add overlay cho module
 
 ```bash
 # File nhỏ
@@ -1056,7 +1308,7 @@ touch modules/my_mod/data/overlay.js
 
 Reload module → overlay tự inject. Test safe mode: /?safe=1.
 
-Trigger diagnostics từ module
+15.3. Trigger diagnostics từ module
 
 ```python
 def diagnose(self, project, path, content):
@@ -1072,7 +1324,7 @@ def diagnose(self, project, path, content):
 
 Save file → nếu settings.diagnostics.auto_run_on_save=true → broadcast qua WS → hiện trong Problems panel + inline markers.
 
-Intercept errors
+15.4. Intercept errors
 
 ```python
 def on_http_error(self, ctx):
@@ -1085,7 +1337,7 @@ def on_http_error(self, ctx):
     }
 ```
 
-Override file (dev only)
+15.5. Override file (dev only)
 
 Đặt .py trong overrides/ → được exec() sau _init_core, trước khi load modules.
 
@@ -1096,19 +1348,31 @@ def patch(engine, sandbox, config, router):
     router.add_core("GET", "/api/dev/debug", lambda req: {"debug": True})
 ```
 
-Thêm nút toolbar mới
+15.6. Dùng Module Storage trong module
 
-1. Thêm <button class="icon-btn" id="myBtn">…</button> vào .top-actions trong index.html
-2. Wire trong app.js → _bind():
+```python
+class Module(ModuleBase):
+    def on_load(self):
+        # Ensure storage ready
+        self.engine.storage.storage_dir(self.name)
 
-```javascript
-const myBtn = document.getElementById("myBtn");
-if (myBtn) myBtn.onclick = () => { /* action */ };
+    def save_cache(self, key, value):
+        import json
+        self.engine.storage.write_file(
+            self.name, f"cache/{key}.json",
+            json.dumps(value)
+        )
+
+    def load_cache(self, key):
+        import json
+        try:
+            data = self.engine.storage.read_file(self.name, f"cache/{key}.json")
+            return json.loads(data.decode("utf-8"))
+        except Exception:
+            return None
 ```
 
-3. Nếu cần disable/enable động → style .icon-btn:disabled { opacity: 0.4 } đã có sẵn trong style.css
-
-Add export cho resource mới (pattern v1.3.6)
+15.7. Add export cho resource mới
 
 Nếu bạn thêm manager mới (vd templates/) và muốn export ZIP tương tự:
 
@@ -1159,16 +1423,17 @@ Frontend:
 exportTemplate: (name) => API.request("/api/templates/export", "POST", { name }),
 
 // app.js — dùng lại helper
-await App.exportTemplate(name);   // tương tự exportProject
+await App.exportTemplate(name);
 ```
 
 ---
 
-14. Testing cheat-sheet
+16. Testing cheat-sheet
 
 ```bash
 # Backend up?
 curl http://localhost:8765/api/status
+curl http://localhost:8765/api/boot
 
 # Module list
 curl http://localhost:8765/api/modules
@@ -1202,52 +1467,96 @@ curl -X POST http://localhost:8765/api/settings \
   -d '{"editor":{"font_size":16}}'
 # → Kiểm tra browser console: WS message `settings_changed` phải tới
 
-# Overlays (xem data/ vs web/)
+# Overlays
 curl http://localhost:8765/api/overlay
 
 # Module static
 curl http://localhost:8765/module/demo_module/
-curl http://localhost:8765/module/my_mod/_data_/overlay.css   # v1.3.1
+curl http://localhost:8765/module/my_mod/_data_/overlay.css
 
-# Terminal (v1.3.2)
+# Terminal
 curl http://localhost:8765/api/terminal/sessions
 
-# ⭐ v1.3.6: Export project / module
+# Export project / module
 curl -X POST http://localhost:8765/api/projects/export \
   -H 'Content-Type: application/json' -d '{"name":"demo"}' \
   | head -c 200
 curl -X POST http://localhost:8765/api/modules/export \
   -H 'Content-Type: application/json' -d '{"name":"demo_module"}' \
   | head -c 200
+
+# ⭐ v1.4.0: Storage
+curl -X POST http://localhost:8765/api/modules/storage/usage \
+  -H 'Content-Type: application/json' -d '{"name":"demo_module"}'
+
+curl -X POST http://localhost:8765/api/modules/storage/list \
+  -H 'Content-Type: application/json' -d '{"name":"demo_module"}'
+
+# Upload 1 chunk nhỏ (giả lập)
+echo -n "hello world" | base64 > /tmp/chunk.b64
+curl -X POST http://localhost:8765/api/modules/storage/upload_chunk \
+  -H 'Content-Type: application/json' \
+  -d "{\"name\":\"demo_module\",\"path\":\"hello.txt\",\"chunk_index\":0,\"total_chunks\":1,\"chunk_b64\":\"$(cat /tmp/chunk.b64)\",\"total_size\":11,\"upload_id\":\"test1\"}"
+
+# Download
+curl -X POST http://localhost:8765/api/modules/storage/download \
+  -H 'Content-Type: application/json' -d '{"name":"demo_module","path":"hello.txt"}'
+
+# Export ZIP
+curl -X POST http://localhost:8765/api/modules/storage/export_zip \
+  -H 'Content-Type: application/json' -d '{"name":"demo_module"}' \
+  | python3 -c "import sys,json,base64; d=json.load(sys.stdin); open('/tmp/storage.zip','wb').write(base64.b64decode(d['zip_base64'])); print('files:', d['files'], 'size:', d['size'])"
+
+unzip -l /tmp/storage.zip
 ```
 
-Test Undo/Redo (⭐ v1.3.3)
+Test Storage UI (browser)
 
-Thủ công trong browser:
+1. Vào tab Modules → click 💾 cạnh module
+2. Xem usage bar (xanh/vàng/đỏ theo %)
+3. Click 📤 Upload file → chọn file → xem progress bar
+4. Click ⬇ trên file row → tải về
+5. Click ⬇ Export ZIP → tải <name>_storage.zip
+6. Click 🗑 Clear all → confirm → storage trống
+
+Test Quota warning
+
+```bash
+# Tạo module test với quota nhỏ
+mkdir -p modules/quick_test
+cat > modules/quick_test/init.txt << 'EOF'
+{
+  "name": "quick_test",
+  "version": "1.0.0",
+  "module_storage_quota": 1048576
+}
+EOF
+cat > modules/quick_test/main.py << 'EOF'
+from core.loader import ModuleBase
+class Module(ModuleBase):
+    pass
+EOF
+
+# Reload → thử upload 900KB → xem toast cảnh báo (≥90%)
+# Upload tiếp 100KB → block (≥98%)
+```
+
+Test Loading & Restart
+
+1. Reload trang → thấy loading overlay
+2. Click 🔄 Restart → thấy overlay 🔄
+3. Đợi ~2s → trang tự reload
+4. Kiểm tra #connDot xanh + output log có "Server restarted"
+
+Test Undo/Redo
 
 1. Mở file A → gõ vài dòng → mở file B → gõ vài dòng
 2. Quay lại tab A → Ctrl+Z → chỉ undo được những gì đã sửa ở A
 3. Ctrl+Z liên tục đến khi hết → nút ↶ tự disable
 4. Ctrl+Y → redo từng bước → nút ↷ tự disable khi hết
 5. Sửa 1 dòng → Ctrl+S → dấu ● biến mất → Ctrl+Z → dấu ● xuất hiện lại
-6. Undo tiếp về trước bước save → dấu ● vẫn còn (vì content khác last saved)
+6. Undo tiếp về trước bước save → dấu ● vẫn còn
 7. Redo về đúng trạng thái đã lưu → dấu ● tự biến mất
-
-Test Export/Import ZIP (⭐ v1.3.6)
-
-1. Tạo project "demo" với vài file (vd main.py, src/utils.py)
-2. Tab Projects → click ⬇ cạnh "demo" → browser tải demo.zip
-3. Verify: unzip -l ~/Downloads/demo.zip → phải thấy demo/main.py, demo/src/utils.py
-4. Xoá project "demo" (long-press hoặc chuột phải → Delete)
-5. Tab Projects → 📤 → chọn demo.zip vừa tải → nhập tên "demo"
-6. Verify: project restored, mở src/utils.py → nội dung y nguyên
-7. Lặp lại tương tự với module trong tab Modules
-
-Round-trip integrity:
-
-· Mở rộng: sau khi re-import, chạy md5sum so sánh file gốc vs file import → phải giống
-· Nếu module có data/settings.json → export → import → settings vẫn còn
-· Nếu module có web/overlay.css → export → import → overlay vẫn inject (F12 → Network → thấy /module/.../overlay.css)
 
 Reset khi kẹt
 
@@ -1256,41 +1565,45 @@ pkill -f "python main.py"
 fuser -k 8765/tcp
 rm core/data/.run_pids.json
 rm core/data/settings.json
-# Diagnostics cache: restart server
+# Storage cache: xoá thủ công từng module
+rm -rf modules/*/storage/.tmp_uploads
 ```
 
 ---
 
-15. Troubleshooting
+17. Troubleshooting
 
 Vấn đề Nguyên nhân Fix
-Undo/redo không hoạt động Focus trong input/modal Click vào editor rồi thử lại — hotkey chỉ fire khi focus ngoài editor hoặc trong editor
-Undo mất history khi đổi tab Code cũ dùng setValue ✅ v1.3.3 đã fix bằng swapDoc — hard-reload để lấy code mới
-Dirty ● không biến mất sau undo So sánh string thất bại (line ending?) Kiểm tra file có CRLF không; nếu có, xem xét normalize khi save
-Android: Backspace không xoá dòng cuối CM5 + contenteditable không merge dòng ở soft keyboard ✅ v1.3.2 đã fix (_fixAndroidLineMerge) — nếu vẫn lỗi, hard-reload
-Settings lưu nhưng không áp dụng Thiếu listener settings_changed ✅ v1.3.2 đã fix — kiểm tra DevTools console có WS settings_changed
-Theme chọn "light"/"dark" không đổi Không phải theme CM5 hợp lệ ✅ v1.3.2 đổi sang dracula/default/material/monokai/solarized/eclipse
-Auto-wrap bật dù đã tắt Settings cũ còn line_wrap: true Vào Settings → Editor → bỏ tick "Line wrap" (apply ngay)
+Undo/redo không hoạt động Focus trong input/modal Click vào editor rồi thử lại
+Undo mất history khi đổi tab Code cũ dùng setValue Hard-reload để lấy code mới (v1.3.3 fix bằng swapDoc)
+Dirty ● không biến mất sau undo So sánh string thất bại (line ending?) Kiểm tra file có CRLF không
+Android: Backspace không xoá dòng cuối CM5 + contenteditable v1.3.2 đã fix (_fixAndroidLineMerge)
+Settings lưu nhưng không áp dụng Thiếu listener settings_changed v1.3.2 đã fix
+Theme chọn "light"/"dark" không đổi Không phải theme CM5 hợp lệ Đổi sang dracula/default/material/monokai/solarized/eclipse
+Auto-wrap bật dù đã tắt Settings cũ còn line_wrap: true Vào Settings → Editor → bỏ tick
 Overlay CSS không load File đặt sai chỗ data/ hoặc web/, tên overlay.css / override.css
-Overlay JS lỗi "not found" init.txt khai overlay field ⚠️ Không khai nữa — loader tự detect
-Module route bị reject Trùng core route Đổi path, đừng override /api/status, /api/projects/*
+Module route bị reject Trùng core route Đổi path, không override /api/status, /api/projects/*
 get_settings() trả về {} Chưa có settings_schema Khai báo schema trong init.txt
 Fold không hoạt động trên JS Thiếu addon Check index.html có load brace-fold.min.js
 Process treo khi disconnect auto_stop_on_disconnect=false Đặt true trong config.json
-Terminal không mở được Trình duyệt chặn WS / chưa load xterm.js Kiểm tra console: [Terminal] xterm.js not loaded? CDN bị chặn?
-Terminal mở nhưng không có prompt WS chưa kết nối Kiểm tra connDot xanh; nút ⟳ restart session
-Terminal bị "Terminal limit reached" Đã đủ max_sessions Tăng terminal.max_sessions trong config.json
-Terminal không auto-close khi tab đóng Session gắn với WS, không phải tab Đóng bằng nút 🗑, hoặc refresh trang (WS disconnect → kill session)
-Export nút ⬇ không hiện Code frontend cũ (chưa update app.js/explorer.js) Hard-reload (Ctrl+Shift+R) để lấy bundle mới — v1.3.6 mới có nút
-Export trả 404 Backend chưa update (không có route /api/*/export) Restart server — route khai báo trong _init_core() v1.3.6
-ZIP export rỗng (0 files) Project/module thực sự rỗng, hoặc chỉ có __pycache__/.pyc Tạo ít nhất 1 file user-facing (vd README.md) trước khi export
-Import ZIP export bị "already installed" Module/project cùng tên đã tồn tại Uninstall/delete trước, hoặc đổi tên khi upload
-ZIP tải về bị hỏng / không mở được Base64 bị truncate (network, proxy) Kiểm tra res.files > 0, download lại; nếu lặp lại → xem Network tab kích thước response
-Export module lớn chậm ZIP_DEFLATED compress CPU-bound với file lớn (node_modules, .venv) Bình thường; hoặc exclude những thư mục đó khỏi export bằng cách sửa export_module_zip → thêm dirs[:] = [d for d in dirs if d not in ("node_modules", ".venv")]
+Terminal không mở được CDN chặn xterm.js Kiểm tra console: [Terminal] xterm.js not loaded
+Terminal "limit reached" Đã đủ max_sessions Tăng terminal.max_sessions
+Export nút ⬇ không hiện Code frontend cũ Hard-reload (Ctrl+Shift+R)
+Export trả 404 Backend chưa update Restart server (route khai báo trong _init_core)
+ZIP export rỗng (0 files) Project/module rỗng Tạo ít nhất 1 file user-facing
+Import báo "already installed" Module cùng tên tồn tại Uninstall/delete trước, hoặc đổi tên khi upload
+Storage upload báo "QuotaExceeded" ≥ 98% quota Xoá file cũ / clear all
+Storage upload 400 Thiếu upload_id hoặc chunk_b64 Check payload JSON
+Storage file không list được Path escape hoặc file không tồn tại Verify path không có ../
+Storage warning không hiện WS chưa kết nối Check #connDot xanh; thử refresh
+Loading overlay không ẩn JS error trước _hideLoading() Check DevTools console
+Restart không reload trang WS system_restarted không tới Check Network tab → WS frames
+Module storage chiếm nhiều disk File user upload không dọn Dùng UI 💾 → Clear all
+Export module ZIP chứa .tmp_uploads Chunk chưa cleanup v1.4.0 đã exclude; nếu còn → check export_module_zip filters
 
 ---
 
-16. Known issues / Roadmap
+18. Known issues / Roadmap
 
 🔴 Cần test kỹ
 
@@ -1300,10 +1613,13 @@ Export module lớn chậm ZIP_DEFLATED compress CPU-bound với file lớn (nod
 · ☐ Diagnostics: auto-run on save, inline markers, jump-to-line
 · ☐ Core route protection: module cố override /api/status phải bị reject
 · ☐ Folding: Python nested functions, JS template strings
-· ☐ Android: Samsung Internet, Firefox mobile (fix backspace v1.3.2)
-· ☐ Terminal: Windows pipes (không có PTY), copy/paste trên mobile, ZMODEM
+· ☐ Android: Samsung Internet, Firefox mobile
+· ☐ Terminal: Windows pipes (không có PTY), copy/paste mobile, ZMODEM
 · ☐ Undo/Redo: selection state sau swapDoc, fold state per-tab, IME composition
 · ☐ Export: symlink handling, project lớn (> 100MB), concurrent export
+· ☐ Storage: quota edge case (upload vượt 100%, concurrent upload)
+· ☐ Storage: file > 200MB (giới hạn frontend)
+· ☐ Storage: Windows path handling
 
 🟢 Nice to have
 
@@ -1315,34 +1631,38 @@ Export module lớn chậm ZIP_DEFLATED compress CPU-bound với file lớn (nod
 · ☐ Per-file fold state persistence (localStorage)
 · ☐ Terminal scrollback persistence
 · ☐ Terminal split panes
-· ☐ Export: chọn subset file (checkbox tree) thay vì export toàn bộ
+· ☐ Export: chọn subset file (checkbox tree)
 · ☐ Export: .tar.gz option
 · ☐ Export: server-side save to disk (không cần base64 round-trip)
+· ☐ Storage: file preview (image, text)
+· ☐ Storage: folder upload
+· ☐ Storage: share link (temporary token)
+· ☐ Storage: quota dashboard toàn hệ thống
 
 Roadmap
 
-v1.3.x — polish
+v1.4.x — polish
 
 · Test suite (pytest cho core, playwright cho frontend)
 · Docs: error dispatch chain + 3 module examples ✅
 · Diagnostics: severity filter trong UI
-· Undo/Redo: test edge cases, fold state per-tab ✅
-· Export: round-trip test ✅
+· Storage: file preview (image/text)
+· Storage: quota dashboard
 
-v1.4.0 — developer experience
+v1.5.0 — developer experience
 
-· Hot reload module (watch modules//main.py + data/.css|js)
-· Project export ✅ (v1.3.6)
+· Hot reload module (watch modules/*/main.py + data/*.css|js)
 · Preview HTML project (/preview/<project>/)
 · Terminal: multiple tabs
 · Undo history persistence qua sessionStorage
 · Multi-cursor editing (giống VS Code Alt+Click)
 · Export: stream download (không buffer toàn bộ vào RAM)
+· Storage: folder upload + drag & drop
 
 v2.0.0 — scale
 
 · Multi-user + auth
-· Collaborative editing (WS) — conflict resolution + operation transform
+· Collaborative editing (WS) — conflict resolution + OT
 · Docker isolation per project
 · Resource limits
 · Terminal sandbox (Docker exec)
@@ -1350,33 +1670,42 @@ v2.0.0 — scale
 
 ---
 
-17. Legal
+19. Legal
 
 Educational / personal use. Không cài module từ nguồn không tin cậy — module có toàn quyền Python. Không chạy server bằng sudo. Terminal chạy với quyền user server — cẩn trọng khi expose ra mạng LAN/WAN.
+
+Module Storage không có authentication — chỉ serve file user upload. Không lưu dữ liệu nhạy cảm.
 
 ```
 
 ---
 
-## 📌 Tóm tắt những gì đã đổi trong README v1.3.6
+## 📌 Tóm tắt những gì đã thay đổi trong README v1.4.0
 
 | Mục | Nội dung mới |
 |---|---|
-| **Header** | Version `1.3.6`, thêm "export/import ZIP" |
-| **§1 Status** | Thêm 3 dòng: Module watcher, System controls, **Export Project/Module ZIP** |
-| **§3 Cấu trúc** | Note `api.js`, `explorer.js`, `app.js` v1.3.6; note `loader.py` có export |
-| **§4 Architecture** | Thêm **luồng Export ZIP** + **luồng Import ZIP** |
-| **§6 Bước 6** | Chia 2 cách package: **Export từ UI** ⭐ v1.3.6 (cách A) + zip thủ công (cách B) |
-| **§7 API Reference** | Thêm 2 endpoint: `/api/projects/export`, `/api/modules/export`; thêm subsection **System** (v1.3.5) |
-| **§8 WS Protocol** | Thêm `modules_changed`, `system_restarting`, `system_shutdown` |
-| **§12 Export / Import ZIP** ⭐ | **Section hoàn toàn mới** — thao tác, nội dung ZIP, round-trip, response shape, bảo mật, test nhanh |
-| **§13 Dev workflow** | Đổi số từ §12; thêm pattern mẫu "Add export cho resource mới" |
-| **§14 Testing** | Đổi số từ §13; thêm curl export + **test cases round-trip** (7 bước) |
-| **§15 Troubleshooting** | Đổi số từ §14; thêm 6 dòng về export (404, empty ZIP, already installed, corrupted ZIP, slow export) |
-| **§16 Roadmap** | Đổi số từ §15; thêm nice-to-have export (subset, tar.gz, stream); note `Project export` → ✅ v1.3.6 |
-| **§17 Legal** | Đổi số từ §16 (nội dung giữ nguyên) |
+| **Header** | Version `1.4.0`, thêm "module storage với quota 512MB" |
+| **§1 Status** | Thêm 4 dòng: Module Storage, Loading overlay, Restart refresh UI, Storage warning toast |
+| **§3 Cấu trúc** | Thêm `core/module_storage.py`, `frontend/js/storage_ui.js`, `modules/<name>/storage/` (3 sub-dir) |
+| **§4 Architecture** | Thêm luồng **Module Storage** + **Loading & Restart**, cập nhật `ModuleStorage` trong engine |
+| **§5 Module Contract** | ⭐ Thêm **[§5.7 Module Storage](#57-module-storage-)** — Python API, quota, exception, UI |
+| **§6 Tạo module** | Bước 1 thêm `storage/`, Bước 5 thêm test storage |
+| **§7 API Reference** | Thêm 7 storage endpoints + `/api/boot`; note `_storage_/` static path |
+| **§8 WS Protocol** | Thêm `storage_warning`, `system_restarted` |
+| **§9 Frontend** | Thêm §9.6 Loading overlay, §9.7 Storage UI |
+| **§13 Module Storage** ⭐ | **Section hoàn toàn mới** — tổng quan, cấu trúc, config, ngưỡng, Python API, HTTP API, serve file, quota override pattern |
+| **§14 Loading & Restart** ⭐ | **Section hoàn toàn mới** — loading flow, restart flow, storage warning toast, boot info endpoint |
+| **§15 Dev workflow** | Thêm §15.6 dùng Storage trong module, đánh số lại các mục |
+| **§16 Testing** | Thêm curl storage + test quota + test loading/restart + reset `.tmp_uploads` |
+| **§17 Troubleshooting** | Thêm 8 dòng về storage + loading/restart |
+| **§18 Roadmap** | Thêm nice-to-have storage (file preview, folder upload, share link, quota dashboard); note storage edge cases cần test |
+| **§19 Legal** | Thêm note storage không auth |
 
 **Điểm nhấn quan trọng:**
-- ⭐ **Section §12 là trung tâm** — mô tả đầy đủ API, round-trip, bảo mật, test
-- **Round-trip hoàn hảo**: ZIP export → upload lại → restored 100% (cả project lẫn module)
-- **Pattern tái sử dụng** trong §13 → dễ mở rộng export cho resource mới (templates, snippets…)
+
+- ⭐ **§5.7 + §13 là trung tâm** — mô tả đầy đủ Python API, HTTP API, quota, cảnh báo, UI
+- **Quota 512MB** mặc định, override per-module qua `init.txt`
+- **Ngưỡng**: ≥ 90% warn, ≥ 98% block
+- **Chunked upload** 4MB/chunk, hỗ trợ tới 200MB/file
+- **Loading & Restart** — UX mượt, tự reload sau restart
+- **Pattern tái sử dụng** trong §15.7 → dễ mở rộng export cho resource mới

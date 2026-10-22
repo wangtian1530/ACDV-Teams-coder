@@ -4,14 +4,43 @@ const App = {
   _promptResolve: null,
   _run: { project: null, path: null, running: false },
 
+  _showLoading(text) {
+    let el = document.getElementById("appLoadingOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "appLoadingOverlay";
+      el.className = "app-loading-overlay";
+      el.innerHTML = `
+        <div class="app-loading-spinner"></div>
+        <div class="app-loading-text" id="appLoadingText">Loading…</div>
+      `;
+      document.body.appendChild(el);
+    }
+    const t = document.getElementById("appLoadingText");
+    if (t && text) t.textContent = text;
+    el.classList.remove("hidden");
+  },
+
+  _hideLoading() {
+    const el = document.getElementById("appLoadingOverlay");
+    if (el) el.classList.add("hidden");
+  },
+
+  _updateLoading(text) {
+    const el = document.getElementById("appLoadingText");
+    if (el && text) el.textContent = text;
+  },
+
   async init() {
+    this._showLoading("Khởi tạo ứng dụng…");
+
     this.editor = new EditorManager();
     this.editor.init();
 
     this.ws = new WSClient();
     this.ws.on("open", () => {
       this._setOnline(true);
-      this._hideRestartOverlay();   // ⭐ v1.3.5: WS reconnect sau restart
+      this._hideRestartOverlay();
       this._refreshRunStatus();
       if (window.TerminalUI) window.TerminalUI.onReconnect();
       if (this.editor && typeof this.editor.loadSettings === "function") {
@@ -35,7 +64,13 @@ const App = {
       }
     });
 
-    // ⭐ v1.3.5: module auto-detect broadcast
+    this.ws.on("storage_warning", (m) => {
+      if (!m) return;
+      const sev = m.severity === "error" ? "error" : "success";
+      this.log(m.message || "Storage warning", sev);
+      this._showStorageWarningToast(m);
+    });
+
     this.ws.on("modules_changed", (m) => {
       const action = (m && m.action) || "changed";
       const name = (m && m.module) || "";
@@ -53,6 +88,15 @@ const App = {
     this.ws.on("system_restarting", () => {
       this._showRestartOverlay();
     });
+
+    this.ws.on("system_restarted", (m) => {
+      this.log(`✓ Server restarted (boot ${m.boot_id || "?"}) — reload UI…`, "success");
+      this._updateLoading("Server đã restart — đang tải lại UI…");
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    });
+
     this.ws.on("system_shutdown", () => {
       this._showShutdownOverlay();
     });
@@ -78,7 +122,7 @@ const App = {
         "color:#fff;padding:8px 16px;border-radius:4px;z-index:100000;" +
         "font:13px sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);";
       document.body.appendChild(t);
-      setTimeout(() => t.remove(), 3000);
+      setTimeout(() => t.remove(), 4000);
     };
 
     window.AppEditor = {
@@ -96,8 +140,25 @@ const App = {
 
     this.ws.connect();
 
+    // ⭐ v1.4.1 FIX: global keydown — thêm fold keys xử lý TRƯỚC Ctrl+Z
     document.addEventListener("keydown", (e) => {
       const mod = e.ctrlKey || e.metaKey;
+
+      // ⭐ v1.4.1: Ctrl-Shift-[ / Ctrl-Shift-] = Fold / Unfold all
+      if (mod && e.shiftKey) {
+        const code = e.code || "";
+        const key = e.key || "";
+        if (code === "BracketLeft" || key === "[" || key === "{") {
+          e.preventDefault();
+          if (this.editor) this.editor.foldAll();
+          return;
+        }
+        if (code === "BracketRight" || key === "]" || key === "}") {
+          e.preventDefault();
+          if (this.editor) this.editor.unfoldAll();
+          return;
+        }
+      }
 
       if (mod && e.key.toLowerCase() === "s") {
         e.preventDefault();
@@ -137,8 +198,12 @@ const App = {
       document.getElementById("bottomPanel").classList.add("collapsed");
     }
 
+    this._updateLoading("Tải projects…");
     await Explorer.loadProjects();
-    await this._loadWelcomeReadme();   // ⭐ NEW: nạp README cho Welcome screen
+    this._updateLoading("Tải README…");
+    await this._loadWelcomeReadme();
+    this._updateLoading("Tải modules…");
+    await this.loadModules();
     this.log("ACDV-Teams Coder ready.");
     try {
       const s = await fetch("/api/status").then(r => r.json());
@@ -149,9 +214,40 @@ const App = {
     setTimeout(() => {
       if (window.DiagnosticsUI) window.DiagnosticsUI.refreshAll();
     }, 500);
+
+    setTimeout(() => this._hideLoading(), 200);
   },
 
-  // ⭐ NEW: Welcome screen — render README.md
+  _showStorageWarningToast(m) {
+    const usage = m.usage || {};
+    const usedMB = ((usage.used || 0) / (1024 * 1024)).toFixed(1);
+    const quotaMB = ((usage.quota || 0) / (1024 * 1024)).toFixed(0);
+    const t = document.createElement("div");
+    const isError = m.severity === "error";
+    t.innerHTML = `
+      <div style="font-weight:600;margin-bottom:4px;">
+        ${isError ? "⛔ Storage gần đầy" : "⚠️ Storage warning"}
+      </div>
+      <div>Module: <b>${this._escapeHtml(m.module || "?")}</b></div>
+      <div>Đã dùng: ${usedMB} MB / ${quotaMB} MB</div>
+      <div style="margin-top:6px;font-size:11px;opacity:0.9;">
+        ${isError ? "Cần xoá file để upload tiếp." : "Nên giải phóng bớt dung lượng."}
+      </div>
+    `;
+    t.style.cssText =
+      "position:fixed;top:20px;right:20px;" +
+      `background:${isError ? "#a72f2f" : "#8f6b00"};` +
+      "color:#fff;padding:12px 18px;border-radius:8px;z-index:100001;" +
+      "font:13px -apple-system,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.5);" +
+      "max-width:320px;line-height:1.5;cursor:pointer;";
+    t.onclick = () => {
+      if (window.StorageUI) StorageUI.open(m.module);
+      t.remove();
+    };
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), isError ? 10000 : 6000);
+  },
+
   async _loadWelcomeReadme() {
     const el = document.getElementById("welcomeReadme");
     if (!el) return;
@@ -167,7 +263,6 @@ const App = {
         el.innerHTML = window.marked.parse(content, { gfm: true, breaks: false });
         this._wireReadmeAnchors(el);
       } else {
-        // Fallback nếu CDN marked.js không load được
         el.innerHTML = `<pre class="welcome-raw">${this._escapeHtml(content)}</pre>`;
       }
     } catch (e) {
@@ -229,7 +324,6 @@ const App = {
       if (el) el.onclick = openModal;
     });
 
-    // ⭐ NEW: refresh README button
     const refreshReadmeBtn = document.getElementById("refreshReadmeBtn");
     if (refreshReadmeBtn) {
       refreshReadmeBtn.onclick = () => this._loadWelcomeReadme();
@@ -302,7 +396,6 @@ const App = {
       if (window.SettingsUI) window.SettingsUI.open("about");
     };
 
-    // ⭐ v1.3.5: system controls
     const restartBtn = document.getElementById("restartBtn");
     if (restartBtn) restartBtn.onclick = () => this.restartServer();
     const shutdownBtn = document.getElementById("shutdownBtn");
@@ -469,13 +562,12 @@ const App = {
     mirror();
   },
 
-  // ⭐ v1.3.5: Restart / Shutdown
   async restartServer() {
     const ok = confirm(
       "🔄 Khởi động lại server?\n\n" +
       "• Mọi process đang chạy sẽ bị dừng\n" +
       "• Terminal session sẽ đóng\n" +
-      "• Trang sẽ tự kết nối lại sau vài giây\n\nTiếp tục?"
+      "• Trang sẽ tự tải lại sau khi server sẵn sàng\n\nTiếp tục?"
     );
     if (!ok) return;
     try {
@@ -488,10 +580,7 @@ const App = {
         headers: { "Content-Type": "application/json" },
         body: "{}",
       }).then(r => r.json());
-    } catch (e) {
-      // Connection drop là bình thường
-    }
-    // WS auto-reconnect sẽ ẩn overlay
+    } catch (e) {}
   },
 
   async shutdownServer() {
@@ -506,7 +595,6 @@ const App = {
       this.log("⏻ Shutting down server…", "success");
     } catch (e) {}
 
-    // Ngăn WS auto-reconnect
     if (this.ws) {
       this.ws.allowReconnect = false;
       try { if (this.ws.socket) this.ws.socket.close(); } catch (e) {}
@@ -533,7 +621,7 @@ const App = {
       el.innerHTML = `
         <div id="restartSpinner" style="font-size:56px;">🔄</div>
         <div style="font-size:18px;font-weight:600;">Đang khởi động lại server…</div>
-        <div style="font-size:12px;color:#888;">Trang sẽ tự kết nối lại khi server sẵn sàng</div>
+        <div style="font-size:12px;color:#888;">Trang sẽ tự tải lại khi server sẵn sàng</div>
       `;
       document.body.appendChild(el);
       const style = document.createElement("style");
@@ -571,7 +659,6 @@ const App = {
     el.style.display = "flex";
   },
 
-  // ⭐ NEW: helper download base64 ZIP
   _downloadBase64(base64, filename) {
     const bin = atob(base64);
     const bytes = new Uint8Array(bin.length);
@@ -587,7 +674,6 @@ const App = {
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   },
 
-  // ⭐ NEW: export project ZIP
   async exportProject(name) {
     if (!name) return;
     try {
@@ -603,7 +689,6 @@ const App = {
     }
   },
 
-  // ⭐ NEW: export module ZIP
   async exportModule(name) {
     if (!name) return;
     try {
@@ -1021,8 +1106,30 @@ const App = {
         ver.className = "module-version";
         ver.textContent = `v${meta.version || "?"}`;
 
+        const usage = meta.storage_usage;
+        if (usage) {
+          const pct = Math.min(100, usage.percent || 0);
+          const cls = usage.status === "full" ? "danger"
+                    : usage.status === "warn" ? "warn" : "ok";
+          const mini = document.createElement("div");
+          mini.className = "module-storage-mini";
+          mini.title = `Storage: ${(usage.used / (1024*1024)).toFixed(1)}MB / ${(usage.quota / (1024*1024)).toFixed(0)}MB (${pct.toFixed(1)}%)`;
+          mini.innerHTML = `<div class="mini-bar"><div class="mini-fill ${cls}" style="width:${pct}%"></div></div>`;
+          li.appendChild(mini);
+        }
+
         const actions = document.createElement("div");
         actions.className = "module-actions";
+
+        const storageBtn = document.createElement("button");
+        storageBtn.className = "icon-btn small";
+        storageBtn.title = "Module storage (upload/download files)";
+        storageBtn.textContent = "💾";
+        storageBtn.onclick = (ev) => {
+          ev.stopPropagation();
+          if (window.StorageUI) StorageUI.open(name);
+        };
+        actions.appendChild(storageBtn);
 
         if (meta.has_web_ui) {
           const b = document.createElement("button");
@@ -1036,7 +1143,6 @@ const App = {
           actions.appendChild(b);
         }
 
-        // ⭐ NEW: download module ZIP
         const exportBtn = document.createElement("button");
         exportBtn.className = "icon-btn small";
         exportBtn.title = "Download module as ZIP";
@@ -1069,7 +1175,7 @@ const App = {
         del.textContent = "🗑";
         del.onclick = async (ev) => {
           ev.stopPropagation();
-          if (!confirm(`Uninstall module "${name}"?`)) return;
+          if (!confirm(`Uninstall module "${name}"?\nStorage cũng sẽ bị xoá.`)) return;
           try {
             await API.uninstallModule(name);
             this.log(`✓ Uninstalled ${name}`, "success");

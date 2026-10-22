@@ -1,11 +1,13 @@
 {
   "name": "md_parser",
-  "version": "1.0.0",
-  "description": "Module upload file Markdown để bóc tách tên file và mã nguồn tự động",
+  "version": "1.2.0",
+  "author": "ACDV-Teams",
+  "description": "ACDV-Teams Module — Upload file Markdown, tự động bóc tách tên file + cấu trúc thư mục, tái tạo cây thư mục và nén ZIP tải 1 phát.",
   "critical": false,
 
   "routes": [
-    { "method": "POST", "path": "/api/md_parser/parse", "handler": "parse_markdown" }
+    { "method": "POST", "path": "/api/md_parser/parse",        "handler": "parse_markdown" },
+    { "method": "POST", "path": "/api/md_parser/download_zip", "handler": "download_zip" }
   ],
 
   "ui_buttons": [
@@ -20,10 +22,15 @@
   ],
 
   "settings_schema": {
-    "enabled": { "type": "boolean", "default": true, "label": "Bật Module MD Parser" }
+    "enabled": { "type": "boolean", "default": true, "label": "Bật Module MD Parser (ACDV-Teams)" }
   },
 
-  "diagnostics": {
-    "files": []
+  "diagnostics": { "files": [] },
+
+  "branding": {
+    "provider": "ACDV-Teams",
+    "module": "MD Code Extractor & Zip Builder",
+    "version": "1.2.0",
+    "copyright": "© ACDV-Teams Module"
   }
 }

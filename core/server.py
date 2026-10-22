@@ -1,11 +1,14 @@
 """HTTP + WebSocket server written from scratch on raw sockets.
 
 v1.3.2:
-  - Terminal over WebSocket (`terminal_open`, `terminal_input`,
-    `terminal_resize`, `terminal_close`).
-  - Auto close terminals owned by a disconnected ws.
+  - Terminal over WebSocket.
+v1.3.7:
+  - HTTPS / WSS support.
+v1.4.0:
+  - Không đổi core protocol; storage đi qua HTTP API.
 """
 import os
+import ssl
 import struct
 import time
 import json
@@ -14,6 +17,7 @@ import base64
 import hashlib
 import mimetypes
 import threading
+import subprocess
 import urllib.parse
 import traceback
 
@@ -102,15 +106,84 @@ class HttpWsServer:
         self.running = False
         self.ws_clients = []
         self.ws_lock = threading.Lock()
+        self.ssl_context = None
+        self._is_https = False
+
+    def _setup_ssl(self):
+        ssl_cfg = self.engine.config.get("ssl") or {}
+        if not ssl_cfg.get("enabled"):
+            return
+
+        cert_file = ssl_cfg.get("cert_file") or "core/data/certs/cert.pem"
+        key_file = ssl_cfg.get("key_file") or "core/data/certs/key.pem"
+
+        if not os.path.isabs(cert_file):
+            cert_file = os.path.join(self.engine.base_dir, cert_file)
+        if not os.path.isabs(key_file):
+            key_file = os.path.join(self.engine.base_dir, key_file)
+
+        if not os.path.isfile(cert_file) or not os.path.isfile(key_file):
+            if ssl_cfg.get("auto_generate", True):
+                self._generate_self_signed(cert_file, key_file)
+            else:
+                raise Exception(
+                    f"SSL enabled but cert/key not found: {cert_file}, {key_file}"
+                )
+
+        try:
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(certfile=cert_file, keyfile=key_file)
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+            self.ssl_context = ctx
+            self._is_https = True
+            print(f"[Server] ✓ TLS enabled (cert={cert_file})")
+        except Exception as e:
+            raise Exception(f"SSLContext init failed: {e}")
+
+    def _generate_self_signed(self, cert_file, key_file):
+        os.makedirs(os.path.dirname(cert_file), exist_ok=True)
+        os.makedirs(os.path.dirname(key_file), exist_ok=True)
+        cmd = [
+            "openssl", "req", "-x509",
+            "-newkey", "rsa:2048",
+            "-keyout", key_file,
+            "-out", cert_file,
+            "-days", "365",
+            "-nodes",
+            "-sha256",
+            "-subj", "/CN=localhost",
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, timeout=30)
+        except FileNotFoundError:
+            raise Exception(
+                "openssl not found — cannot auto-generate self-signed cert. "
+                "Install openssl or provide ssl.cert_file / ssl.key_file manually."
+            )
+        except subprocess.TimeoutExpired:
+            raise Exception("openssl timed out generating self-signed cert")
+
+        if result.returncode != 0:
+            err = (result.stderr or b"").decode("utf-8", errors="replace").strip()
+            raise Exception(f"openssl failed (exit {result.returncode}): {err}")
+
+        print(f"[Server] ✓ generated self-signed cert: {cert_file}")
 
     def start(self):
+        self._setup_ssl()
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind((self.host, self.port))
         self.sock.listen(64)
         self.running = True
         threading.Thread(target=self._accept_loop, daemon=True).start()
-        print(f"[Server] ✓ listening on http://{self.host}:{self.port}")
+
+        protocol = "https" if self._is_https else "http"
+        ws_protocol = "wss" if self._is_https else "ws"
+        print(f"[Server] ✓ listening on {protocol}://{self.host}:{self.port}")
+        if self._is_https:
+            print(f"[Server] ✓ WebSocket: {ws_protocol}://{self.host}:{self.port}")
 
     def stop(self):
         self.running = False
@@ -120,23 +193,43 @@ class HttpWsServer:
     def _accept_loop(self):
         while self.running:
             try:
-                client, addr = self.sock.accept()
-                threading.Thread(target=self._handle_client,
-                                 args=(client, addr), daemon=True).start()
+                raw_client, addr = self.sock.accept()
             except Exception:
                 if not self.running:
                     break
+                continue
+
+            client = raw_client
+            if self.ssl_context is not None:
+                try:
+                    raw_client.settimeout(10)
+                    client = self.ssl_context.wrap_socket(
+                        raw_client, server_side=True,
+                    )
+                except ssl.SSLError as e:
+                    print(f"[Server] TLS handshake failed {addr}: {e}")
+                    try: raw_client.close()
+                    except Exception: pass
+                    continue
+                except Exception as e:
+                    print(f"[Server] TLS wrap error {addr}: {e}")
+                    try: raw_client.close()
+                    except Exception: pass
+                    continue
+
+            threading.Thread(target=self._handle_client,
+                             args=(client, addr), daemon=True).start()
 
     def _handle_client(self, client, addr):
         try:
-            client.settimeout(60)
+            client.settimeout(120)
             data = b""
             while b"\r\n\r\n" not in data:
                 chunk = client.recv(4096)
                 if not chunk:
                     client.close(); return
                 data += chunk
-                if len(data) > 2 * 1024 * 1024:
+                if len(data) > 4 * 1024 * 1024:
                     client.close(); return
 
             header_data, _, body = data.partition(b"\r\n\r\n")
@@ -157,7 +250,7 @@ class HttpWsServer:
 
             clen = int(headers.get("content-length", "0") or "0")
             while len(body) < clen:
-                chunk = client.recv(4096)
+                chunk = client.recv(65536)
                 if not chunk:
                     break
                 body += chunk
@@ -259,6 +352,9 @@ class HttpWsServer:
         if rest.startswith("_data_/"):
             source = "data"
             rest = rest[len("_data_/"):]
+        elif rest.startswith("_storage_/"):
+            source = "storage/files"
+            rest = rest[len("_storage_/"):]
 
         source_dir = os.path.join(self.engine.base_dir, "modules", module_name, source)
         if not os.path.isdir(source_dir):
@@ -304,7 +400,7 @@ class HttpWsServer:
         except Exception:
             pass
         try:
-            client.settimeout(120)
+            client.settimeout(300)
         except Exception:
             pass
 
@@ -318,7 +414,8 @@ class HttpWsServer:
         ws = WebSocketConnection(client, client.getpeername())
         with self.ws_lock:
             self.ws_clients.append(ws)
-        print(f"[WS] + {ws.addr}  (clients: {len(self.ws_clients)})")
+        scheme = "wss" if self._is_https else "ws"
+        print(f"[{scheme.upper()}] + {ws.addr}  (clients: {len(self.ws_clients)})")
 
         try:
             while not ws.closed:
@@ -334,21 +431,20 @@ class HttpWsServer:
                 elif opcode == 0x1:
                     self._handle_ws_message(ws, payload.decode("utf-8", errors="replace"))
         except Exception as e:
-            print(f"[WS] error: {e}")
+            print(f"[{scheme.upper()}] error: {e}")
         finally:
             with self.ws_lock:
                 if ws in self.ws_clients:
                     self.ws_clients.remove(ws)
                 no_clients = len(self.ws_clients) == 0
             ws.close()
-            print(f"[WS] - {ws.addr}  (clients: {len(self.ws_clients)})")
+            print(f"[{scheme.upper()}] - {ws.addr}  (clients: {len(self.ws_clients)})")
 
-            # ⭐ v1.3.2: kill terminals owned by this ws
             try:
                 if hasattr(self.engine, "terminal"):
                     self.engine.terminal.close_by_ws(ws)
             except Exception as e:
-                print(f"[WS] terminal cleanup error: {e}")
+                print(f"[{scheme.upper()}] terminal cleanup error: {e}")
 
             if no_clients and self.engine.config.get("auto_stop_on_disconnect", True):
                 threading.Thread(
@@ -492,7 +588,6 @@ class HttpWsServer:
                                   "module": module_name, "button_id": button_id,
                                   "ok": False, "error": str(e)})
 
-        # ⭐ v1.3.2: terminal WS protocol
         elif mtype == "terminal_open":
             term_id = msg.get("id")
             if not term_id:

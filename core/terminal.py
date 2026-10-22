@@ -1,10 +1,4 @@
-"""Terminal session manager — spawn shell with PTY (POSIX) or pipes (Windows).
-
-v1.3.2:
-  - Mỗi session gắn với một WebSocket cụ thể (ws), output chỉ gửi cho client đó.
-  - Auto cleanup khi WS disconnect.
-  - Hỗ trợ resize (TIOCSWINSZ + SIGWINCH).
-"""
+"""Terminal session manager — spawn shell with PTY (POSIX) or pipes (Windows)."""
 import os
 import subprocess
 import threading
