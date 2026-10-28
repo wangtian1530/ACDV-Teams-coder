@@ -1,0 +1,59 @@
+Mở: **http://localhost:8000**
+
+## 🎮 Điều khiển
+
+| Hành động | Phím |
+|---|---|
+| Điều hướng | Chuột |
+| Boost (4s) | Chuột trái / Space |
+| Reset AI | **Shift + Click** nút "XUẤT HÀNH" |
+
+## ⚡ Cơ chế Boost
+
+- Boost **tối đa 4 giây** liên tục
+- Cạn → **cooldown 5 giây** (không boost được)
+- Sau cooldown → hồi full 4 giây
+- **Boost tiêu đốt**: cứ **0.5s → −1 đốt** (4s = −8 đốt)
+- Đốt rơi lại thành đồng xu
+- Không thể boost khi `segments ≤ 15`
+
+## 🐍 Tăng trưởng (áp dụng MỌI rắn)
+
+| Segments | Radius |
+|---|---|
+| 24 (start) | 10 px |
+| 100 | 13 px |
+| 300 | 21 px |
+| 500 (max) | 29 px |
+
+Rắn **to và dài** song song — không chỉ dài ra mà còn mập hơn.
+
+## 🍱 Thức ăn Tết
+
+| Loại | Điểm | Tỉ lệ |
+|---|---|---|
+| 🌼 Hoa mai | +1 | 30% |
+| 🌸 Hoa đào | +1 | 22% |
+| 🧧 Lì xì | +2 | 15% |
+| 🪙 Đồng xu | +3 | 10% |
+| 🥟 Bánh chưng | +3 | 15% |
+| 🧨 Pháo | +5 | 6% (bắn pháo hoa) |
+| 🅰️ Chữ A | +0 | 2% (vòng quay) |
+
+Vòng quay: +20 → **+200 đốt**.
+
+## 🧠 AI tự học (localStorage)
+
+- Bot giết player → `hunt += 0.08`, `gen++`
+- Player giết bot → `avoid += 0.03`
+- **Hunt mode**: bot dài hơn 15% → dự đoán vị trí → cắt mặt → **aura đỏ** cảnh báo
+
+## 🎨 Giao diện Tết 2027
+
+- Nền đỏ `#1a0508` + gold `#ffd700` + gold-2 `#ffb347`
+- Lồng đèn 🏮 2 góc + linh vật Dê 🐐 góc phải dưới
+- Logo "ĐINH MÙI · XUÂN 2027"
+- Font monospace cho số liệu
+- Corner brackets + viền vàng thế giới
+
+## 📁 Cấu trúc

@@ -1,0 +1,1 @@
+score = kills×100 − deaths×50 + hits×15 − damage_taken×10 + max(0, rewards)

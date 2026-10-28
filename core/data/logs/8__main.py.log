@@ -1,0 +1,11 @@
+
+===== RUN 2026-10-28 19:13:31 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/8/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/8
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/8/main.py"[0m, line [35m5[0m, in [35m<module>[0m
+    from core.loader import ModuleBase
+[1;35mModuleNotFoundError[0m: [35mNo module named 'core'[0m
+
+[exit code: 1]

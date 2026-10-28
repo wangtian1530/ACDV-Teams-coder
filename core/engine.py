@@ -1,11 +1,7 @@
 """Core Engine — boot sequence, module registry, critical-fail policy, error dispatch.
 
-v1.4.0:
-  - ⭐ ModuleStorage: quota 512MB per-module, upload chunk, export ZIP.
-  - ⭐ API: /api/modules/storage/* (list, upload_chunk, download, delete, clear, export_zip, usage).
-  - ⭐ Broadcast storage_warning khi module gần đầy quota.
-  - ⭐ Restart refresh UI: broadcast system_restarted sau khi boot xong.
-  - ⭐ /api/boot cho loading overlay.
+v2.0.0:
+  - ⭐ /api/overlay trả css_etag, js_etag, css_warning (overlay fix).
 """
 import os
 import sys
@@ -27,6 +23,66 @@ from .settings import SettingsManager
 from .diagnostics import DiagnosticsManager
 from .terminal import TerminalManager
 from .module_storage import ModuleStorage, QuotaExceeded, StorageViolation
+
+
+CONFIG_EDITABLE = {
+    "host": {
+        "type": "string", "restart": True, "label": "Host",
+        "description": "Địa chỉ bind (0.0.0.0 = mọi interface, 127.0.0.1 = localhost).",
+    },
+    "port": {
+        "type": "number", "min": 1, "max": 65535, "integer": True,
+        "restart": True, "label": "Port",
+        "description": "Cổng HTTP/WS (mặc định 8765).",
+    },
+    "log_level": {
+        "type": "select", "options": ["debug", "info", "warn", "error"],
+        "restart": False, "label": "Log level",
+        "description": "Mức log của server (hiện chỉ lưu, không in thêm).",
+    },
+    "auto_stop_on_disconnect": {
+        "type": "boolean", "restart": False, "label": "Auto stop on disconnect",
+        "description": "Tự kill process đang chạy khi client WS cuối cùng ngắt kết nối (sau 5s grace).",
+    },
+    "auto_detect_modules": {
+        "type": "boolean", "restart": True, "label": "Auto detect modules",
+        "description": "Tự load/unload module khi filesystem thay đổi (watcher thread).",
+    },
+    "module_watch_interval": {
+        "type": "number", "min": 1, "max": 60, "integer": True,
+        "restart": True, "label": "Module watch interval (s)",
+        "description": "Chu kỳ quét module mới (giây).",
+    },
+    "enable_system_controls": {
+        "type": "boolean", "restart": False, "label": "Enable system controls",
+        "description": "Bật/tắt các endpoint Restart / Shutdown. CẨN THẬN: nếu tắt, "
+                       "bạn không thể restart từ UI — phải sửa config.json + chạy tay.",
+    },
+    "module_storage_quota": {
+        "type": "number", "min": 1048576, "integer": True,
+        "restart": False, "label": "Module storage quota (bytes)",
+        "description": "Quota mặc định cho mỗi module (bytes). 536870912 = 512MB. "
+                       "Module có thể override qua init.txt (module_storage_quota).",
+    },
+    "ssl.enabled": {
+        "type": "boolean", "restart": True, "label": "Enable TLS (HTTPS/WSS)",
+        "description": "Bật TLS. Sẽ tự sinh cert self-signed nếu auto_generate=true.",
+    },
+    "ssl.auto_generate": {
+        "type": "boolean", "restart": True, "label": "Auto-generate self-signed cert",
+        "description": "Tự sinh cert bằng openssl khi chưa có cert_file/key_file.",
+    },
+    "terminal.shell": {
+        "type": "string", "restart": False, "label": "Shell",
+        "nullable": True,
+        "description": "Shell cho terminal (vd: /bin/bash). Để trống = dùng $SHELL hoặc /bin/bash.",
+    },
+    "terminal.max_sessions": {
+        "type": "number", "min": 1, "max": 64, "integer": True,
+        "restart": False, "label": "Max terminal sessions",
+        "description": "Số session terminal tối đa cùng lúc.",
+    },
+}
 
 
 class CoreEngine:
@@ -109,6 +165,8 @@ class CoreEngine:
 
         A("GET",  "/api/status",                self._api_status)
         A("GET",  "/api/boot",                  self._api_boot_info)
+        A("GET",  "/api/config",                self._api_config_get)
+        A("POST", "/api/config",                self._api_config_update)
         A("GET",  "/api/modules",               self._api_modules)
         A("POST", "/api/modules/install",       self._api_install)
         A("POST", "/api/modules/uninstall",     self._api_uninstall)
@@ -169,6 +227,112 @@ class CoreEngine:
             "version": self.config.get("version"),
             "modules": list(self.modules.keys()),
             "storage_quota": self.storage.default_quota,
+        }
+
+    @staticmethod
+    def _cfg_get_nested(d, key):
+        cur = d
+        for p in key.split("."):
+            if not isinstance(cur, dict):
+                return None
+            cur = cur.get(p)
+        return cur
+
+    @staticmethod
+    def _cfg_set_nested(d, key, value):
+        parts = key.split(".")
+        cur = d
+        for p in parts[:-1]:
+            if p not in cur or not isinstance(cur[p], dict):
+                cur[p] = {}
+            cur = cur[p]
+        cur[parts[-1]] = value
+
+    def _api_config_get(self, req):
+        out = {}
+        for key, spec in CONFIG_EDITABLE.items():
+            val = self._cfg_get_nested(self.config, key)
+            out[key] = {"value": val, "spec": spec}
+        return {
+            "ok": True,
+            "config": out,
+            "version": self.config.get("version"),
+            "name": self.config.get("name"),
+        }
+
+    def _api_config_update(self, req):
+        patch = req.get("patch") or {}
+        if not isinstance(patch, dict):
+            return {"ok": False, "error": "patch must be object"}
+
+        old_config = json.loads(json.dumps(self.config))
+
+        errors = []
+        applied = {}
+        restart_required = False
+
+        for key, val in patch.items():
+            if key not in CONFIG_EDITABLE:
+                errors.append(f"{key}: not editable")
+                continue
+            spec = CONFIG_EDITABLE[key]
+            t = spec.get("type", "string")
+
+            if t == "boolean":
+                if not isinstance(val, bool):
+                    errors.append(f"{key}: must be boolean")
+                    continue
+            elif t == "number":
+                if not isinstance(val, (int, float)) or isinstance(val, bool):
+                    errors.append(f"{key}: must be number")
+                    continue
+                if "min" in spec and val < spec["min"]:
+                    errors.append(f"{key}: must be >= {spec['min']}")
+                    continue
+                if "max" in spec and val > spec["max"]:
+                    errors.append(f"{key}: must be <= {spec['max']}")
+                    continue
+                if spec.get("integer"):
+                    val = int(val)
+            elif t == "select":
+                opts = spec.get("options") or []
+                if opts and val not in opts:
+                    errors.append(f"{key}: must be one of {opts}")
+                    continue
+            elif t == "string":
+                if not isinstance(val, str):
+                    errors.append(f"{key}: must be string")
+                    continue
+                if spec.get("nullable") and val.strip() == "":
+                    val = None
+
+            self._cfg_set_nested(self.config, key, val)
+            applied[key] = val
+            if spec.get("restart"):
+                restart_required = True
+
+        if errors:
+            self.config = old_config
+            return {"ok": False, "errors": errors}
+
+        cfg_path = os.path.join(self.base_dir, "config.json")
+        try:
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            self.config = old_config
+            return {"ok": False, "error": f"save failed: {e}"}
+
+        if "module_storage_quota" in applied:
+            try:
+                self.storage.default_quota = int(applied["module_storage_quota"])
+            except Exception:
+                pass
+
+        return {
+            "ok": True,
+            "applied": applied,
+            "restart_required": restart_required,
         }
 
     def _apply_overrides(self):
@@ -295,9 +459,6 @@ class CoreEngine:
         except Exception:
             return {}
 
-    # ================================================================ #
-    #  Storage API handlers
-    # ================================================================ #
     def _api_storage_usage(self, req):
         name = req.get("name")
         if not name:
@@ -425,9 +586,6 @@ class CoreEngine:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ================================================================ #
-    #  Module watcher
-    # ================================================================ #
     def _module_paths(self, name):
         mod_dir = os.path.join(self.base_dir, "modules", name)
         return {
@@ -530,9 +688,6 @@ class CoreEngine:
             except Exception as e:
                 print(f"[Watcher] ✗ unload '{name}' failed: {e}")
 
-    # ================================================================ #
-    #  System controls
-    # ================================================================ #
     def _system_controls_enabled(self):
         return bool(self.config.get("enable_system_controls", True))
 
@@ -596,9 +751,6 @@ class CoreEngine:
         threading.Thread(target=_do, daemon=True).start()
         return {"ok": True, "message": "shutting down"}
 
-    # ================================================================ #
-    #  API handlers
-    # ================================================================ #
     def _api_status(self, req):
         return {
             "status": "critical" if self.critical_fail else "ok",
@@ -950,6 +1102,7 @@ class CoreEngine:
                              "module": name, "values": result["values"]})
         return result
 
+    # ⭐ PATCH: thêm css_etag, js_etag, css_warning vào response
     def _api_overlay_get(self, req):
         overlays = []
         gs = self.settings.get_global()
@@ -968,6 +1121,9 @@ class CoreEngine:
                 "name": name,
                 "css": f"/module/{name}/{css}" if css else None,
                 "js": f"/module/{name}/{js}" if js else None,
+                "css_etag": ov.get("css_etag", ""),
+                "js_etag":  ov.get("js_etag", ""),
+                "css_warning": ov.get("css_warning"),
                 "css_enabled": css_enabled,
                 "js_enabled": js_enabled,
             })

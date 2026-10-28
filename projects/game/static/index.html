@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>🧧 Rắn Săn Mồi · Tết Đinh Mùi 2027</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Trang trí Tết -->
+  <div class="lantern lantern-tl">🏮</div>
+  <div class="lantern lantern-tr">🏮</div>
+  <div class="goat-mascot">🐐</div>
+
+  <div class="tet-logo">
+    <div class="tet-mark">ĐINH MÙI</div>
+    <div class="tet-sub">XUÂN 2027 🐐</div>
+  </div>
+
+  <div id="hud">
+    <div class="score-box">
+      <span class="label">ĐỘ DÀI</span>
+      <span id="scoreVal">0</span>
+      <div class="energy-container">
+        <span class="energy-label">⚡ TĂNG TỐC</span>
+        <div class="energy-track">
+          <div class="energy-fill" id="energyFill"></div>
+        </div>
+        <span class="energy-status" id="energyStatus"></span>
+      </div>
+    </div>
+
+    <div class="leaderboard">
+      <h3>🏮 BẢNG VÀNG</h3>
+      <ol id="lbList"></ol>
+    </div>
+
+    <div class="brain-box">
+      <div class="brain-title">🧠 AI ĐANG HỌC</div>
+      <div>Thế hệ: <b id="brainGen">1</b></div>
+      <div>Hạ gục bạn: <b id="brainKills">0</b></div>
+      <div>Hung hăng: <b id="brainHunt">40%</b></div>
+    </div>
+
+    <div class="fps" id="fps">-- FPS</div>
+  </div>
+
+  <div id="overlay">
+    <div class="panel">
+      <div class="blossom-top">🌸 🐐 🌸</div>
+      <h1>RẮN SĂN MỒI</h1>
+      <p class="subtitle">TẾT ĐINH MÙI · XUÂN 2027</p>
+      <p id="overText" class="sub">
+        Ăn để <b>to ra & dài ra</b> · Boost <b>4s</b> rồi chờ hồi chiêu.<br>
+        Năm Dê đến rồi — <b style="color:#ff4d6d">bot AI cũng đang săn bạn!</b>
+      </p>
+      <ul class="hints">
+        <li>🖱️ <b>Chuột</b> điều hướng · <b>Space/Click</b> boost 4s</li>
+        <li>🌼 +1 · 🧧 +2 · 🪙 +3 · 🥟 <b>+3</b> · 🧨 <b>+5</b> (hiếm)</li>
+        <li>🅰️ <b>Chữ A</b> cực hiếm → <b style="color:#ffd700">VÒNG QUAY MAY MẮN</b></li>
+        <li>⚡ Boost làm bạn <b>mất đốt</b> — cân nhắc!</li>
+        <li><i style="opacity:0.55">Shift + Click để reset AI</i></li>
+      </ul>
+      <button id="startBtn">🧧 XUẤT HÀNH</button>
+      <div class="blossom-bottom">🐐 An Khang Thịnh Vượng · Vạn Sự Như Ý 🐐</div>
+    </div>
+  </div>
+
+  <div id="wheelOverlay" class="wheel-overlay hidden">
+    <div class="wheel-panel">
+      <h2>🎰 VÒNG QUAY MAY MẮN</h2>
+      <p class="wheel-sub">Bạn đã tìm thấy <b style="color:#ffd700">CHỮ A</b> cực hiếm!</p>
+      <div class="wheel-container">
+        <canvas id="wheelCanvas" width="400" height="400"></canvas>
+        <div class="wheel-pointer">▼</div>
+      </div>
+      <button id="spinBtn">QUAY NGAY 🎁</button>
+      <div id="wheelResult" class="wheel-result"></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

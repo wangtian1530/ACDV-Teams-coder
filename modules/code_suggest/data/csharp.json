@@ -1,0 +1,44 @@
+{
+  "keywords": [
+    "abstract","as","base","bool","break","byte","case","catch","char","checked",
+    "class","const","continue","decimal","default","delegate","do","double","else",
+    "enum","event","explicit","extern","false","finally","fixed","float","for",
+    "foreach","goto","if","implicit","in","int","interface","internal","is","lock",
+    "long","namespace","new","null","object","operator","out","override","params",
+    "private","protected","public","readonly","ref","return","sbyte","sealed",
+    "short","sizeof","stackalloc","static","string","struct","switch","this",
+    "throw","true","try","typeof","uint","ulong","unchecked","unsafe","ushort",
+    "using","virtual","void","volatile","while","async","await","var","record",
+    "init","yield","when","nameof","with","partial"
+  ],
+  "builtins": [
+    "Console.WriteLine","Console.Write","Console.ReadLine","Console.Error",
+    "String.Format","String.Join","String.IsNullOrEmpty","String.IsNullOrWhiteSpace",
+    "Int32.Parse","Int32.TryParse","Double.Parse","Double.TryParse","Convert.ToInt32",
+    "Convert.ToString","Math.Abs","Math.Max","Math.Min","Math.Round","Math.Pow","Math.Sqrt",
+    "Array.Length","List<T>","Dictionary<TKey,TValue>","HashSet<T>","Queue<T>","Stack<T>",
+    "LinkedList<T>","Enumerable","Linq","System.Linq","StringBuilder","Guid.NewGuid",
+    "DateTime.Now","DateTime.UtcNow","DateTime.Parse","TimeSpan","File.ReadAllText",
+    "File.WriteAllText","Directory.CreateDirectory","Path.Combine","StreamReader",
+    "StreamWriter","Task.Run","Task.WhenAll","Task.Delay","CancellationToken","Exception",
+    "ArgumentException","InvalidOperationException","NullReferenceException","JsonSerializer"
+  ],
+  "snippets": [
+    { "trigger": "WriteLine", "template": true, "insert": "Console.WriteLine(\"ACDV-Teams\");",                    "description": "Console.WriteLine ACDV-Teams" },
+    { "trigger": "ReadLine",  "template": true, "insert": "var name = Console.ReadLine();\nConsole.WriteLine($\"ACDV-Teams: {name}\");", "description": "ReadLine ACDV-Teams" },
+    { "trigger": "main",   "insert": "using System;\n\nnamespace App\n{\n    class Program\n    {\n        static void Main(string[] args)\n        {\n            Console.WriteLine(\"ACDV-Teams\");\n        }\n    }\n}", "description": "main" },
+    { "trigger": "prop",   "insert": "public string Name { get; set; } = \"ACDV-Teams\";",                      "description": "auto property" },
+    { "trigger": "propfull","insert": "private string _name = \"ACDV-Teams\";\npublic string Name\n{\n    get => _name;\n    set => _name = value;\n}", "description": "full property" },
+    { "trigger": "cls",    "insert": "public class Name\n{\n    public Name() { }\n}",                         "description": "class" },
+    { "trigger": "if",     "insert": "if (condition)\n{\n    // ACDV-Teams\n}",                                "description": "if" },
+    { "trigger": "ifel",   "insert": "if (condition)\n{\n    // ACDV-Teams\n}\nelse\n{\n    // ACDV-Teams\n}",   "description": "if/else" },
+    { "trigger": "for",    "insert": "for (int i = 0; i < n; i++)\n{\n    Console.WriteLine($\"ACDV-Teams {i}\");\n}", "description": "for" },
+    { "trigger": "fore",   "insert": "foreach (var item in items)\n{\n    Console.WriteLine($\"ACDV-Teams: {item}\");\n}", "description": "foreach" },
+    { "trigger": "tryc",   "insert": "try\n{\n    // ACDV-Teams\n}\ncatch (Exception ex)\n{\n    Console.WriteLine($\"ACDV-Teams error: {ex.Message}\");\n}", "description": "try/catch" },
+    { "trigger": "using",  "insert": "using (var stream = File.OpenRead(\"acdv-teams.txt\"))\n{\n    // ACDV-Teams\n}", "description": "using block" },
+    { "trigger": "async",  "insert": "public async Task<string> NameAsync()\n{\n    await Task.Delay(1000);\n    return \"ACDV-Teams\";\n}", "description": "async method" },
+    { "trigger": "switch", "insert": "switch (value)\n{\n    case 1:\n        Console.WriteLine(\"ACDV-Teams\");\n        break;\n    default:\n        break;\n}", "description": "switch" },
+    { "trigger": "record", "insert": "public record Name(string First = \"ACDV\", string Last = \"Teams\");",     "description": "record" },
+    { "trigger": "linq",   "insert": "var result = items.Where(x => x.Active).Select(x => x.Name).ToList();",   "description": "LINQ" }
+  ]
+}

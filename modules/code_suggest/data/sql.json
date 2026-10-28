@@ -1,0 +1,39 @@
+{
+  "keywords": [
+    "SELECT","FROM","WHERE","JOIN","INNER","LEFT","RIGHT","FULL","OUTER","CROSS",
+    "ON","GROUP","BY","HAVING","ORDER","ASC","DESC","LIMIT","OFFSET","INSERT","INTO",
+    "VALUES","UPDATE","SET","DELETE","CREATE","TABLE","VIEW","INDEX","ALTER","DROP",
+    "TRUNCATE","PRIMARY","KEY","FOREIGN","REFERENCES","UNIQUE","NOT","NULL","DEFAULT",
+    "CHECK","CONSTRAINT","AS","AND","OR","IN","BETWEEN","LIKE","IS","EXISTS","CASE",
+    "WHEN","THEN","ELSE","END","UNION","ALL","DISTINCT","WITH","RETURNING","IF",
+    "BEGIN","COMMIT","ROLLBACK","TRANSACTION","GRANT","REVOKE","CASCADE","RESTRICT",
+    "USING","INTO","OVER","PARTITION","ROW_NUMBER","RANK","DENSE_RANK","LAG","LEAD",
+    "TRUE","FALSE","EXPLAIN","ANALYZE"
+  ],
+  "builtins": [
+    "COUNT","SUM","AVG","MIN","MAX","COALESCE","NULLIF","IFNULL","CAST","CONVERT",
+    "LOWER","UPPER","TRIM","LTRIM","RTRIM","LENGTH","CHAR_LENGTH","SUBSTRING","SUBSTR",
+    "REPLACE","CONCAT","CONCAT_WS","INSTR","POSITION","LEFT","RIGHT","LPAD","RPAD",
+    "ABS","CEIL","CEILING","FLOOR","ROUND","POWER","POW","SQRT","MOD","RANDOM",
+    "NOW","CURRENT_DATE","CURRENT_TIME","CURRENT_TIMESTAMP","EXTRACT","DATE_TRUNC",
+    "DATE_ADD","DATE_SUB","DATEDIFF","TO_CHAR","TO_DATE","TO_NUMBER","ROW_NUMBER",
+    "RANK","DENSE_RANK","LAG","LEAD","FIRST_VALUE","LAST_VALUE","SUM","AVG",
+    "JSON_EXTRACT","JSON_OBJECT","JSON_ARRAY","ARRAY_AGG","STRING_AGG","GROUP_CONCAT"
+  ],
+  "snippets": [
+    { "trigger": "sel",   "insert": "SELECT *\nFROM acdv_teams\nWHERE condition;",                              "description": "SELECT ACDV" },
+    { "trigger": "selc",  "insert": "SELECT column1, column2\nFROM acdv_teams\nWHERE condition\nORDER BY column1 DESC\nLIMIT 10;", "description": "SELECT columns" },
+    { "trigger": "insert","insert": "INSERT INTO acdv_teams (name, value)\nVALUES ('ACDV-Teams', 1);",            "description": "INSERT ACDV" },
+    { "trigger": "update","insert": "UPDATE acdv_teams\nSET name = 'ACDV-Teams'\nWHERE condition;",               "description": "UPDATE ACDV" },
+    { "trigger": "delete","insert": "DELETE FROM acdv_teams\nWHERE condition;",                                   "description": "DELETE ACDV" },
+    { "trigger": "create","insert": "CREATE TABLE acdv_teams (\n  id INT PRIMARY KEY,\n  name VARCHAR(255) NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);", "description": "CREATE TABLE" },
+    { "trigger": "alter", "insert": "ALTER TABLE acdv_teams ADD COLUMN value VARCHAR(255);",                      "description": "ALTER TABLE" },
+    { "trigger": "join",  "insert": "SELECT a.*, b.*\nFROM acdv_teams a\nJOIN other b ON b.acdv_id = a.id\nWHERE a.active = TRUE;", "description": "JOIN" },
+    { "trigger": "leftjoin","insert": "SELECT a.*, b.*\nFROM acdv_teams a\nLEFT JOIN other b ON b.acdv_id = a.id;", "description": "LEFT JOIN" },
+    { "trigger": "group", "insert": "SELECT name, COUNT(*)\nFROM acdv_teams\nGROUP BY name\nHAVING COUNT(*) > 1;", "description": "GROUP BY" },
+    { "trigger": "cte",   "insert": "WITH cte AS (\n  SELECT * FROM acdv_teams\n)\nSELECT * FROM cte;",         "description": "CTE" },
+    { "trigger": "case",  "insert": "CASE\n  WHEN cond THEN 'ACDV-Teams'\n  ELSE 'ACDV-Teams'\nEND",            "description": "CASE expression" },
+    { "trigger": "win",   "insert": "ROW_NUMBER() OVER (PARTITION BY name ORDER BY id DESC)",                   "description": "window fn" },
+    { "trigger": "tx",    "insert": "BEGIN;\n-- ACDV-Teams\nCOMMIT;",                                            "description": "transaction" }
+  ]
+}

@@ -1,4 +1,9 @@
-"""Project manager: CRUD projects + file operations inside projects."""
+"""Project manager: CRUD projects + file operations inside projects.
+
+v2.0.1 (hotfix):
+  - C10: write_file/create_file raise nếu project không tồn tại
+         (tránh resurrect project sau khi delete).
+"""
 import os
 import io
 import json
@@ -14,14 +19,17 @@ class ProjectManager:
         self.projects_dir = os.path.join(base_dir, "projects")
         os.makedirs(self.projects_dir, exist_ok=True)
 
-    def _safe_path(self, project, path=""):
+    def _project_dir(self, project):
         if not project or "/" in project or "\\" in project or project in (".", ".."):
             raise Exception("Invalid project name")
-
         proj_dir = os.path.abspath(os.path.join(self.projects_dir, project))
         projects_root = os.path.abspath(self.projects_dir)
         if proj_dir != projects_root and not proj_dir.startswith(projects_root + os.sep):
             raise Exception("Invalid project path")
+        return proj_dir
+
+    def _safe_path(self, project, path=""):
+        proj_dir = self._project_dir(project)
 
         rel = (path or "").lstrip("/").replace("\\", "/")
         for part in rel.split("/"):
@@ -32,6 +40,13 @@ class ProjectManager:
         if target != proj_dir and not target.startswith(proj_dir + os.sep):
             raise Exception("Path escape")
         return target
+
+    def _ensure_project_exists(self, project):
+        """⭐ C10: raise nếu project không tồn tại."""
+        proj_dir = self._project_dir(project)
+        if not os.path.isdir(proj_dir):
+            raise Exception(f"Project '{project}' not found")
+        return proj_dir
 
     def _meta_path(self, project):
         return os.path.join(self.projects_dir, project, ".project.json")
@@ -100,7 +115,6 @@ class ProjectManager:
         return ("README.md", "# New project\n")
 
     def create_from_zip(self, name, zip_base64):
-        """Tạo project từ ZIP base64. Tự động giải nén + strip root folder."""
         if not name:
             raise Exception("Missing project name")
         if "/" in name or "\\" in name or name in (".", ".."):
@@ -206,7 +220,6 @@ class ProjectManager:
         return {**meta, "files_extracted": extracted, "files_skipped": skipped}
 
     def export_zip(self, name):
-        """Export project thành ZIP bytes (base dir = <name>/)."""
         if not name:
             raise Exception("Missing project name")
         if "/" in name or "\\" in name or name in (".", ".."):
@@ -297,6 +310,8 @@ class ProjectManager:
             raise Exception("File is not valid UTF-8 text")
 
     def write_file(self, project, path, content):
+        # ⭐ C10: check project tồn tại TRƯỚC khi ghi
+        self._ensure_project_exists(project)
         target = self._safe_path(project, path)
         parent = os.path.dirname(target)
         if parent:
@@ -306,6 +321,8 @@ class ProjectManager:
         return True
 
     def create_file(self, project, path):
+        # ⭐ C10: check project tồn tại TRƯỚC khi tạo
+        self._ensure_project_exists(project)
         target = self._safe_path(project, path)
         if os.path.exists(target):
             raise Exception("Already exists")
@@ -316,6 +333,8 @@ class ProjectManager:
         return True
 
     def create_folder(self, project, path):
+        # ⭐ C10: check project tồn tại TRƯỚC khi tạo
+        self._ensure_project_exists(project)
         target = self._safe_path(project, path)
         if os.path.exists(target):
             raise Exception("Already exists")

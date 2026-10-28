@@ -7,12 +7,32 @@ from datetime import datetime
 
 from core.loader import ModuleBase
 
+# Tên file / path trong 1 dòng. Có hỗ trợ dotfile.
 FILE_PATTERN = re.compile(r"[A-Za-z0-9_\-./\\]+\.[A-Za-z0-9]{1,10}")
-FENCE_PATTERN = re.compile(r"```([A-Za-z0-9_+\-.#]*)[ \t]*\r?\n(.*?)(?:```|\Z)", re.DOTALL)
+# Dotfile thuần: .env, .gitignore, .dockerignore, ...
+DOTFILE_PATTERN = re.compile(r"^\.[A-Za-z0-9_\-.]{1,32}$")
+
+# Fence ```lang\n ... ``` — MULTILINE để nhận fence có indent đầu dòng,
+# và cho phép space giữa ``` và lang (ví dụ: ``` python).
+FENCE_PATTERN = re.compile(
+    r"^[ \t]*```[ \t]*([A-Za-z0-9_+\-.#]*)[ \t]*\r?\n(.*?)(?:^[ \t]*```|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+# Prefix nhận diện tên file. Alternation sắp dài-trước-ngắn để tránh
+# "file name" bị match nhầm thành "file". Dấu ':' là optional.
 PREFIX_PATTERN = re.compile(
-    r"^(file|filename|file name|tên file|ten file|path|đường dẫn|duong dan)\s*[:：]\s*",
+    r"^(?:filename|file[ _]name|tên[ _]file|ten[ _]file|"
+    r"đường[ _]dẫn|duong[ _]dan|path|file)\b\s*[:：]?\s*",
     re.IGNORECASE,
 )
+
+# Chặn domain bị bắt nhầm thành tên file (example.com, foo.io, ...).
+_TLD_BLACKLIST = {
+    "com", "net", "org", "edu", "gov", "mil", "int",
+    "io", "dev", "app", "co", "info", "biz", "xyz",
+    "vn", "us", "uk", "jp", "cn", "kr", "sg", "th",
+}
 
 LANG_EXT = {
     "python": "py", "py": "py",
@@ -43,10 +63,19 @@ class Module(ModuleBase):
     def _is_valid_filename(name: str) -> bool:
         if not name or "://" in name:
             return False
-        if not re.search(r"\.[A-Za-z0-9]{1,10}$", name):
+
+        basename = name.replace("\\", "/").rsplit("/", 1)[-1]
+
+        # ✅ Dotfile: .env, .gitignore, .dockerignore, .env.local, ...
+        if DOTFILE_PATTERN.match(basename):
+            return True
+
+        if not re.search(r"\.[A-Za-z0-9]{1,10}$", basename):
             return False
-        ext = name.rsplit(".", 1)[-1]
+        ext = basename.rsplit(".", 1)[-1]
         if ext.isdigit():
+            return False
+        if ext.lower() in _TLD_BLACKLIST:
             return False
         return True
 
@@ -54,63 +83,89 @@ class Module(ModuleBase):
         if not raw_path:
             return None
         path = raw_path.replace("\\", "/").strip()
-        path = re.sub(r"^[A-Za-z]:/", "", path)
-        path = re.sub(r"^(\.{1,2}/)+", "", path).lstrip("/")
+        path = re.sub(r"^[A-Za-z]:/", "", path)          # bỏ ổ đĩa Windows
+        path = re.sub(r"^(\.{1,2}/)+", "", path).lstrip("/")  # bỏ ./ ../ /
 
         segments = []
         for seg in path.split("/"):
             seg = seg.strip()
             if not seg or seg in (".", ".."):
                 continue
-            seg = seg.lstrip(".")
+            # ❌ BỎ lstrip(".") — giữ nguyên dotfile: .github, .env, .vscode
             seg = re.sub(r'[<>:"|?*\x00-\x1f]', "_", seg)
-            seg = seg.strip(" .")
+            seg = seg.rstrip(" .")   # chỉ strip đuôi
             if not seg:
                 continue
             segments.append(seg[:80])
 
         if not segments:
             return None
-        if len(segments) > 8:
-            segments = segments[-8:]
-        return "/".join(segments)[:200]
+
+        # ✅ Cap an toàn theo tổng độ dài, KHÔNG cắt mất segment gốc
+        result, total = [], 0
+        for seg in reversed(segments):
+            need = len(seg) + (1 if result else 0)
+            if total + need > 200:
+                break
+            result.insert(0, seg)
+            total += need
+        if not result:
+            result = [segments[-1][:200]]
+        return "/".join(result)
 
     def _extract_filename(self, header_part: str, lang: str, index: int) -> str:
         lines = header_part.strip().split("\n")
+
         for line in reversed(lines):
-            clean = (
-                line.replace("*", "").replace("#", "").replace("`", "")
-                    .replace("📁", "").replace("📄", "").strip()
-            )
-            clean = PREFIX_PATTERN.sub("", clean)
-            candidates = FILE_PATTERN.findall(clean)
-            for cand in reversed(candidates):
+            raw = line.strip()
+            if not raw or len(raw) > 200:
+                continue
+
+            # ---- Bóc các trang trí markdown ----
+            clean = raw.replace("`", "").replace("📁", "").replace("📄", "").strip()
+            # Bullet / heading ở đầu dòng
+            clean = re.sub(r"^(?:[-*+•>]+[ \t]+|#{1,6}[ \t]+)", "", clean).strip()
+            # Bold **...**
+            clean = re.sub(r"^\*\*|\*\*$", "", clean).strip()
+
+            # Bóc prefix "File:", "Path:", "tên file:", ...
+            stripped = PREFIX_PATTERN.sub("", clean).strip()
+
+            # ✅ Chiến lược 1: cả dòng (sau khi bóc prefix) là 1 filename duy nhất
+            if re.fullmatch(r"[^\s]+", stripped) and self._is_valid_filename(stripped):
+                safe = self._sanitize_path(stripped)
+                if safe and self._is_valid_filename(safe):
+                    return safe
+
+            # ✅ Chiến lược 2: chỉ chấp nhận token khi nó chiếm TRỌN dòng
+            # (tránh câu văn xuôi chứa "config/x.json" bị bắt nhầm)
+            for cand in reversed(FILE_PATTERN.findall(stripped)):
                 if not self._is_valid_filename(cand):
+                    continue
+                if cand.strip() != stripped.strip():
                     continue
                 safe = self._sanitize_path(cand)
                 if safe and self._is_valid_filename(safe):
                     return safe
 
+        # ---- Fallback ----
         ext = LANG_EXT.get((lang or "").lower())
         if ext:
             return f"snippets/snippet_{index}.{ext}"
         return f"snippets/file_snippet_{index}.txt"
 
     # ------------------------------------------------------------------
-    # 🔑 Request parsing — robust cho mọi kiểu req core truyền vào
+    # Request parsing (giữ nguyên — đã ổn định)
     # ------------------------------------------------------------------
     def _read_body_dict(self, req) -> dict:
         if not isinstance(req, dict):
             return {}
 
-        # Case 1: req["body"] đã parse sẵn (dict)
         body = req.get("body")
         if isinstance(body, dict):
-            # Nếu body rỗng mà req có files/content trực tiếp thì ưu tiên req
             if body or not ("files" in req or "content" in req):
                 return body
 
-        # Case 2: req["body"] là JSON string
         if isinstance(body, (str, bytes)):
             if isinstance(body, bytes):
                 try:
@@ -125,7 +180,6 @@ class Module(ModuleBase):
                 except Exception as e:
                     print(f"[md_parser] body JSON parse failed: {e}; preview={body[:200]!r}")
 
-        # Case 3: raw_body / raw
         for key in ("raw_body", "raw", "_body", "_raw_body"):
             if key in req and req[key]:
                 raw = req[key]
@@ -142,7 +196,6 @@ class Module(ModuleBase):
                     except Exception as e:
                         print(f"[md_parser] {key} JSON parse failed: {e}")
 
-        # ⭐ Case 4 (FIX): req CHÍNH LÀ body — top-level files/content
         if "files" in req or "content" in req:
             return req
 
@@ -172,7 +225,6 @@ class Module(ModuleBase):
                     if content:
                         return content
             except Exception:
-                # body là raw markdown text
                 if body:
                     return body
 
@@ -195,7 +247,6 @@ class Module(ModuleBase):
                         if raw:
                             return raw
 
-        # ⭐ Fallback: req CHÍNH LÀ body
         if "content" in req and isinstance(req["content"], str):
             return req["content"]
 
@@ -239,7 +290,7 @@ class Module(ModuleBase):
         return {"ok": True, "files": parsed_files, "total": len(parsed_files)}
 
     # ------------------------------------------------------------------
-    # Handler: download_zip (⭐ FIXED)
+    # Handler: download_zip
     # ------------------------------------------------------------------
     def download_zip(self, req):
         body = self._read_body_dict(req)
@@ -263,7 +314,6 @@ class Module(ModuleBase):
                     name = f"snippets/file_{i + 1}.txt"
                 files.append({"filename": name, "code": f.get("code") or ""})
         else:
-            # Fallback: dùng content trực tiếp (user paste MD mà không parse)
             parsed = self.parse_markdown(req)
             if not parsed.get("ok"):
                 return {
@@ -279,8 +329,14 @@ class Module(ModuleBase):
         if not files:
             return {"ok": False, "error": "Không có file nào để nén!"}
 
+        # ✅ Tránh trùng README.md với file user
+        existing = {(f["filename"] or "").strip().lower() for f in files}
+        readme_name = "README.md"
+        if readme_name.lower() in existing:
+            readme_name = "_ACDV_README.md"
+
         buf = io.BytesIO()
-        used = set()
+        used = {readme_name}
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
             readme = (
                 "# ACDV-Teams Module — MD Code Extractor\n\n"
@@ -289,7 +345,7 @@ class Module(ModuleBase):
                 "- Bản quyền: **ACDV-Teams Module**\n\n"
                 "> Toàn bộ cấu trúc thư mục cha → con đã được tái tạo tự động.\n"
             )
-            zf.writestr("README.md", readme)
+            zf.writestr(readme_name, readme)
 
             for f in files:
                 name = f["filename"]

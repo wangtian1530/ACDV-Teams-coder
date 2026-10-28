@@ -1,8 +1,13 @@
-"""Diagnostics manager — collect problems from modules (VS Code style)."""
+"""Diagnostics manager — collect problems from modules (VS Code style).
+
+v2.0.1 (hotfix):
+  - L15: timeout 5s cho provider.diagnose() — tránh module treo thread diagnostics.
+"""
 import threading
 
 
 SEVERITY = ("error", "warning", "info", "hint")
+DIAGNOSE_TIMEOUT = 5.0  # giây
 
 
 class DiagnosticsManager:
@@ -35,6 +40,28 @@ class DiagnosticsManager:
                 return True
         return False
 
+    def _call_diagnose_with_timeout(self, fn, *args, timeout=DIAGNOSE_TIMEOUT):
+        """⭐ L15: chạy fn trong thread riêng, timeout nếu quá lâu."""
+        result = {"done": False, "value": None, "error": None}
+
+        def _runner():
+            try:
+                result["value"] = fn(*args)
+            except Exception as e:
+                result["error"] = e
+            finally:
+                result["done"] = True
+
+        t = threading.Thread(target=_runner, daemon=True)
+        t.start()
+        t.join(timeout)
+
+        if not result["done"]:
+            raise TimeoutError(f"diagnose() vượt quá {timeout}s")
+        if result["error"]:
+            raise result["error"]
+        return result["value"]
+
     def run_for_file(self, project, path, content):
         with self.lock:
             providers = dict(self.providers)
@@ -51,7 +78,12 @@ class DiagnosticsManager:
             if not callable(fn):
                 continue
             try:
-                diags = fn(project, path, content) or []
+                diags = self._call_diagnose_with_timeout(
+                    fn, project, path, content
+                ) or []
+            except TimeoutError:
+                print(f"[Diagnostics] {mod_name} timeout ({DIAGNOSE_TIMEOUT}s) — skip")
+                continue
             except Exception as e:
                 print(f"[Diagnostics] {mod_name} error: {e}")
                 continue

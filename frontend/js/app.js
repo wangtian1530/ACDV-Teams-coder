@@ -31,6 +31,62 @@ const App = {
     if (el && text) el.textContent = text;
   },
 
+  // ⭐ M6: hiển thị lỗi init rõ ràng thay vì treo loading
+  _showFatal(msg) {
+    let el = document.getElementById("appFatalOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "appFatalOverlay";
+      el.style.cssText =
+        "position:fixed;inset:0;background:rgba(30,30,30,0.97);z-index:1000000;" +
+        "display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "color:#fff;font:14px -apple-system,sans-serif;gap:16px;padding:32px;text-align:center;";
+      document.body.appendChild(el);
+    }
+    el.innerHTML = `
+      <div style="font-size:64px;">💥</div>
+      <div style="font-size:18px;font-weight:600;">Không khởi tạo được ứng dụng</div>
+      <div style="max-width:520px;color:#aaa;line-height:1.6;">${this._escapeHtml(msg || "Unknown error")}</div>
+      <div style="color:#666;font-size:12px;margin-top:12px;">
+        Gợi ý:<br>
+        • Kiểm tra kết nối mạng (CodeMirror/xterm từ CDN)<br>
+        • Mở DevTools Console để xem chi tiết<br>
+        • Reload trang (Ctrl+Shift+R) để thử lại
+      </div>
+      <button onclick="location.reload()" style="margin-top:20px;background:#0e639c;color:#fff;border:none;padding:10px 24px;border-radius:4px;cursor:pointer;font-size:14px;">Reload</button>
+    `;
+  },
+
+  _fmtSize(bytes) {
+    if (!bytes || bytes < 0) return "0 B";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+  },
+
+  _isReady: false,
+  _readyCallbacks: [],
+
+  whenReady(cb) {
+    if (typeof cb !== "function") return;
+    if (this._isReady) {
+      try { cb(); } catch (e) { console.error("[App.whenReady]", e); }
+    } else {
+      this._readyCallbacks.push(cb);
+    }
+  },
+
+  _markReady() {
+    if (this._isReady) return;
+    this._isReady = true;
+    const cbs = this._readyCallbacks;
+    this._readyCallbacks = [];
+    for (const cb of cbs) {
+      try { cb(); } catch (e) { console.error("[App.whenReady]", e); }
+    }
+  },
+
   async init() {
     this._showLoading("Khởi tạo ứng dụng…");
 
@@ -57,11 +113,34 @@ const App = {
     this.ws.on("run_finished", (m) => this._onRunFinished(m));
     this.ws.on("module_action_result", (m) => this._onModuleActionResult(m));
 
+    // ⭐ M12: settings_changed → refresh cả editor lẫn Settings UI
     this.ws.on("settings_changed", (m) => {
       if (!m || !m.settings) return;
       if (this.editor && typeof this.editor.onSettingsChanged === "function") {
         this.editor.onSettingsChanged(m.settings);
       }
+      if (window.OverlayLoader) {
+        OverlayLoader.refresh().catch(e => console.warn("[Overlay]", e));
+      }
+      // M12: nếu Settings modal đang mở → reload để đồng bộ input
+      try {
+        const sm = document.getElementById("settingsModal");
+        if (sm && sm.style.display === "flex" && window.SettingsUI &&
+            typeof SettingsUI.reload === "function") {
+          SettingsUI.reload();
+        }
+      } catch (e) {}
+    });
+
+    // ⭐ M9: config_changed → reload Settings UI (Server tab)
+    this.ws.on("config_changed", () => {
+      try {
+        const sm = document.getElementById("settingsModal");
+        if (sm && sm.style.display === "flex" && window.SettingsUI &&
+            typeof SettingsUI.reload === "function") {
+          SettingsUI.reload();
+        }
+      } catch (e) {}
     });
 
     this.ws.on("storage_warning", (m) => {
@@ -76,6 +155,14 @@ const App = {
       const name = (m && m.module) || "";
       this.log(`📦 Module ${action}${name ? ": " + name : ""}`, "success");
       this.loadModules();
+      if (window.OverlayLoader) {
+        OverlayLoader.refresh().catch(e => console.warn("[Overlay]", e));
+      }
+      // Clear diagnostics của module vừa reload
+      if (action === "reloaded" && name && window.DiagnosticsUI &&
+          typeof DiagnosticsUI.clearBySource === "function") {
+        DiagnosticsUI.clearBySource(name);
+      }
       try {
         const sm = document.getElementById("settingsModal");
         if (sm && sm.style.display === "flex" && window.SettingsUI &&
@@ -83,6 +170,28 @@ const App = {
           SettingsUI.reload();
         }
       } catch (e) {}
+    });
+
+    // ⭐ M8: project_deleted → đóng tab + clear diag
+    this.ws.on("project_deleted", (m) => {
+      if (!m || !m.project) return;
+      if (this.editor && typeof this.editor.closeByProject === "function") {
+        this.editor.closeByProject(m.project);
+      }
+      if (window.Explorer) Explorer.loadProjects();
+      this.log(`🗑 Project deleted: ${m.project}`, "success");
+    });
+
+    // ⭐ M7: project_file_deleted → đóng tab + clear diag
+    this.ws.on("project_file_deleted", (m) => {
+      if (!m || !m.project || !m.path) return;
+      if (this.editor && typeof this.editor.closeByPath === "function") {
+        this.editor.closeByPath(m.project, m.path);
+      }
+      if (window.DiagnosticsUI &&
+          typeof DiagnosticsUI.setFileDiagnostics === "function") {
+        DiagnosticsUI.setFileDiagnostics(m.project, m.path, []);
+      }
     });
 
     this.ws.on("system_restarting", () => {
@@ -140,11 +249,9 @@ const App = {
 
     this.ws.connect();
 
-    // ⭐ v1.4.1 FIX: global keydown — thêm fold keys xử lý TRƯỚC Ctrl+Z
     document.addEventListener("keydown", (e) => {
       const mod = e.ctrlKey || e.metaKey;
 
-      // ⭐ v1.4.1: Ctrl-Shift-[ / Ctrl-Shift-] = Fold / Unfold all
       if (mod && e.shiftKey) {
         const code = e.code || "";
         const key = e.key || "";
@@ -160,14 +267,19 @@ const App = {
         }
       }
 
+      // ⭐ L16: chỉ save editor khi focus không ở input/textarea của modal
       if (mod && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        this.editor.save();
+        if (!this._isEditableTarget(e.target)) {
+          e.preventDefault();
+          this.editor.save();
+        }
         return;
       }
       if (mod && e.key === "Enter") {
-        e.preventDefault();
-        this.runCurrent();
+        if (!this._isEditableTarget(e.target)) {
+          e.preventDefault();
+          this.runCurrent();
+        }
         return;
       }
       if (mod && (e.key === "`" || e.key === "~" || e.code === "Backquote")) {
@@ -216,6 +328,8 @@ const App = {
     }, 500);
 
     setTimeout(() => this._hideLoading(), 200);
+
+    this._markReady();
   },
 
   _showStorageWarningToast(m) {
@@ -676,31 +790,39 @@ const App = {
 
   async exportProject(name) {
     if (!name) return;
+    this._showLoading(`Đang tạo ZIP cho project "${name}"…`);
     try {
       this.log(`📦 Exporting project "${name}" …`);
       const res = await API.exportProject(name);
       const fname = res.filename || `${name}.zip`;
+      this._updateLoading("Đang tải file ZIP về máy…");
       this._downloadBase64(res.zip_base64, fname);
       const kb = ((res.size || 0) / 1024).toFixed(1);
       this.log(`✓ Downloaded ${fname} (${kb} KB, ${res.files || 0} files)`, "success");
     } catch (e) {
       this.log(`✗ Export project failed: ${e.message}`, "error");
       alert(e.message);
+    } finally {
+      this._hideLoading();
     }
   },
 
   async exportModule(name) {
     if (!name) return;
+    this._showLoading(`Đang tạo ZIP cho module "${name}"…`);
     try {
       this.log(`📦 Exporting module "${name}" …`);
       const res = await API.exportModule(name);
       const fname = res.filename || `${name}.zip`;
+      this._updateLoading("Đang tải file ZIP về máy…");
       this._downloadBase64(res.zip_base64, fname);
       const kb = ((res.size || 0) / 1024).toFixed(1);
       this.log(`✓ Downloaded ${fname} (${kb} KB, ${res.files || 0} files)`, "success");
     } catch (e) {
       this.log(`✗ Export module failed: ${e.message}`, "error");
       alert(e.message);
+    } finally {
+      this._hideLoading();
     }
   },
 
@@ -819,10 +941,13 @@ const App = {
     this._refreshRunStatus();
   },
 
+  // ⭐ C11: chỉ append output của run hiện tại (project khớp)
+  // Output từ module (project="(module)") được route sang Output log để
+  // không trộn lẫn với output file đang chạy.
   _onRunOutput(m) {
     const el = document.getElementById("runLog");
     if (!el) return;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
+
     let text = "";
     if (Array.isArray(m.lines)) {
       text = m.lines.join("\n");
@@ -831,6 +956,22 @@ const App = {
       text = m.line + "\n";
     }
     if (!text) return;
+
+    // ⭐ C11: nếu project khác run hiện tại → log vào Output (không trộn Run panel)
+    if (this._run.project && m.project !== this._run.project) {
+      const tag = m.project === "(module)"
+        ? `[module:${m.path || "?"}]`
+        : `[${m.project}/${m.path || "?"}]`;
+      // Tách nhiều dòng để hiển thị rõ
+      const lines = text.split("\n");
+      for (const ln of lines) {
+        if (ln === "") continue;
+        this.log(`${tag} ${ln}`, "info");
+      }
+      return;
+    }
+
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
     el.textContent += text;
     if (el.textContent.length > 500000) {
       el.textContent = "[… trimmed older lines …]\n" + el.textContent.slice(-400000);
@@ -840,12 +981,12 @@ const App = {
 
   _onRunFinished(m) {
     const el = document.getElementById("runLog");
-    if (el) {
+    if (el && (!this._run.project || m.project === this._run.project)) {
       el.textContent += `\n[exit code: ${m.exit_code}]\n`;
       el.scrollTop = el.scrollHeight;
     }
     const hdr = document.getElementById("runHeader");
-    if (hdr) {
+    if (hdr && (!this._run.project || m.project === this._run.project)) {
       hdr.textContent =
         `⏹ Finished ${m.project}/${m.path} (exit ${m.exit_code}) · log: ${m.log_name}`;
     }
@@ -1025,32 +1166,52 @@ const App = {
     const defName = file.name.replace(/\.zip$/i, "").replace(/[^a-zA-Z0-9_\-]/g, "_");
     const name = (await this.prompt("Upload Project ZIP", "Project name:")) || defName;
     if (!name) return;
+
+    this._showLoading(`Đang đọc ${file.name} (${this._fmtSize(file.size)})…`);
     try {
-      this.log(`Uploading ${file.name} …`);
+      this.log(`Uploading ${file.name} (${this._fmtSize(file.size)}) …`);
+
       const b64 = await this._fileToBase64(file);
+
+      this._updateLoading(`Đang upload & giải nén project "${name}"…`);
       const res = await API.uploadProject(name, b64);
       const p = res.project || res;
+
+      this._updateLoading(`Đã upload — đang tải lại danh sách project…`);
       this.log(`✓ Uploaded ${name} (${p.files_extracted ?? "?"} files)`, "success");
+
       await Explorer.loadProjects();
       await Explorer.openProject(name);
     } catch (e) {
       this.log(`✗ Upload failed: ${e.message}`, "error");
       alert(e.message);
+    } finally {
+      this._hideLoading();
     }
   },
 
   async _installModuleZip(file) {
     if (!file.name.toLowerCase().endsWith(".zip")) return alert("Chọn file .zip");
+
+    this._showLoading(`Đang đọc ${file.name} (${this._fmtSize(file.size)})…`);
     try {
-      this.log(`Installing module ${file.name} …`);
+      this.log(`Installing module ${file.name} (${this._fmtSize(file.size)}) …`);
+
       const b64 = await this._fileToBase64(file);
+
+      this._updateLoading(`Đang giải nén & cài đặt module…`);
       const res = await API.installModule(b64);
       const meta = res.module || {};
+
+      this._updateLoading(`Đã cài ${meta.name || "module"} — đang tải lại UI…`);
       this.log(`✓ Module installed: ${meta.name || "?"} v${meta.version || "?"}`, "success");
+
       await this.loadModules();
     } catch (e) {
       this.log(`✗ Install failed: ${e.message}`, "error");
       alert(e.message);
+    } finally {
+      this._hideLoading();
     }
   },
 
@@ -1262,4 +1423,13 @@ const App = {
   },
 };
 
-window.addEventListener("DOMContentLoaded", () => App.init());
+window.App = App;
+
+// ⭐ M6: catch init errors để không treo loading mãi
+window.addEventListener("DOMContentLoaded", () => {
+  App.init().catch(err => {
+    console.error("[App] init failed:", err);
+    try { App._hideLoading(); } catch (e) {}
+    App._showFatal(err && err.message ? err.message : String(err));
+  });
+});

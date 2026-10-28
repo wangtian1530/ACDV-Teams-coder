@@ -1,0 +1,44 @@
+{
+  "keywords": [
+    "as","async","await","break","const","continue","crate","dyn","else","enum",
+    "extern","false","fn","for","if","impl","in","let","loop","match","mod","move",
+    "mut","pub","ref","return","self","Self","static","struct","super","trait",
+    "true","type","unsafe","use","where","while","union","macro_rules","macro",
+    "yield","unsized","box"
+  ],
+  "builtins": [
+    "println!","print!","eprintln!","eprint!","format!","vec!","panic!","assert!",
+    "assert_eq!","assert_ne!","debug_assert!","dbg!","matches!","write!","writeln!",
+    "todo!","unimplemented!","unreachable!","include_str!","include_bytes!","env!",
+    "option_env!","String","String::new","String::from","str","to_string","as_str",
+    "Vec::new","Vec::with_capacity","Box::new","Rc::new","Arc::new","Cell::new",
+    "RefCell::new","Mutex::new","Option::Some","Option::None","Result::Ok","Result::Err",
+    "Iterator","iter","into_iter","map","filter","fold","collect","zip","enumerate",
+    "std::io::stdin","std::io::stdout","std::fs::read_to_string","std::fs::write",
+    "std::fs::File","std::io::Read","std::io::Write","std::env::args","std::process::exit",
+    "std::thread::spawn","std::sync::mpsc::channel","HashMap","HashSet","BTreeMap",
+    "BTreeSet","VecDeque","Duration","Instant"
+  ],
+  "snippets": [
+    { "trigger": "println", "template": true, "insert": "println!(\"ACDV-Teams\");",                                 "description": "println! ACDV-Teams" },
+    { "trigger": "printlnv","template": true, "insert": "println!(\"ACDV-Teams {}\", value);",                       "description": "println! with value" },
+    { "trigger": "vec",     "template": true, "insert": "let v = vec![\"ACDV-Teams\"];",                              "description": "vec! ACDV-Teams" },
+    { "trigger": "format",  "template": true, "insert": "let s = format!(\"ACDV-Teams {}\", value);",                "description": "format!" },
+    { "trigger": "panic",   "template": true, "insert": "panic!(\"ACDV-Teams: {}\", err);",                          "description": "panic! ACDV-Teams" },
+    { "trigger": "main",    "insert": "fn main() {\n    println!(\"ACDV-Teams\");\n}",                                "description": "main" },
+    { "trigger": "fn",      "insert": "fn name(args: T) -> R {\n    println!(\"ACDV-Teams\");\n}",                    "description": "function" },
+    { "trigger": "struct",  "insert": "#[derive(Debug, Clone)]\nstruct Name {\n    value: String,\n}",               "description": "struct" },
+    { "trigger": "enum",    "insert": "#[derive(Debug)]\nenum Name {\n    A,\n    B(String),\n}",                     "description": "enum" },
+    { "trigger": "trait",   "insert": "trait Name {\n    fn method(&self);\n}",                                        "description": "trait" },
+    { "trigger": "impl",    "insert": "impl Name {\n    pub fn new() -> Self {\n        Self { value: \"ACDV-Teams\".into() }\n    }\n}", "description": "impl" },
+    { "trigger": "if",      "insert": "if condition {\n    println!(\"ACDV-Teams\");\n}",                              "description": "if" },
+    { "trigger": "match",   "insert": "match value {\n    Some(x) => println!(\"ACDV-Teams: {}\", x),\n    None => println!(\"ACDV-Teams: none\"),\n}", "description": "match" },
+    { "trigger": "for",     "insert": "for item in items.iter() {\n    println!(\"ACDV-Teams: {}\", item);\n}",       "description": "for" },
+    { "trigger": "while",   "insert": "while condition {\n    println!(\"ACDV-Teams\");\n}",                            "description": "while" },
+    { "trigger": "res",     "insert": "match result {\n    Ok(v) => println!(\"ACDV-Teams OK: {:?}\", v),\n    Err(e) => println!(\"ACDV-Teams ERR: {:?}\", e),\n}", "description": "Result match" },
+    { "trigger": "opt",     "insert": "if let Some(x) = value {\n    println!(\"ACDV-Teams: {}\", x);\n}",             "description": "if let Some" },
+    { "trigger": "q",       "insert": "let v = something()?;",                                                          "description": "try with ?" },
+    { "trigger": "mod",     "insert": "mod name {\n    pub fn f() { println!(\"ACDV-Teams\"); }\n}",                     "description": "module" },
+    { "trigger": "use",     "insert": "use std::{collections::HashMap, io::{self, Read}};",                            "description": "use" }
+  ]
+}

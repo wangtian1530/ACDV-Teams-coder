@@ -1,0 +1,39 @@
+{
+  "keywords": [
+    "auto","break","case","char","const","continue","default","do","double","else",
+    "enum","extern","float","for","goto","if","inline","int","long","register",
+    "restrict","return","short","signed","sizeof","static","struct","switch",
+    "typedef","union","unsigned","void","volatile","while","_Bool","_Complex",
+    "_Imaginary","_Atomic","_Static_assert","_Thread_local","_Generic",
+    "_Noreturn","_Alignas","_Alignof"
+  ],
+  "builtins": [
+    "printf","fprintf","sprintf","snprintf","scanf","fscanf","sscanf","puts","fputs",
+    "getchar","putchar","fgets","fputs","fopen","fclose","fread","fwrite","fseek",
+    "ftell","rewind","fflush","feof","ferror","perror","remove","rename",
+    "malloc","calloc","realloc","free","memcpy","memmove","memset","memcmp","strlen",
+    "strcpy","strncpy","strcat","strncat","strcmp","strncmp","strchr","strrchr",
+    "strstr","strtok","strdup","atoi","atol","atof","strtol","strtod","abs","labs",
+    "fabs","sqrt","pow","exp","log","sin","cos","tan","floor","ceil","round",
+    "rand","srand","time","exit","abort","atexit","getenv","system","qsort","bsearch",
+    "assert","errno","stdin","stdout","stderr","NULL","EOF","sizeof","offsetof"
+  ],
+  "snippets": [
+    { "trigger": "printf", "template": true, "insert": "printf(\"ACDV-Teams\\n\");",                                  "description": "printf ACDV-Teams" },
+    { "trigger": "scanf",  "template": true, "insert": "scanf(\"%s\", buffer);",                                      "description": "scanf" },
+    { "trigger": "malloc", "template": true, "insert": "void *p = malloc(n * sizeof(*p));\nif (!p) { perror(\"ACDV-Teams\"); return 1; }\n// ...\nfree(p);", "description": "malloc + free" },
+    { "trigger": "fopen",  "template": true, "insert": "FILE *fp = fopen(\"acdv-teams.txt\", \"r\");\nif (!fp) { perror(\"ACDV-Teams\"); return 1; }\n// ...\nfclose(fp);", "description": "fopen ACDV-Teams" },
+    { "trigger": "main",   "insert": "#include <stdio.h>\n#include <stdlib.h>\n\nint main(int argc, char **argv) {\n    printf(\"ACDV-Teams\\n\");\n    return 0;\n}", "description": "main + includes" },
+    { "trigger": "if",     "insert": "if (condition) {\n    // ACDV-Teams\n}",                              "description": "if" },
+    { "trigger": "ifel",   "insert": "if (condition) {\n    // ACDV-Teams\n} else {\n    // ACDV-Teams\n}",  "description": "if/else" },
+    { "trigger": "fori",   "insert": "for (int i = 0; i < n; i++) {\n    printf(\"ACDV-Teams %d\\n\", i);\n}", "description": "for i" },
+    { "trigger": "while",  "insert": "while (condition) {\n    // ACDV-Teams\n}",                           "description": "while" },
+    { "trigger": "dowh",   "insert": "do {\n    // ACDV-Teams\n} while (condition);",                        "description": "do/while" },
+    { "trigger": "switch", "insert": "switch (var) {\n    case val:\n        // ACDV-Teams\n        break;\n    default:\n        break;\n}", "description": "switch" },
+    { "trigger": "func",   "insert": "return_type name(args) {\n    printf(\"ACDV-Teams\\n\");\n}",        "description": "function" },
+    { "trigger": "struct", "insert": "typedef struct {\n    char *name;\n} Name;",                            "description": "struct" },
+    { "trigger": "enum",   "insert": "enum Name {\n    ACDV,\n    TEAMS\n};",                                 "description": "enum" },
+    { "trigger": "ptr",    "insert": "type *ptr = &var;",                                                     "description": "pointer" },
+    { "trigger": "forarr", "insert": "for (size_t i = 0; i < sizeof(arr)/sizeof(arr[0]); i++) {\n    // ACDV-Teams\n}", "description": "for array" }
+  ]
+}

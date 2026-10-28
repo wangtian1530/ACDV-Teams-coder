@@ -1,13 +1,24 @@
-/* ACDV Diagnostics UI — Problems panel + CodeMirror inline markers */
+/* ACDV Diagnostics UI — Problems panel + CodeMirror inline markers
+ * v2.0.1: C9 — key dùng separator '\0' thay vì '/' để an toàn với nested path.
+ */
 (function () {
   'use strict';
+
+  const SEP = '\u0000';  // ⭐ C9: không bao giờ xuất hiện trong project/path
 
   const state = {
     byFile: {},
     markers: {},
   };
 
-  function key(project, path) { return project + '/' + path; }
+  function key(project, path) { return project + SEP + path; }
+
+  function parseKey(k) {
+    const i = k.indexOf(SEP);
+    if (i < 0) return [k, ''];
+    return [k.substring(0, i), k.substring(i + 1)];
+  }
+
   function cmForPath(project, path) {
     if (window.AppEditor && typeof window.AppEditor.getCm === 'function') {
       return window.AppEditor.getCm(project, path);
@@ -98,8 +109,7 @@
       const diags = state.byFile[k];
       if (!diags.length) continue;
       hasAny = true;
-      const [project, ...rest] = k.split('/');
-      const path = rest.join('/');
+      const [project, path] = parseKey(k);
       const group = document.createElement('div');
       group.className = 'problem-group';
       const header = document.createElement('div');
@@ -136,7 +146,11 @@
     if (msg.type === 'diagnostics_update') {
       setFileDiagnostics(msg.project, msg.path, msg.diagnostics);
     } else if (msg.type === 'diagnostics_cleared') {
-      Object.keys(state.markers).forEach(k => clearMarkersFor(...k.split('/')));
+      // ⭐ C9: dùng parseKey — không split('/')
+      Object.keys(state.markers).forEach(k => {
+        const [proj, path] = parseKey(k);
+        clearMarkersFor(proj, path);
+      });
       state.byFile = {};
       state.markers = {};
       renderPanel();
@@ -164,9 +178,21 @@
     return state.byFile[key(project, path)] || [];
   }
 
+  /** Xoá diags của module cụ thể (khi module reload). */
+  function clearBySource(sourceName) {
+    for (const k of Object.keys(state.byFile)) {
+      const filtered = state.byFile[k].filter(d => d.source !== sourceName);
+      if (filtered.length) state.byFile[k] = filtered;
+      else delete state.byFile[k];
+    }
+    renderPanel();
+    updateBadge();
+  }
+
   window.DiagnosticsUI = {
     setFileDiagnostics,
     clearMarkersFor,
+    clearBySource,
     handleWsMessage,
     renderPanel,
     refreshAll,

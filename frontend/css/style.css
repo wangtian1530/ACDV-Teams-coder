@@ -1258,3 +1258,78 @@ input.settings-input[type=checkbox] { width: auto; }
 .mini-fill.ok     { background: var(--success); }
 .mini-fill.warn   { background: var(--warning); }
 .mini-fill.danger { background: var(--error); }
+/* ============================================================ */
+/*  ⭐ v1.4.2: Server Config tab                                */
+/* ============================================================ */
+
+.settings-info-banner {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(55, 148, 255, 0.08);
+  border: 1px solid rgba(55, 148, 255, 0.25);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--fg);
+  margin-bottom: 16px;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+.settings-info-banner > span:first-child {
+  color: #4af;
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.settings-group {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-group:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.settings-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+}
+
+.restart-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: rgba(204, 167, 0, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(204, 167, 0, 0.35);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.settings-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--fg-dim);
+  margin-top: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+
+.settings-error {
+  padding: 20px;
+  color: var(--error);
+  background: rgba(241, 76, 76, 0.06);
+  border: 1px solid rgba(241, 76, 76, 0.25);
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+}

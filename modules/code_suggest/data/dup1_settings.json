@@ -1,0 +1,10 @@
+# 1. Copy tất cả files trên vào modules/code_suggest/
+# 2. Reload module
+curl -X POST http://localhost:8765/api/modules/reload \
+  -H 'Content-Type: application/json' -d '{"name":"code_suggest"}'
+
+# 3. Xem intro page
+open http://localhost:8765/module/code_suggest/
+
+# 4. Test function template
+# Gõ "setTimeout" trong editor JS → thấy snippet với full template

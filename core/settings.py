@@ -1,4 +1,8 @@
-"""Settings manager — global + per-module settings, schema validation."""
+"""Settings manager — global + per-module settings, schema validation.
+
+v2.0.1 (hotfix):
+  - H5: ghi atomic (tmp + fsync + os.replace) — không corrupt file khi crash.
+"""
 import os
 import copy
 import json
@@ -23,6 +27,20 @@ DEFAULT_GLOBAL = {
         "per_module": {},
     },
 }
+
+
+def _atomic_write_json(path, data):
+    """Ghi JSON atomic — tránh corrupt khi process bị kill giữa dump."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
+    os.replace(tmp, path)
 
 
 class SettingsManager:
@@ -63,8 +81,7 @@ class SettingsManager:
 
     def _save_global(self):
         try:
-            with open(self.path, "w", encoding="utf-8") as f:
-                json.dump(self.global_settings, f, indent=2, ensure_ascii=False)
+            _atomic_write_json(self.path, self.global_settings)
         except Exception as e:
             print(f"[Settings] save error: {e}")
 
@@ -149,10 +166,8 @@ class SettingsManager:
             current = self.get_module(module_name)
             updated = self._deep_merge(current, patch or {})
             path = self._module_path(module_name)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
             try:
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(updated, f, indent=2, ensure_ascii=False)
+                _atomic_write_json(path, updated)
             except Exception as e:
                 return {"ok": False, "errors": [f"save failed: {e}"]}
         mod = self.engine.modules.get(module_name)

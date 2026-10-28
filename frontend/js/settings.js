@@ -1,11 +1,15 @@
-/* ACDV Settings UI — global + per-module settings + overlay toggles + About */
+/* ACDV Settings UI — global + per-module settings + overlay toggles + server config + About
+ * v2.0.1:
+ * - M1: hiển thị đầy đủ error (error + errors[]) ở mọi save bar.
+ */
 (function () {
   'use strict';
 
   const state = {
     global: null,
     modules: [],
-    version: '1.4.0',
+    config: null,
+    version: '2.0.1',
     activeTab: 'general',
   };
 
@@ -78,7 +82,17 @@
       </div>
     </details>
     <details class="about-details">
-      <summary>7. Troubleshooting</summary>
+      <summary>7. Server Config</summary>
+      <div class="content">
+        <ul>
+          <li>Tab <strong>🖥 Server</strong> cho phép chỉnh <code>config.json</code> từ UI</li>
+          <li>Field có badge <span class="restart-badge">requires restart</span> cần restart server</li>
+          <li>Sau khi save, hỏi restart ngay nếu cần</li>
+        </ul>
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>8. Troubleshooting</summary>
       <div class="content">
         <ul>
           <li>Port bị chiếm: <code>python3 main.py --port 9000</code></li>
@@ -103,7 +117,7 @@
 
   async function loadAll() {
     try {
-      const [gs, ms, st] = await Promise.all([
+      const [gs, ms, st, cfg] = await Promise.all([
         fetch('/api/settings').then(r => r.json()),
         fetch('/api/settings/modules', {
           method: 'POST',
@@ -111,10 +125,12 @@
           body: JSON.stringify({}),
         }).then(r => r.json()),
         fetch('/api/status').then(r => r.json()).catch(() => null),
+        fetch('/api/config').then(r => r.json()).catch(() => null),
       ]);
       if (gs && gs.ok) state.global = gs.settings;
       if (ms && ms.ok) state.modules = ms.modules;
       if (st && st.version) state.version = st.version;
+      if (cfg && cfg.ok) state.config = cfg.config;
     } catch (e) {
       console.error('[Settings] load error', e);
     }
@@ -128,6 +144,7 @@
 
     const tabs = [
       { id: 'general',     label: '⚙ General' },
+      { id: 'server',      label: '🖥 Server' },
       { id: 'editor',      label: '📝 Editor' },
       { id: 'diagnostics', label: '🩺 Diagnostics' },
       { id: 'overlays',    label: '🎨 Overlays' },
@@ -144,6 +161,7 @@
 
     content.innerHTML = '';
     if (state.activeTab === 'general') content.appendChild(renderGlobalGeneral());
+    else if (state.activeTab === 'server') content.appendChild(renderServer());
     else if (state.activeTab === 'editor') content.appendChild(renderGlobalEditor());
     else if (state.activeTab === 'diagnostics') content.appendChild(renderGlobalDiagnostics());
     else if (state.activeTab === 'overlays') content.appendChild(renderGlobalOverlays());
@@ -177,6 +195,7 @@
       if ('min' in spec) input.min = spec.min;
       if ('max' in spec) input.max = spec.max;
       if ('step' in spec) input.step = spec.step;
+      if (spec.integer) input.step = 1;
     } else if (t === 'select') {
       input = document.createElement('select');
       for (const opt of (spec.options || [])) {
@@ -210,6 +229,14 @@
     return out;
   }
 
+  // ⭐ M1: helper format error thống nhất
+  function formatSaveError(res) {
+    if (!res) return 'unknown';
+    if (Array.isArray(res.errors) && res.errors.length) return res.errors.join('; ');
+    if (res.error) return res.error;
+    return 'unknown';
+  }
+
   async function saveSettings(payload) {
     let res;
     try {
@@ -240,7 +267,7 @@
       const v = collectValues(wrap);
       const res = await saveSettings(v);
       if (res && res.ok) toast('Settings saved');
-      else toast('Save failed: ' + (res && res.error ? res.error : 'unknown'), 'error');
+      else toast('Save failed: ' + formatSaveError(res), 'error');
     }));
     return wrap;
   }
@@ -267,7 +294,7 @@
       }
       const res = await saveSettings(nested);
       if (res && res.ok) toast('Editor settings saved');
-      else toast('Save failed', 'error');
+      else toast('Save failed: ' + formatSaveError(res), 'error');
     }));
     return wrap;
   }
@@ -295,7 +322,7 @@
       }
       const res = await saveSettings(nested);
       if (res && res.ok) toast('Diagnostics settings saved');
-      else toast('Save failed', 'error');
+      else toast('Save failed: ' + formatSaveError(res), 'error');
     }));
     return wrap;
   }
@@ -354,7 +381,9 @@
       if (res && res.ok) {
         toast('Overlay settings saved — refreshing');
         if (window.OverlayLoader) OverlayLoader.refresh();
-      } else toast('Save failed', 'error');
+      } else {
+        toast('Save failed: ' + formatSaveError(res), 'error');
+      }
     }));
     return wrap;
   }
@@ -390,19 +419,169 @@
       btn.textContent = 'Save';
       btn.addEventListener('click', async () => {
         const values = collectValues(body);
-        const res = await fetch('/api/settings/module/set', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: m.name, values }),
-        }).then(r => r.json());
+        let res;
+        try {
+          res = await fetch('/api/settings/module/set', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: m.name, values }),
+          }).then(r => r.json());
+        } catch (e) {
+          res = { ok: false, error: e.message };
+        }
         if (res && res.ok) toast(`Saved: ${m.name}`);
-        else if (res && res.errors) toast('Error: ' + res.errors.join('; '), 'error');
+        else toast('Error: ' + formatSaveError(res), 'error');
       });
       bar.appendChild(btn);
       item.appendChild(bar);
 
       wrap.appendChild(item);
     }
+    return wrap;
+  }
+
+  function renderServer() {
+    const wrap = document.createElement('div');
+    wrap.className = 'settings-section';
+
+    if (!state.config) {
+      wrap.innerHTML = '<div class="settings-error">✗ Không tải được /api/config. Backend có thể chưa update.</div>';
+      return wrap;
+    }
+
+    const info = document.createElement('div');
+    info.className = 'settings-info-banner';
+    info.innerHTML = `
+      <span>ℹ</span>
+      <span>Field có badge <span class="restart-badge">requires restart</span>
+        chỉ có hiệu lực <strong>sau khi restart server</strong>. Bạn sẽ được hỏi restart ngay sau khi save nếu cần.</span>
+    `;
+    wrap.appendChild(info);
+
+    const groups = [
+      { title: '🌐 Server binding',  keys: ['host', 'port'] },
+      { title: '🔒 TLS / SSL',       keys: ['ssl.enabled', 'ssl.auto_generate'] },
+      { title: '⚙️ Runtime',          keys: [
+          'log_level',
+          'auto_stop_on_disconnect',
+          'auto_detect_modules',
+          'module_watch_interval',
+          'enable_system_controls',
+        ] },
+      { title: '💾 Storage',         keys: ['module_storage_quota'] },
+      { title: '⌨ Terminal',         keys: ['terminal.shell', 'terminal.max_sessions'] },
+    ];
+
+    const collected = {};
+    for (const group of groups) {
+      const g = document.createElement('div');
+      g.className = 'settings-group';
+      const h = document.createElement('h4');
+      h.className = 'settings-group-title';
+      h.textContent = group.title;
+      g.appendChild(h);
+
+      for (const key of group.keys) {
+        const entry = state.config[key];
+        if (!entry) continue;
+        const spec = entry.spec;
+        const field = renderField(key, spec, entry.value);
+
+        if (spec.restart) {
+          const label = field.querySelector('label');
+          if (label) {
+            const badge = document.createElement('span');
+            badge.className = 'restart-badge';
+            badge.textContent = 'requires restart';
+            badge.title = 'Chỉ có hiệu lực sau khi restart server';
+            label.appendChild(badge);
+          }
+        }
+
+        if (key === 'module_storage_quota') {
+          const input = field.querySelector('[data-key]');
+          const hint = document.createElement('div');
+          hint.className = 'settings-hint';
+          const updateHint = () => {
+            const bytes = parseFloat(input.value) || 0;
+            hint.textContent = `≈ ${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+          };
+          if (input) {
+            input.addEventListener('input', updateHint);
+            updateHint();
+          }
+          field.appendChild(hint);
+        }
+
+        g.appendChild(field);
+        const input = field.querySelector('[data-key]');
+        if (input) collected[key] = input;
+      }
+      wrap.appendChild(g);
+    }
+
+    const bar = document.createElement('div');
+    bar.className = 'settings-savebar';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-primary';
+    saveBtn.textContent = 'Save config';
+    saveBtn.addEventListener('click', async () => {
+      const patch = {};
+      for (const [key, input] of Object.entries(collected)) {
+        const type = input.dataset.type;
+        if (type === 'boolean') patch[key] = input.checked;
+        else if (type === 'number') patch[key] = parseFloat(input.value) || 0;
+        else patch[key] = input.value;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+      let res;
+      try {
+        res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patch }),
+        }).then(r => r.json());
+      } catch (e) {
+        res = { ok: false, error: e.message };
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save config';
+      }
+
+      if (res && res.ok) {
+        try {
+          const cfg = await fetch('/api/config').then(r => r.json());
+          if (cfg && cfg.ok) state.config = cfg.config;
+        } catch (e) {}
+        render();
+
+        if (res.restart_required) {
+          const doRestart = confirm(
+            '✓ Đã lưu config.\n\n' +
+            'Một số thay đổi cần RESTART server để có hiệu lực ' +
+            '(host, port, SSL, watcher…).\n\n' +
+            'Restart ngay bây giờ?\n\n' +
+            '(Nếu bind port mới thất bại, bạn có thể phải sửa config.json thủ công ' +
+            'và chạy lại: python3 main.py)'
+          );
+          if (doRestart && window.App && typeof App.restartServer === 'function') {
+            hide();
+            App.restartServer();
+          } else {
+            toast('Đã lưu — nhớ restart server sau');
+          }
+        } else {
+          toast('Config saved');
+        }
+      } else {
+        toast('Save failed: ' + formatSaveError(res), 'error');
+      }
+    });
+    bar.appendChild(saveBtn);
+    wrap.appendChild(bar);
+
     return wrap;
   }
 
@@ -431,7 +610,7 @@
       </svg>
       <div class="about-hero-text">
         <h3>ACDV-Teams Coder</h3>
-        <div class="version">v${state.version || '1.4.0'}</div>
+        <div class="version">v${state.version || '2.0.1'}</div>
         <div class="tagline">Local web IDE · Python stdlib backend · CodeMirror frontend</div>
       </div>
     `;
@@ -463,6 +642,7 @@
       <h4>🔗 Liên kết</h4>
       <div class="about-links">
         <a href="/api/status" target="_blank" rel="noopener">API status</a>
+        <a href="/api/config" target="_blank" rel="noopener">Config JSON</a>
         <a href="/api/modules" target="_blank" rel="noopener">Module list</a>
         <a href="/api/settings" target="_blank" rel="noopener">Settings JSON</a>
         <a href="/api/boot" target="_blank" rel="noopener">Boot info</a>
@@ -501,5 +681,5 @@
     }
   });
 
-  window.SettingsUI = { open, hide };
+  window.SettingsUI = { open, hide, reload: async () => { await loadAll(); render(); } };
 })();

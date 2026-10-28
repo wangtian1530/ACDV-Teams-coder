@@ -1,0 +1,44 @@
+{
+  "keywords": [
+    "as","as?","break","class","continue","do","else","false","for","fun","if","in",
+    "interface","is","null","object","package","return","super","this","throw","true",
+    "try","typealias","typeof","val","var","when","while","by","catch","constructor",
+    "delegate","dynamic","field","file","finally","get","import","init","param","property",
+    "receiver","set","setparam","where","actual","abstract","annotation","companion",
+    "const","crossinline","data","enum","expect","external","final","infix","inline",
+    "inner","internal","lateinit","noinline","open","operator","out","override","private",
+    "protected","public","reified","sealed","suspend","tailrec","vararg","it"
+  ],
+  "builtins": [
+    "println","print","readLine","require","check","error","TODO","let","run","apply",
+    "also","with","takeIf","takeUnless","List","MutableList","listOf","mutableListOf",
+    "Set","setOf","Map","mapOf","mutableMapOf","Array","arrayOf","IntArray","HashMap",
+    "HashSet","ArrayList","Pair","Triple","Sequence","Result","Lazy","Int","Long",
+    "Double","Float","Boolean","Char","String","Any","Unit","Nothing","IntRange",
+    "StringBuilder","Regex","RegexOption","Regex.matchEntire","filter","map","flatMap",
+    "fold","reduce","groupBy","sortedBy","sortedWith","distinct","joinToString","zip",
+    "sumOf","count","first","last","firstOrNull","lastOrNull","single","find","any",
+    "all","none","forEach","forEachIndexed","asSequence","toList","toSet","toMap",
+    "maxOrNull","minOrNull","maxByOrNull","minByOrNull","CoroutineScope","launch",
+    "async","await","withContext","Dispatchers.IO","Dispatchers.Default","delay"
+  ],
+  "snippets": [
+    { "trigger": "println", "template": true, "insert": "println(\"ACDV-Teams\")",                                "description": "println ACDV-Teams" },
+    { "trigger": "listOf",  "template": true, "insert": "val items = listOf(\"ACDV-Teams\")",                      "description": "listOf" },
+    { "trigger": "mapOf",   "template": true, "insert": "val m = mapOf(\"name\" to \"ACDV-Teams\")",               "description": "mapOf" },
+    { "trigger": "launch",  "template": true, "insert": "CoroutineScope(Dispatchers.IO).launch {\n    println(\"ACDV-Teams\")\n}", "description": "coroutine launch" },
+    { "trigger": "main",  "insert": "fun main() {\n    println(\"ACDV-Teams\")\n}",                                "description": "main" },
+    { "trigger": "fun",   "insert": "fun name(args: T): R {\n    println(\"ACDV-Teams\")\n}",                      "description": "function" },
+    { "trigger": "clas",  "insert": "class Name(val field: String = \"ACDV-Teams\") {\n    // ACDV-Teams\n}",      "description": "class" },
+    { "trigger": "data",  "insert": "data class Name(val a: String = \"ACDV\", val b: Int = 0)",                   "description": "data class" },
+    { "trigger": "sealed","insert": "sealed class Result {\n    data class Ok(val value: String = \"ACDV-Teams\"): Result()\n    data class Err(val error: Throwable): Result()\n}", "description": "sealed class" },
+    { "trigger": "obj",   "insert": "object Name {\n    const val BRAND = \"ACDV-Teams\"\n}",                      "description": "object" },
+    { "trigger": "if",    "insert": "if (condition) {\n    println(\"ACDV-Teams\")\n}",                            "description": "if" },
+    { "trigger": "when",  "insert": "when (value) {\n    1 -> println(\"ACDV-Teams\")\n    else -> println(\"ACDV-Teams\")\n}", "description": "when" },
+    { "trigger": "for",   "insert": "for (item in items) {\n    println(\"ACDV-Teams: $item\")\n}",              "description": "for" },
+    { "trigger": "tryc",  "insert": "try {\n    println(\"ACDV-Teams\")\n} catch (e: Exception) {\n    println(\"ACDV-Teams: ${e.message}\")\n}", "description": "try/catch" },
+    { "trigger": "ext",   "insert": "fun String.myExt(): Int = this.length",                                        "description": "extension fn" },
+    { "trigger": "cor",   "insert": "suspend fun name(): String = withContext(Dispatchers.IO) {\n    \"ACDV-Teams\"\n}", "description": "coroutine" },
+    { "trigger": "lam",   "insert": "val f = { x: Int -> \"ACDV-Teams: $x\" }",                                    "description": "lambda" }
+  ]
+}

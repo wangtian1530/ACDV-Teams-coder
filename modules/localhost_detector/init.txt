@@ -1,0 +1,14 @@
+{
+  "name": "localhost_detector",
+  "version": "1.0.0",
+  "description": "Phát hiện localhost server trong Python code và hiện nút mở nhanh (mở tab mới, không đổi tab editor)",
+  "critical": false,
+
+  "routes": [
+    { "method": "POST", "path": "/api/localhost_detector/scan", "handler": "scan" }
+  ],
+
+  "settings_schema": {
+    "enabled": { "type": "boolean", "default": true, "label": "Bật dò localhost server" }
+  }
+}

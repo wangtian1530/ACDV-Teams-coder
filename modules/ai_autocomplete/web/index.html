@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Autocomplete — ACDV-Teams</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1e1e2e; color: #cdd6f4;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    max-width: 900px; width: 100%;
+    background: #181825; border-radius: 14px;
+    padding: 30px; border: 1px solid #313244;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  h1 { margin: 0 0 6px; font-size: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge {
+    font-size: 12px; padding: 3px 9px; border-radius: 6px;
+    background: #89b4fa22; color: #89b4fa; font-weight: 600;
+    border: 1px solid #89b4fa55;
+  }
+  .badge-local {
+    background: #f9e2af22; color: #f9e2af;
+    border: 1px solid #f9e2af55; display: none;
+  }
+  .badge-local.show { display: inline-block; }
+  .copyright { color: #f9e2af; font-size: 13px; margin-bottom: 4px; }
+  .subtitle { color: #6c7086; font-size: 13px; margin-bottom: 22px; }
+  hr { border: none; border-top: 1px solid #313244; margin: 22px 0; }
+  h2 { font-size: 15px; color: #89b4fa; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+
+  .provider-tabs {
+    display: flex; gap: 8px; margin-bottom: 22px;
+    padding: 4px; background: #11111b; border-radius: 10px;
+    border: 1px solid #313244;
+  }
+  .provider-tab {
+    flex: 1; padding: 12px 18px; border-radius: 8px; border: none;
+    background: transparent; color: #a6adc8; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .provider-tab:hover { color: #cdd6f4; background: #181825; }
+  .provider-tab.active {
+    background: #89b4fa; color: #11111b;
+    box-shadow: 0 2px 8px rgba(137,180,250,.3);
+  }
+  .provider-tab .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #45475a;
+  }
+  .provider-tab .status-dot.has-key { background: #a6e3a1; }
+  .provider-tab.active .status-dot { background: #11111b; }
+  .provider-tab.active .status-dot.has-key { background: #2a6a2a; }
+
+  label { display: block; font-size: 13px; color: #bac2de; margin: 0 0 6px; font-weight: 600; }
+  input[type=password], input[type=text], select {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid #45475a; background: #11111b; color: #cdd6f4;
+    font-family: 'Courier New', monospace; font-size: 13px;
+  }
+  input:focus, select:focus { outline: none; border-color: #89b4fa; }
+  .hint { font-size: 12px; color: #6c7086; margin-top: 6px; }
+  .hint a { color: #89b4fa; }
+  .field { margin-bottom: 16px; }
+
+  .actions { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 18px; border-radius: 8px; border: none;
+    font-weight: 600; cursor: pointer; font-size: 13px;
+    transition: filter .15s;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.15); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: #89b4fa; color: #11111b; }
+  .btn-success { background: #a6e3a1; color: #11111b; }
+  .btn-muted   { background: #313244; color: #cdd6f4; }
+  .btn-warn    { background: #f9e2af; color: #11111b; }
+
+  .status {
+    margin-top: 14px; padding: 12px 14px; border-radius: 8px;
+    font-size: 13px; font-family: 'Courier New', monospace;
+    white-space: pre-wrap; word-break: break-word; display: none;
+  }
+  .status.show { display: block; }
+  .status.ok  { background: #a6e3a115; border: 1px solid #a6e3a1; color: #a6e3a1; }
+  .status.err { background: #f38ba815; border: 1px solid #f38ba8; color: #f38ba8; }
+  .status.info{ background: #89b4fa15; border: 1px solid #89b4fa; color: #89b4fa; }
+
+  .kbd {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    background: #313244; color: #cdd6f4; font-family: monospace;
+    font-size: 11px; border: 1px solid #45475a;
+  }
+
+  .meta {
+    margin-top: 20px; font-size: 12px; color: #6c7086;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .meta span { color: #a6adc8; }
+
+  .model-grid {
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    margin-bottom: 6px;
+  }
+  .model-card {
+    position: relative; padding: 12px 14px; border-radius: 10px;
+    background: #11111b; border: 2px solid #313244;
+    cursor: pointer; transition: all .15s;
+  }
+  .model-card:hover { border-color: #45475a; background: #181825; }
+  .model-card.selected {
+    border-color: #89b4fa; background: #89b4fa10;
+    box-shadow: 0 0 0 1px #89b4fa33;
+  }
+  .model-card .head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .model-card .name { font-weight: 700; color: #cdd6f4; font-size: 13px; }
+  .model-card .tier-badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: #89b4fa22; color: #89b4fa; font-weight: 600;
+  }
+  .model-card .id {
+    font-family: 'Courier New', monospace; font-size: 11px;
+    color: #6c7086; margin-bottom: 6px;
+  }
+  .model-card .desc { font-size: 12px; color: #a6adc8; line-height: 1.4; }
+  .model-card .check {
+    position: absolute; top: 10px; right: 10px;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #45475a; background: #181825;
+    display: none; align-items: center; justify-content: center;
+    font-size: 12px; color: transparent;
+  }
+  .model-card.selected .check {
+    border-color: #89b4fa; background: #89b4fa; color: #11111b;
+    display: flex;
+  }
+  .model-card.selected .tier-badge { display: none; }
+
+  .switch-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: #11111b; border-radius: 8px;
+    border: 1px solid #45475a;
+  }
+  .switch-row .label { font-size: 13px; color: #cdd6f4; font-weight: 600; }
+  .switch-row .sub { font-size: 12px; color: #6c7086; margin-top: 2px; }
+  .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #313244; border-radius: 26px; transition: .2s;
+  }
+  .slider::before {
+    position: absolute; content: ""; height: 20px; width: 20px;
+    left: 3px; bottom: 3px; background: #cdd6f4;
+    border-radius: 50%; transition: .2s;
+  }
+  .switch input:checked + .slider { background: #a6e3a1; }
+  .switch input:checked + .slider::before { transform: translateX(20px); background: #11111b; }
+
+  .range-row { display: flex; align-items: center; gap: 14px; }
+  .range-row input[type=range] { flex: 1; }
+  .range-value {
+    min-width: 56px; text-align: right; font-family: 'Courier New', monospace;
+    font-size: 13px; color: #89b4fa; font-weight: 700;
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; height: 6px;
+    background: #313244; border-radius: 3px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #89b4fa; cursor: pointer; border: 2px solid #11111b;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #89b4fa; cursor: pointer; border: 2px solid #11111b;
+  }
+
+  #helpBox {
+    margin-top: 16px; padding: 16px; border-radius: 8px;
+    background: #11111b; border: 1px solid #45475a;
+    font-family: 'Courier New', monospace; font-size: 12px;
+    color: #cdd6f4; white-space: pre-wrap; display: none;
+    max-height: 460px; overflow-y: auto; line-height: 1.55;
+  }
+  #helpBox.show { display: block; }
+
+  .section { margin-bottom: 24px; }
+
+  .localhost-banner {
+    display: none; margin-bottom: 18px;
+    padding: 10px 14px; border-radius: 8px;
+    background: #f9e2af15; border: 1px solid #f9e2af66;
+    color: #f9e2af; font-size: 12px; line-height: 1.5;
+  }
+  .localhost-banner.show { display: block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>
+    🤖 AI Autocomplete
+    <span class="badge" id="verBadge">v1.3.0</span>
+    <span class="badge badge-local" id="localBadge">🏠 Localhost</span>
+  </h1>
+  <div class="copyright">© ACDV-Teams · Gemini (free) + DeepSeek (rẻ)</div>
+  <div class="subtitle" id="statusLine">Đang kiểm tra trạng thái…</div>
+
+  <div class="localhost-banner" id="localBanner">
+    🏠 <strong>Localhost mode</strong> — settings.json đã được tự tạo với giá trị mặc định.
+    Module sẽ tự test API một lần / session nếu đã có key.
+  </div>
+
+  <div class="provider-tabs" id="providerTabs">
+    <button class="provider-tab active" data-provider="gemini">
+      <span class="status-dot" id="dotGemini"></span> ✨ Gemini
+    </button>
+    <button class="provider-tab" data-provider="deepseek">
+      <span class="status-dot" id="dotDeepSeek"></span> 🐋 DeepSeek
+    </button>
+  </div>
+
+  <div class="section">
+    <h2 id="keyHeading">🔑 Gemini API Key</h2>
+    <div class="field">
+      <input type="password" id="apiKey" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
+      <div class="hint" id="keyHint">
+        Lấy key miễn phí tại
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:8px;">
+      <button class="btn btn-success" id="btnTest">🧪 Test API</button>
+      <button class="btn btn-primary" id="btnSaveKey">💾 Lưu key</button>
+      <button class="btn btn-muted"   id="btnRefresh">🔄 Làm mới</button>
+      <button class="btn btn-warn"    id="btnHelp">📖 Hướng dẫn</button>
+    </div>
+    <div class="status" id="output"></div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <h2>🎯 Model chính <span style="font-size:11px;color:#6c7086;font-weight:400;">(chọn 1)</span></h2>
+    <div class="model-grid" id="modelGrid"></div>
+  </div>
+
+  <div class="section">
+    <h2>🛟 Model dự phòng</h2>
+    <div class="field">
+      <label for="fallbackModel">Tự động chuyển khi model chính hết quota (429) hoặc lỗi (503)</label>
+      <select id="fallbackModel">
+        <option value="">— Không dùng dự phòng —</option>
+      </select>
+      <div class="hint">Fallback luôn trong cùng provider đang chọn.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <h2>⚙️ Tham số sinh</h2>
+
+    <div class="field">
+      <label for="maxTokens">Max output tokens</label>
+      <div class="range-row">
+        <input type="range" id="maxTokens" min="20" max="800" step="10" value="120">
+        <span class="range-value" id="maxTokensVal">120</span>
+      </div>
+      <div class="hint">Số token tối đa AI được phép sinh cho mỗi gợi ý.</div>
+    </div>
+
+    <div class="field">
+      <label for="temperature">Temperature</label>
+      <div class="range-row">
+        <input type="range" id="temperature" min="0" max="1" step="0.05" value="0.3">
+        <span class="range-value" id="temperatureVal">0.30</span>
+      </div>
+      <div class="hint">0.0 = chính xác · 1.0 = sáng tạo. Code khuyến nghị 0.1 – 0.3.</div>
+    </div>
+
+    <div class="field">
+      <div class="switch-row">
+        <div>
+          <div class="label">Bật AI Autocomplete</div>
+          <div class="sub">Tắt để tạm ngưng gọi API mà không cần xoá module</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="enabled" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:18px;">
+      <button class="btn btn-primary" id="btnSaveConfig">💾 Lưu cấu hình</button>
+      <button class="btn btn-muted"   id="btnResetConfig">↺ Đặt lại mặc định</button>
+    </div>
+    <div class="status" id="configOut"></div>
+  </div>
+
+  <hr>
+
+  <div style="font-size:13px;color:#a6adc8;line-height:1.9;">
+    <strong style="color:#cdd6f4;">Cách dùng trong editor</strong><br>
+    • Nhấn <span class="kbd">Ctrl</span> + <span class="kbd">Space</span> để gợi ý code<br>
+    • Hoặc click nút <strong>🤖 AI</strong> trên toolbar<br>
+    • Gợi ý hiện dạng ghost-text — <span class="kbd">Tab</span> chấp nhận, <span class="kbd">Esc</span> huỷ
+  </div>
+
+  <div id="helpBox"></div>
+
+  <div class="meta">
+    <div>Version: <span id="metaVer">—</span></div>
+    <div>Author: <span id="metaAuthor">ACDV-Teams</span></div>
+    <div>Provider: <span id="metaProvider">—</span></div>
+    <div>Model: <span id="metaModel">—</span></div>
+    <div>Fallback: <span id="metaFallback">—</span></div>
+    <div>Storage: <span id="metaStorage">—</span></div>
+    <div>Mode: <span id="metaMode">—</span></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const DEFAULTS = {
+  enabled: true,
+  provider: "gemini",
+  model_gemini: "gemini-3.8-flash",
+  model_deepseek: "deepseek-chat",
+  fallback_gemini: "gemini-3.5-flash-8b",
+  fallback_deepseek: "deepseek-chat",
+  max_tokens: 120,
+  temperature: 0.3,
+};
+
+const PROVIDER_META = {
+  gemini: {
+    label: "Gemini",
+    keyPlaceholder: "AIzaSy…",
+    keyHintHtml: 'Lấy key miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>',
+    maskPrefix: "••••••••••••••••",
+  },
+  deepseek: {
+    label: "DeepSeek",
+    keyPlaceholder: "sk-…",
+    keyHintHtml: 'Lấy key tại <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a> — DeepSeek không có free tier nhưng cực rẻ (~$0.14/1M token)',
+    maskPrefix: "••••••••••••••••",
+  },
+};
+
+const AUTOTEST_KEY = 'ai_ac_autotest_done_v1';
+
+let CATALOG = { gemini: [], deepseek: [] };
+let CURRENT = { ...DEFAULTS };
+let HAS_KEYS = { gemini: false, deepseek: false };
+let IS_LOCALHOST = false;
+
+function show(elId, html, cls) {
+  const el = $(elId);
+  el.className = 'status show ' + (cls || 'info');
+  el.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+async function jpost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body || {})
+  });
+  return r.json();
+}
+
+function setProvider(p) {
+  if (!CATALOG[p]) p = "gemini";
+  CURRENT.provider = p;
+  document.querySelectorAll('.provider-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.provider === p);
+  });
+  renderProviderUI();
+}
+
+function renderProviderUI() {
+  const p = CURRENT.provider;
+  const meta = PROVIDER_META[p];
+
+  $('keyHeading').textContent = `🔑 ${meta.label} API Key`;
+  $('keyHint').innerHTML = meta.keyHintHtml;
+  $('apiKey').placeholder = meta.keyPlaceholder;
+
+  $('apiKey').value = HAS_KEYS[p] ? meta.maskPrefix : '';
+
+  if (HAS_KEYS[p]) {
+    show('output', `✅ Đã có ${meta.label} API key. Bấm "Test API" để kiểm tra.`, 'ok');
+  } else {
+    show('output', `⚠️ Chưa có ${meta.label} API key. Dán key bên dưới rồi bấm "Test API".`, 'info');
+  }
+
+  renderModelGrid();
+  renderFallbackSelect();
+
+  $('metaProvider').textContent = p;
+  $('metaModel').textContent = CURRENT[`model_${p}`] || '—';
+  $('metaFallback').textContent = CURRENT[`fallback_${p}`] || '(không)';
+}
+
+function renderModelGrid() {
+  const p = CURRENT.provider;
+  const grid = $('modelGrid');
+  grid.innerHTML = '';
+  (CATALOG[p] || []).forEach(m => {
+    const card = document.createElement('div');
+    const selected = CURRENT[`model_${p}`] === m.id;
+    card.className = 'model-card' + (selected ? ' selected' : '');
+    card.innerHTML = `
+      <div class="check">✓</div>
+      <div class="head">
+        <div class="name">${escapeHtml(m.name)}</div>
+        <div class="tier-badge">${escapeHtml(m.badge || '')}</div>
+      </div>
+      <div class="id">${escapeHtml(m.id)}</div>
+      <div class="desc">${escapeHtml(m.desc || '')}</div>
+    `;
+    card.addEventListener('click', () => {
+      CURRENT[`model_${p}`] = m.id;
+      renderModelGrid();
+      renderFallbackSelect();
+      $('metaModel').textContent = m.id;
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderFallbackSelect() {
+  const p = CURRENT.provider;
+  const sel = $('fallbackModel');
+  sel.innerHTML = '<option value="">— Không dùng dự phòng —</option>';
+  (CATALOG[p] || []).forEach(m => {
+    if (m.id === CURRENT[`model_${p}`]) return;
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.name} — ${m.id}`;
+    sel.appendChild(opt);
+  });
+  sel.value = CURRENT[`fallback_${p}`] || '';
+}
+
+function applyToForm() {
+  $('maxTokens').value = CURRENT.max_tokens;
+  $('maxTokensVal').textContent = CURRENT.max_tokens;
+  $('temperature').value = CURRENT.temperature;
+  $('temperatureVal').textContent = Number(CURRENT.temperature).toFixed(2);
+  $('enabled').checked = !!CURRENT.enabled;
+  renderProviderUI();
+}
+
+async function loadInfo() {
+  try {
+    const [infoRes, modelsRes] = await Promise.all([
+      fetch('/api/ai_autocomplete/info').then(r => r.json()),
+      fetch('/api/ai_autocomplete/models').then(r => r.json()),
+    ]);
+
+    if (!infoRes.ok) { show('output', 'Lỗi: ' + (infoRes.error || 'unknown'), 'err'); return; }
+    if (modelsRes.ok) CATALOG = modelsRes.catalog || CATALOG;
+
+    const d = infoRes;
+    CURRENT = { ...DEFAULTS, ...(d.settings || {}) };
+    HAS_KEYS = d.has_keys || { gemini: false, deepseek: false };
+    IS_LOCALHOST = !!d.is_localhost;
+
+    $('verBadge').textContent   = 'v' + d.version;
+    $('metaVer').textContent    = d.version;
+    $('metaAuthor').textContent = d.author || 'ACDV-Teams';
+    $('statusLine').textContent = 'Module đã kết nối · ' + d.copyright;
+
+    $('localBadge').classList.toggle('show', IS_LOCALHOST);
+    $('localBanner').classList.toggle('show', IS_LOCALHOST && d.auto_setup);
+    $('metaMode').textContent = IS_LOCALHOST ? '🏠 localhost' : '🌐 remote';
+
+    $('dotGemini').classList.toggle('has-key', !!HAS_KEYS.gemini);
+    $('dotDeepSeek').classList.toggle('has-key', !!HAS_KEYS.deepseek);
+
+    if (d.storage && d.storage.quota) {
+      const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
+      $('metaStorage').textContent = mb(d.storage.used) + ' / ' + mb(d.storage.quota);
+    }
+
+    document.querySelectorAll('.provider-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.provider === CURRENT.provider);
+    });
+    applyToForm();
+
+    if (IS_LOCALHOST && HAS_KEYS[CURRENT.provider]
+        && !sessionStorage.getItem(AUTOTEST_KEY)) {
+      sessionStorage.setItem(AUTOTEST_KEY, '1');
+      setTimeout(() => autoTest(), 400);
+    }
+  } catch (e) {
+    show('output', '❌ Không kết nối được server: ' + e.message, 'err');
+  }
+}
+
+async function autoTest() {
+  const p = CURRENT.provider;
+  const meta = PROVIDER_META[p];
+  show('output', `🏠 Localhost auto-test — đang kiểm tra ${meta.label}…`, 'info');
+  try {
+    const r = await jpost('/api/ai_autocomplete/test', {
+      provider: p,
+      model: CURRENT[`model_${p}`],
+    });
+    if (r.ok) {
+      show('output',
+        `🏠 Localhost auto-test ✅ — ${meta.label} hoạt động\n` +
+        'Model: ' + (r.model_used || '?') + '\n' +
+        'Phản hồi: ' + (r.reply || '(trống)') + '\n' +
+        'Module: v' + (r.version || '?') + ' · ' + (r.copyright || ''),
+        'ok'
+      );
+    } else {
+      show('output',
+        `🏠 Localhost auto-test ❌ — ${meta.label} lỗi\n` +
+        'Error: ' + (r.error || 'Unknown') + '\n' +
+        'Nhập key / đổi model rồi bấm "🧪 Test API" thủ công.',
+        'err'
+      );
+    }
+  } catch (e) {
+    show('output', '❌ Auto-test lỗi: ' + e.message, 'err');
+  }
+}
+
+async function testApi() {
+  const p = CURRENT.provider;
+  const meta = PROVIDER_META[p];
+  const key = $('apiKey').value.trim();
+  const isMasked = key.startsWith('•••');
+  if (!isMasked && key && key.length < 20) {
+    show('output', `❌ ${meta.label} API key quá ngắn.`, 'err');
+    return;
+  }
+  $('btnTest').disabled = true;
+  show('output', `⏳ Đang gọi ${meta.label}… (model: ${CURRENT[`model_${p}`]})`, 'info');
+  try {
+    const payload = isMasked ? {} : { api_key: key };
+    payload.provider = p;
+    payload.model = CURRENT[`model_${p}`];
+    const r = await jpost('/api/ai_autocomplete/test', payload);
+    if (r.ok) {
+      show('output',
+        '✅ ' + (r.message || 'OK') + '\n' +
+        'Phản hồi: ' + (r.reply || '(trống)') + '\n' +
+        'Module: v' + (r.version || '?') + ' · ' + (r.copyright || ''),
+        'ok'
+      );
+      if (!isMasked) {
+        $('apiKey').value = meta.maskPrefix;
+        HAS_KEYS[p] = true;
+        $('dot' + (p === 'gemini' ? 'Gemini' : 'DeepSeek')).classList.add('has-key');
+      }
+    } else {
+      let extra = '';
+      if (r.detail) extra = '\n\nChi tiết:\n' + (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail, null, 2));
+      show('output', '❌ ' + (r.error || 'Unknown') + extra, 'err');
+    }
+  } catch (e) {
+    show('output', '❌ ' + e.message, 'err');
+  } finally {
+    $('btnTest').disabled = false;
+  }
+}
+
+async function saveKey() {
+  const p = CURRENT.provider;
+  const meta = PROVIDER_META[p];
+  const key = $('apiKey').value.trim();
+  if (!key || key.startsWith('•••')) { show('output', '⚠️ Nhập key mới vào ô trên.', 'info'); return; }
+  $('btnSaveKey').disabled = true;
+  try {
+    const r = await jpost('/api/ai_autocomplete/save_key', { provider: p, api_key: key });
+    if (r.ok) {
+      show('output', '✅ ' + r.message, 'ok');
+      $('apiKey').value = meta.maskPrefix;
+      HAS_KEYS[p] = true;
+      $('dot' + (p === 'gemini' ? 'Gemini' : 'DeepSeek')).classList.add('has-key');
+    } else {
+      show('output', '❌ ' + (r.error || 'Lỗi'), 'err');
+    }
+  } catch (e) { show('output', '❌ ' + e.message, 'err'); }
+  finally { $('btnSaveKey').disabled = false; }
+}
+
+function collectConfig() {
+  return {
+    enabled: $('enabled').checked,
+    provider: CURRENT.provider,
+    model_gemini: CURRENT.model_gemini,
+    model_deepseek: CURRENT.model_deepseek,
+    fallback_gemini: CURRENT.fallback_gemini,
+    fallback_deepseek: CURRENT.fallback_deepseek,
+    max_tokens: parseInt($('maxTokens').value, 10),
+    temperature: parseFloat($('temperature').value),
+  };
+}
+
+async function saveConfig() {
+  const values = collectConfig();
+  $('btnSaveConfig').disabled = true;
+  show('configOut', '⏳ Đang lưu…', 'info');
+  try {
+    const r = await jpost('/api/ai_autocomplete/save_config', { values });
+    if (r.ok) {
+      CURRENT = { ...DEFAULTS, ...(r.settings || values) };
+      applyToForm();
+      show('configOut', '✅ ' + (r.message || 'Đã lưu') + ' — v' + (r.version || ''), 'ok');
+    } else {
+      show('configOut', '❌ ' + (r.error || 'Lỗi lưu cấu hình'), 'err');
+    }
+  } catch (e) {
+    show('configOut', '❌ ' + e.message, 'err');
+  } finally {
+    $('btnSaveConfig').disabled = false;
+  }
+}
+
+function resetConfig() {
+  CURRENT = { ...DEFAULTS };
+  applyToForm();
+  show('configOut', '↺ Đã đặt lại form về mặc định (chưa lưu — bấm "Lưu cấu hình" để áp dụng)', 'info');
+}
+
+async function toggleHelp() {
+  const box = $('helpBox');
+  if (box.classList.contains('show')) { box.classList.remove('show'); return; }
+  box.classList.add('show');
+  box.textContent = '⏳ Đang tải hướng dẫn…';
+  try {
+    const r = await fetch('/api/ai_autocomplete/help_install');
+    const d = await r.json();
+    box.textContent = d.ok ? d.content : '❌ ' + (d.error || 'Không tải được hướng dẫn');
+  } catch (e) {
+    box.textContent = '❌ ' + e.message;
+  }
+}
+
+$('providerTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.provider-tab');
+  if (!tab) return;
+  setProvider(tab.dataset.provider);
+});
+$('maxTokens').addEventListener('input', (e) => {
+  $('maxTokensVal').textContent = e.target.value;
+});
+$('temperature').addEventListener('input', (e) => {
+  $('temperatureVal').textContent = Number(e.target.value).toFixed(2);
+});
+$('fallbackModel').addEventListener('change', (e) => {
+  CURRENT[`fallback_${CURRENT.provider}`] = e.target.value;
+  $('metaFallback').textContent = e.target.value || '(không)';
+});
+
+$('btnTest').addEventListener('click', testApi);
+$('btnSaveKey').addEventListener('click', saveKey);
+$('btnRefresh').addEventListener('click', loadInfo);
+$('btnHelp').addEventListener('click', toggleHelp);
+$('btnSaveConfig').addEventListener('click', saveConfig);
+$('btnResetConfig').addEventListener('click', resetConfig);
+
+loadInfo();
+</script>
+</body>
+</html>

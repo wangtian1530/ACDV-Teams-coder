@@ -1,0 +1,6 @@
+localhost_detector/
+├── init.txt
+├── main.py
+└── web/
+    ├── overlay.js
+    └── overlay.css

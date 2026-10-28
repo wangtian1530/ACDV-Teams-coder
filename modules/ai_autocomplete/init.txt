@@ -1,0 +1,49 @@
+{
+  "name": "ai_autocomplete",
+  "version": "1.3.0",
+  "description": "AI Autocomplete (Gemini + DeepSeek) — © ACDV-Teams",
+  "critical": false,
+  "module_storage_quota": 104857600,
+
+  "routes": [
+    { "method": "GET",  "path": "/api/ai_autocomplete/info",         "handler": "info" },
+    { "method": "GET",  "path": "/api/ai_autocomplete/models",       "handler": "models" },
+    { "method": "GET",  "path": "/api/ai_autocomplete/help_install", "handler": "help_install" },
+    { "method": "POST", "path": "/api/ai_autocomplete/save_key",     "handler": "save_key" },
+    { "method": "POST", "path": "/api/ai_autocomplete/save_config",  "handler": "save_config" },
+    { "method": "POST", "path": "/api/ai_autocomplete/test",         "handler": "test_api" },
+    { "method": "POST", "path": "/api/ai_autocomplete/complete",     "handler": "complete" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "test_api",
+      "label": "Test AI",
+      "icon": "🧪",
+      "color": "info",
+      "action": "route",
+      "params": { "method": "POST", "path": "/api/ai_autocomplete/test", "body": {} }
+    }
+  ],
+
+  "settings_schema": {
+    "enabled":          { "type": "boolean", "default": true,             "label": "Bật AI Autocomplete" },
+    "provider":         { "type": "select",  "default": "gemini",
+                          "options": ["gemini", "deepseek"],
+                          "label": "Nhà cung cấp AI" },
+    "model_gemini":     { "type": "select",  "default": "gemini-3.8-flash",
+                          "options": ["gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.7-flash", "gemini-3.5-flash-8b", "gemini-3.1-pro", "gemini-4.0-flash"],
+                          "label": "Model Gemini" },
+    "model_deepseek":   { "type": "select",  "default": "deepseek-chat",
+                          "options": ["deepseek-chat", "deepseek-reasoner"],
+                          "label": "Model DeepSeek" },
+    "fallback_gemini":  { "type": "select",  "default": "gemini-3.5-flash-8b",
+                          "options": ["", "gemini-3.8-flash", "gemini-3.8-flash-lite", "gemini-3.7-flash", "gemini-3.5-flash-8b", "gemini-3.1-pro", "gemini-4.0-flash"],
+                          "label": "Fallback Gemini" },
+    "fallback_deepseek":{ "type": "select",  "default": "deepseek-chat",
+                          "options": ["", "deepseek-chat", "deepseek-reasoner"],
+                          "label": "Fallback DeepSeek" },
+    "max_tokens":       { "type": "number",  "default": 120, "min": 20, "max": 800, "label": "Max output tokens" },
+    "temperature":      { "type": "number",  "default": 0.3, "min": 0,  "max": 1,   "label": "Temperature" }
+  }
+}

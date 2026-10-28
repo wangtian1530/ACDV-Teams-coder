@@ -1,0 +1,41 @@
+{
+  "keywords": [
+    "abstract","as","assert","async","await","base","break","case","catch","class",
+    "const","continue","covariant","default","deferred","do","dynamic","else","enum",
+    "export","extends","extension","external","factory","false","final","finally",
+    "for","Function","get","hide","if","implements","import","in","interface","is",
+    "late","library","mixin","new","null","on","operator","part","required","rethrow",
+    "return","sealed","set","show","static","super","switch","sync","this","throw",
+    "true","try","type","typedef","var","void","when","while","with","yield"
+  ],
+  "builtins": [
+    "print","stdout.write","stdin.readLineSync","dart:core","dart:async","dart:io",
+    "dart:convert","dart:math","dart:collection","dart:typed_data","dart:isolate",
+    "String.length","String.substring","String.contains","String.split","String.trim",
+    "String.toUpperCase","String.toLowerCase","String.replaceAll","String.padLeft",
+    "int.parse","double.parse","int.tryParse","List.generate","List.filled","List.from",
+    "List.of","List.empty","List.unmodifiable","Map.from","Map.of","Map.identity",
+    "Set.from","Set.of","Iterable","Future","Stream","StreamController","Completer",
+    "Timer","Timer.periodic","Duration","DateTime.now","DateTime.parse","Random",
+    "math.sqrt","math.pow","math.max","math.min","math.pi","math.random","jsonEncode",
+    "jsonDecode","utf8.encode","utf8.decode","base64Encode","base64Decode","File",
+    "Directory","Platform","exit","argv","RegExp","Match","Object","identical"
+  ],
+  "snippets": [
+    { "trigger": "print",   "template": true, "insert": "print('ACDV-Teams');",                                    "description": "print ACDV-Teams" },
+    { "trigger": "Future",  "template": true, "insert": "Future.delayed(const Duration(seconds: 1), () {\n  print('ACDV-Teams');\n});", "description": "Future.delayed" },
+    { "trigger": "Timer",   "template": true, "insert": "Timer(const Duration(seconds: 1), () {\n  print('ACDV-Teams');\n});", "description": "Timer 1s" },
+    { "trigger": "main",   "insert": "void main(List<String> args) {\n    print('ACDV-Teams');\n}",                 "description": "main" },
+    { "trigger": "fn",     "insert": "ReturnType name(Args args) {\n    print('ACDV-Teams');\n}",                  "description": "function" },
+    { "trigger": "afn",    "insert": "Future<void> name() async {\n    await Future.delayed(const Duration(seconds: 1));\n    print('ACDV-Teams');\n}", "description": "async function" },
+    { "trigger": "cls",    "insert": "class Name {\n  final String field;\n\n  Name({this.field = 'ACDV-Teams'});\n}", "description": "class" },
+    { "trigger": "mixin",  "insert": "mixin Name on Base {\n  void method() => print('ACDV-Teams');\n}",          "description": "mixin" },
+    { "trigger": "enum",   "insert": "enum Name { acdv, teams }",                                                   "description": "enum" },
+    { "trigger": "if",     "insert": "if (condition) {\n  print('ACDV-Teams');\n}",                                "description": "if" },
+    { "trigger": "for",    "insert": "for (var item in items) {\n  print('ACDV-Teams: $item');\n}",                "description": "for-in" },
+    { "trigger": "fori",   "insert": "for (var i = 0; i < n; i++) {\n  print('ACDV-Teams: $i');\n}",              "description": "for i" },
+    { "trigger": "switch", "insert": "switch (value) {\n  case 1:\n    print('ACDV-Teams');\n    break;\n  default:\n    print('ACDV-Teams');\n    break;\n}", "description": "switch" },
+    { "trigger": "tryc",   "insert": "try {\n  print('ACDV-Teams');\n} on Exception catch (e) {\n  print('ACDV-Teams: $e');\n}", "description": "try/catch" },
+    { "trigger": "stream", "insert": "Stream<String> name() async* {\n  yield 'ACDV-Teams';\n}",                   "description": "stream" }
+  ]
+}

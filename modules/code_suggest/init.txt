@@ -1,12 +1,13 @@
 {
   "name": "code_suggest",
-  "version": "1.0.0",
-  "description": "VS Code-style autocomplete for Python / JS / Bash",
+  "version": "1.1.0",
+  "description": "VS Code-style autocomplete + function templates (ACDV-Teams) cho 18 ngôn ngữ",
   "critical": false,
 
   "routes": [
     { "method": "POST", "path": "/api/code_suggest/complete",  "handler": "complete" },
-    { "method": "GET",  "path": "/api/code_suggest/languages", "handler": "languages" }
+    { "method": "GET",  "path": "/api/code_suggest/languages", "handler": "languages" },
+    { "method": "GET",  "path": "/api/code_suggest/about",     "handler": "about" }
   ],
 
   "ui_buttons": [
@@ -17,17 +18,26 @@
       "color": "info",
       "action": "route",
       "params": { "method": "GET", "path": "/api/code_suggest/languages" }
+    },
+    {
+      "id": "about",
+      "label": "About ACDV-Teams Module",
+      "icon": "ℹ️",
+      "color": "info",
+      "action": "route",
+      "params": { "method": "GET", "path": "/api/code_suggest/about" }
     }
   ],
 
   "settings_schema": {
-    "enabled":         { "type": "boolean", "default": true, "label": "Enable suggestions" },
-    "min_prefix":      { "type": "number",  "default": 1, "min": 1, "max": 5,  "label": "Min prefix length" },
-    "max_items":       { "type": "number",  "default": 20, "min": 5, "max": 50, "label": "Max suggestions" },
-    "show_keywords":   { "type": "boolean", "default": true, "label": "Show keywords" },
-    "show_builtins":   { "type": "boolean", "default": true, "label": "Show builtins" },
-    "show_snippets":   { "type": "boolean", "default": true, "label": "Show snippets" },
-    "show_locals":     { "type": "boolean", "default": true, "label": "Show local symbols (in-file defs)" }
+    "enabled":                { "type": "boolean", "default": true, "label": "Enable suggestions" },
+    "min_prefix":             { "type": "number",  "default": 1, "min": 1, "max": 5,  "label": "Min prefix length" },
+    "max_items":              { "type": "number",  "default": 20, "min": 5, "max": 50, "label": "Max suggestions" },
+    "show_keywords":          { "type": "boolean", "default": true, "label": "Show keywords" },
+    "show_builtins":          { "type": "boolean", "default": true, "label": "Show builtins" },
+    "show_snippets":          { "type": "boolean", "default": true, "label": "Show snippets" },
+    "show_locals":            { "type": "boolean", "default": true, "label": "Show local symbols (in-file defs)" },
+    "show_function_templates":{ "type": "boolean", "default": true, "label": "Show function call templates (ACDV-Teams samples)" }
   },
 
   "diagnostics": { "files": [] }

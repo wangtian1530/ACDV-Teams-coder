@@ -1,0 +1,42 @@
+{
+  "keywords": [
+    "abstract","assert","boolean","break","byte","case","catch","char","class",
+    "const","continue","default","do","double","else","enum","extends","final",
+    "finally","float","for","goto","if","implements","import","instanceof","int",
+    "interface","long","native","new","package","private","protected","public",
+    "return","short","static","strictfp","super","switch","synchronized","this",
+    "throw","throws","transient","try","void","volatile","while","var","record",
+    "sealed","permits","yield","true","false","null"
+  ],
+  "builtins": [
+    "System.out.println","System.out.print","System.err.println","System.in",
+    "String.format","String.join","String.valueOf","Integer.parseInt","Integer.valueOf",
+    "Double.parseDouble","Long.parseLong","Math.abs","Math.max","Math.min","Math.pow",
+    "Math.sqrt","Math.random","ArrayList","LinkedList","HashMap","TreeMap","HashSet",
+    "TreeSet","ArrayDeque","Collections.sort","Arrays.sort","Arrays.asList","List.of",
+    "Map.of","Set.of","StringBuilder","Optional","Stream","Collectors","Objects.requireNonNull",
+    "Thread","Runnable","ExecutorService","Executors","CompletableFuture",
+    "FileReader","FileWriter","BufferedReader","BufferedWriter","Files.readString",
+    "Files.writeString","Paths.get","Path.of","LocalDate","LocalDateTime","Instant",
+    "Duration","DateTimeFormatter","BigDecimal","BigInteger","Exception","RuntimeException",
+    "IllegalArgumentException","IllegalStateException","NullPointerException"
+  ],
+  "snippets": [
+    { "trigger": "println",  "template": true, "insert": "System.out.println(\"ACDV-Teams\");",                        "description": "System.out.println ACDV-Teams" },
+    { "trigger": "arraylist","template": true, "insert": "var list = new ArrayList<String>();\nlist.add(\"ACDV-Teams\");", "description": "ArrayList + add" },
+    { "trigger": "hashmap",  "template": true, "insert": "var map = new HashMap<String, String>();\nmap.put(\"name\", \"ACDV-Teams\");", "description": "HashMap" },
+    { "trigger": "optional", "template": true, "insert": "Optional.ofNullable(value).orElse(\"ACDV-Teams\");",         "description": "Optional" },
+    { "trigger": "stream",   "template": true, "insert": "items.stream().filter(x -> x.active()).map(Foo::name).toList();", "description": "stream" },
+    { "trigger": "main",   "insert": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"ACDV-Teams\");\n    }\n}", "description": "main" },
+    { "trigger": "cls",    "insert": "public class Name {\n    private String name = \"ACDV-Teams\";\n\n    public Name() { }\n}", "description": "class" },
+    { "trigger": "iface",  "insert": "public interface Name {\n    void method();\n}",         "description": "interface" },
+    { "trigger": "if",     "insert": "if (condition) {\n    // ACDV-Teams\n}",                  "description": "if" },
+    { "trigger": "ifel",   "insert": "if (condition) {\n    // ACDV-Teams\n} else {\n    // ACDV-Teams\n}", "description": "if/else" },
+    { "trigger": "for",    "insert": "for (int i = 0; i < n; i++) {\n    System.out.println(\"ACDV-Teams \" + i);\n}", "description": "for" },
+    { "trigger": "fore",   "insert": "for (var item : items) {\n    System.out.println(\"ACDV-Teams: \" + item);\n}", "description": "foreach" },
+    { "trigger": "while",  "insert": "while (condition) {\n    // ACDV-Teams\n}",               "description": "while" },
+    { "trigger": "tryc",   "insert": "try {\n    // ACDV-Teams\n} catch (Exception e) {\n    System.err.println(\"ACDV-Teams: \" + e.getMessage());\n}", "description": "try/catch" },
+    { "trigger": "method", "insert": "public ReturnType name(Args args) {\n    System.out.println(\"ACDV-Teams\");\n}", "description": "method" },
+    { "trigger": "record", "insert": "public record Name(String first, String last) { }",      "description": "record" }
+  ]
+}

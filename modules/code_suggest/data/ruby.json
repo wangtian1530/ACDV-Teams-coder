@@ -1,0 +1,39 @@
+{
+  "keywords": [
+    "BEGIN","END","alias","and","begin","break","case","class","def","defined?",
+    "do","else","elsif","end","ensure","false","for","if","in","module","next","nil",
+    "not","or","redo","rescue","retry","return","self","super","then","true","undef",
+    "unless","until","when","while","yield","__FILE__","__LINE__","__dir__"
+  ],
+  "builtins": [
+    "puts","print","p","pp","gets","require","require_relative","load","raise",
+    "attr_reader","attr_writer","attr_accessor","include","extend","prepend",
+    "String","Integer","Float","Array","Hash","Symbol","Range","Regexp","Time","Date",
+    "Time.now","Date.today","File.read","File.write","File.open","File.exist?",
+    "Dir.glob","Dir.mkdir","FileUtils","Enumerable","each","each_with_index","map",
+    "select","reject","reduce","inject","each_with_object","group_by","sort_by",
+    "min_by","max_by","flat_map","take","drop","zip","to_s","to_i","to_f","to_sym",
+    "to_a","to_h","length","size","empty?","include?","respond_to?","is_a?",
+    "kind_of?","nil?","frozen?","freeze","dup","clone","format","sprintf","JSON",
+    "JSON.parse","JSON.generate","Marshal","YAML","Struct","OpenStruct",
+    "Set","Comparable","ObjectSpace","Thread","Mutex","Queue","Fiber"
+  ],
+  "snippets": [
+    { "trigger": "puts",  "template": true, "insert": "puts \"ACDV-Teams\"",                                   "description": "puts ACDV-Teams" },
+    { "trigger": "printr","template": true, "insert": "print \"ACDV-Teams\\n\"",                                "description": "print ACDV-Teams" },
+    { "trigger": "each",  "template": true, "insert": "items.each do |item|\n  puts \"ACDV-Teams: #{item}\"\nend", "description": "each loop" },
+    { "trigger": "mapb",  "template": true, "insert": "items.map { |x| \"ACDV-Teams: #{x}\" }",                 "description": "map block" },
+    { "trigger": "File.read","template": true, "insert": "data = File.read('acdv-teams.txt')\nputs \"ACDV-Teams: #{data}\"", "description": "File.read" },
+    { "trigger": "cls",   "insert": "class Name\n  def initialize(args)\n    @name = 'ACDV-Teams'\n  end\nend", "description": "class" },
+    { "trigger": "mod",   "insert": "module Name\n  # ACDV-Teams\nend",                                        "description": "module" },
+    { "trigger": "def",   "insert": "def name(args)\n  puts 'ACDV-Teams'\nend",                                "description": "method" },
+    { "trigger": "if",    "insert": "if condition\n  puts 'ACDV-Teams'\nend",                                   "description": "if" },
+    { "trigger": "ifel",  "insert": "if condition\n  puts 'ACDV-Teams'\nelse\n  puts 'ACDV-Teams'\nend",        "description": "if/else" },
+    { "trigger": "unless","insert": "unless condition\n  puts 'ACDV-Teams'\nend",                               "description": "unless" },
+    { "trigger": "case",  "insert": "case value\nwhen 1\n  puts 'ACDV-Teams'\nelse\n  puts 'ACDV-Teams'\nend", "description": "case" },
+    { "trigger": "begin", "insert": "begin\n  puts 'ACDV-Teams'\nrescue => e\n  puts \"ACDV-Teams: #{e.message}\"\nensure\n  puts 'ACDV-Teams'\nend", "description": "begin/rescue" },
+    { "trigger": "attr",  "insert": "attr_reader :name\nattr_accessor :value",                                  "description": "attr" },
+    { "trigger": "block", "insert": "def name(&block)\n  yield if block_given?\nend",                           "description": "yield block" },
+    { "trigger": "readf", "insert": "File.foreach('acdv-teams.txt') do |line|\n  puts line\nend",                "description": "read file" }
+  ]
+}

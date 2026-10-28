@@ -1,12 +1,9 @@
 """Module loader + ZIP installer + ModuleBase interface.
 
-v1.3.1:
-  - ModuleBase gains error-interceptor hooks.
-  - Overlay detection: ưu tiên data/ (cho file lớn) trước web/.
-  - register_module rejects routes collision với core (protected).
-
-v1.4.0:
-  - Không thay đổi core logic; storage được quản lý bởi ModuleStorage.
+v2.0.1 (hotfix):
+  - C3: critical module fail khi load → fail_critical (không chỉ recovery).
+  - H11: install_from_zip shutdown instance in-memory nếu folder đã bị xoá tay.
+  - _enrich_overlay_meta: log cảnh báo nếu overlay khai báo nhưng file missing.
 """
 import os
 import io
@@ -26,42 +23,21 @@ class ModuleBase:
         self.engine = engine
         self.metadata = {}
 
-    # --- lifecycle ---
-    def on_load(self):
-        pass
-
-    def on_recovery(self):
-        pass
-
-    def on_shutdown(self):
-        pass
-
-    # --- settings ---
-    def on_settings_changed(self, new_settings):
-        pass
+    def on_load(self): pass
+    def on_recovery(self): pass
+    def on_shutdown(self): pass
+    def on_settings_changed(self, new_settings): pass
 
     def get_settings(self):
-        try:
-            return self.engine.settings.get_module(self.name)
-        except Exception:
-            return {}
+        try: return self.engine.settings.get_module(self.name)
+        except Exception: return {}
 
-    # --- diagnostics ---
-    def diagnose(self, project, path, content):
-        return []
+    def diagnose(self, project, path, content): return []
 
-    # --- error interception hooks ---
-    def on_any_error(self, ctx):
-        return None
-
-    def on_http_error(self, ctx):
-        return None
-
-    def on_ws_route_error(self, ctx):
-        return None
-
-    def on_ws_action_error(self, ctx):
-        return None
+    def on_any_error(self, ctx): return None
+    def on_http_error(self, ctx): return None
+    def on_ws_route_error(self, ctx): return None
+    def on_ws_action_error(self, ctx): return None
 
     def handle_route(self, handler_name, request):
         handler = getattr(self, handler_name, None)
@@ -77,6 +53,64 @@ class ModuleLoader:
         self.modules_dir = os.path.join(self.base_dir, "modules")
         self.sandbox = engine.sandbox
 
+    # ---------------------------------------------------------------- #
+    #  Overlay helpers
+    # ---------------------------------------------------------------- #
+    @staticmethod
+    def _file_etag(path):
+        try:
+            st = os.stat(path)
+            return f"{st.st_mtime_ns:x}-{st.st_size:x}"
+        except OSError:
+            return ""
+
+    @staticmethod
+    def _overlay_abs_path(mod_path, rel):
+        if rel.startswith("_data_/"):
+            return os.path.join(mod_path, "data", rel[len("_data_/"):])
+        if rel.startswith("_storage_/"):
+            return os.path.join(mod_path, "storage", "files", rel[len("_storage_/"):])
+        return os.path.join(mod_path, "web", rel)
+
+    def _enrich_overlay_meta(self, name, mod_path, metadata):
+        overlay = metadata.get("overlay") or {}
+        if not overlay:
+            return
+
+        for kind in ("css", "js"):
+            rel = overlay.get(kind)
+            if not rel:
+                continue
+            full = self._overlay_abs_path(mod_path, rel)
+            if not os.path.isfile(full):
+                # M11: log file missing
+                print(f"[Loader] ⚠ '{name}': overlay {kind} file missing: {rel}")
+                continue
+            overlay[kind + "_etag"] = self._file_etag(full)
+
+        css_rel = overlay.get("css")
+        if css_rel:
+            css_full = self._overlay_abs_path(mod_path, css_rel)
+            if os.path.isfile(css_full):
+                try:
+                    with open(css_full, "r", encoding="utf-8", errors="replace") as f:
+                        head = f.read(4096)
+                    prefix_a = f".acdv-{name}-"
+                    prefix_b = f'[data-module="{name}"]'
+                    prefix_c = f"[data-module='{name}']"
+                    if not any(p in head for p in (prefix_a, prefix_b, prefix_c)):
+                        overlay["css_warning"] = "no-namespace-prefix"
+                        print(
+                            f"[Loader] ⚠ '{name}': overlay.css lacks namespace prefix — "
+                            f"expected '.acdv-{name}-' or '[data-module=\"{name}\"]' "
+                            f"to avoid CSS conflicts with other modules"
+                        )
+                except Exception:
+                    pass
+
+    # ---------------------------------------------------------------- #
+    #  Scan / load
+    # ---------------------------------------------------------------- #
     def scan_and_load_all(self):
         os.makedirs(self.modules_dir, exist_ok=True)
         for entry in sorted(os.listdir(self.modules_dir)):
@@ -89,6 +123,18 @@ class ModuleLoader:
                 print(f"[Loader] ✗ Failed '{entry}': {e}")
                 import traceback
                 traceback.print_exc()
+                # ⭐ C3: critical module fail → engine exit ngay
+                try:
+                    init_path = os.path.join(mod_path, "init.txt")
+                    if os.path.isfile(init_path):
+                        with open(init_path, "r", encoding="utf-8") as f:
+                            meta = json.load(f)
+                        if meta.get("critical"):
+                            self.engine.fail_critical(
+                                f"critical module '{entry}' failed to load: {e}"
+                            )
+                except Exception:
+                    pass
 
     def load_module(self, name):
         mod_path = os.path.join(self.modules_dir, name)
@@ -114,13 +160,16 @@ class ModuleLoader:
         metadata.setdefault("diagnostics", None)
         metadata.setdefault("overlay", {})
 
-        # web UI detection
+        btn_ids = [b.get("id") for b in metadata.get("ui_buttons", []) if b.get("id")]
+        dupes = {i for i in btn_ids if btn_ids.count(i) > 1}
+        if dupes:
+            raise Exception(f"init.txt: duplicate ui_button id {dupes}")
+
         web_dir = os.path.join(mod_path, "web")
         data_dir = os.path.join(mod_path, "data")
         metadata["has_web_ui"] = os.path.isfile(os.path.join(web_dir, "index.html"))
         metadata["web_ui_path"] = f"/module/{name}/" if metadata["has_web_ui"] else None
 
-        # ⭐ v1.3.1: Overlay detection — data/ ưu tiên (file lớn), fallback web/
         for css_name in ("overlay.css", "override.css"):
             if os.path.isfile(os.path.join(data_dir, css_name)):
                 metadata["overlay"]["css"] = f"_data_/{css_name}"
@@ -136,6 +185,8 @@ class ModuleLoader:
             if os.path.isfile(os.path.join(web_dir, js_name)):
                 metadata["overlay"]["js"] = js_name
                 break
+
+        self._enrich_overlay_meta(name, mod_path, metadata)
 
         os.makedirs(os.path.join(mod_path, "data"), exist_ok=True)
         os.makedirs(os.path.join(mod_path, "storage"), exist_ok=True)
@@ -173,26 +224,15 @@ class ModuleLoader:
         self.engine.register_module(instance)
 
         overlay_txt = ""
-        if metadata["overlay"].get("css"):
-            overlay_txt += ", css"
-        if metadata["overlay"].get("js"):
-            overlay_txt += ", js"
-        err_txt = ""
-        for hook in ("on_any_error", "on_http_error",
-                     "on_ws_route_error", "on_ws_action_error"):
-            fn = getattr(instance, hook, None)
-            base = getattr(ModuleBase, hook, None)
-            if callable(fn) and fn is not base and getattr(fn, "__func__", None) is not base:
-                err_txt += ", err"
-                break
+        if metadata["overlay"].get("css"): overlay_txt += ", css"
+        if metadata["overlay"].get("js"):  overlay_txt += ", js"
         print(f"[Loader] ✓ '{name}' v{metadata['version']} "
               f"({len(metadata['routes'])} routes"
               f"{', ' + str(len(metadata['ui_buttons'])) + ' btns' if metadata['ui_buttons'] else ''}"
               f"{', web UI' if metadata['has_web_ui'] else ''}"
               f"{', settings' if metadata['settings_schema'] else ''}"
               f"{', diagnostics' if diag_cfg else ''}"
-              f"{', overlay' + overlay_txt if overlay_txt else ''}"
-              f"{err_txt})")
+              f"{', overlay' + overlay_txt if overlay_txt else ''})")
         return instance
 
     def install_from_zip(self, zip_path):
@@ -218,6 +258,25 @@ class ModuleLoader:
             if os.path.exists(target_dir):
                 raise Exception(f"Module '{module_name}' already installed")
 
+            # ⭐ H11: nếu instance còn trong memory nhưng folder đã xoá tay → shutdown
+            existing = self.engine.modules.get(module_name)
+            if existing:
+                print(f"[Loader] ⚠ '{module_name}' instance còn trong memory — shutdown trước khi cài lại")
+                try:
+                    existing.on_shutdown()
+                except Exception:
+                    pass
+                try:
+                    self.engine._unregister_module_routes(module_name)
+                except Exception:
+                    pass
+                self.engine.modules.pop(module_name, None)
+                try:
+                    self.engine.diagnostics.unregister_provider(module_name)
+                    self.engine.settings.unregister_module(module_name)
+                except Exception:
+                    pass
+
             root = init_name.rsplit("/", 1)[0] + "/" if "/" in init_name else ""
             os.makedirs(target_dir, exist_ok=True)
             os.makedirs(os.path.join(target_dir, "data"), exist_ok=True)
@@ -232,7 +291,9 @@ class ModuleLoader:
                 rel = norm[len(root):] if root and norm.startswith(root) else norm
                 if not rel:
                     continue
-                if rel.startswith("data/") or rel.startswith("web/") or rel.startswith("storage/") or rel in ("init.txt", "main.py"):
+                if (rel.startswith("data/") or rel.startswith("web/")
+                        or rel.startswith("storage/")
+                        or rel in ("init.txt", "main.py")):
                     dest = os.path.join(target_dir, rel)
                 else:
                     dest = os.path.join(target_dir, "data", rel)
@@ -246,11 +307,7 @@ class ModuleLoader:
         self.load_module(module_name)
         return metadata
 
-    # ---------------------------------------------------------------- #
-    #  ⭐ Export module as ZIP
-    # ---------------------------------------------------------------- #
     def export_module_zip(self, name):
-        """Export module thành ZIP bytes (base dir = <name>/)."""
         if not name:
             raise Exception("Missing module name")
         if "/" in name or "\\" in name or name in (".", ".."):
@@ -267,7 +324,8 @@ class ModuleLoader:
         count = 0
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for root, dirs, files in os.walk(mod_dir):
-                dirs[:] = sorted(d for d in dirs if d not in ("__pycache__", ".git", ".svn", ".tmp_uploads"))
+                dirs[:] = sorted(d for d in dirs
+                                 if d not in ("__pycache__", ".git", ".svn", ".tmp_uploads"))
                 for fname in sorted(files):
                     if fname.endswith(".pyc"):
                         continue
@@ -283,18 +341,12 @@ class ModuleLoader:
                     except (OSError, IOError):
                         continue
 
-        return {
-            "data": buf.getvalue(),
-            "files": count,
-            "size": buf.tell(),
-        }
+        return {"data": buf.getvalue(), "files": count, "size": buf.tell()}
 
     def uninstall(self, name):
         if name in self.engine.modules:
-            try:
-                self.engine.modules[name].on_shutdown()
-            except Exception:
-                pass
+            try: self.engine.modules[name].on_shutdown()
+            except Exception: pass
             del self.engine.modules[name]
         self.engine.diagnostics.unregister_provider(name)
         self.engine.settings.unregister_module(name)

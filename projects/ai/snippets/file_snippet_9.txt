@@ -1,0 +1,9 @@
+[BOT N] → chọn action
+   ├─ MOVE  → di chuyển → [BOT N+1] (ngay)
+   └─ SHOOT → spawn bullet → [PHASE=RESOLVING]
+                                    ↓
+                          mỗi 50ms: bullet bay
+                                    ↓
+                    đạn bị hấp thụ hết (bot N không còn bullet)
+                                    ↓
+                              [BOT N+1]

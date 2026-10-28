@@ -1,0 +1,38 @@
+{
+  "keywords": [
+    "begin","break","catch","class","continue","data","define","do","dynamicparam",
+    "else","elseif","end","enum","exit","filter","finally","for","foreach","from",
+    "function","if","in","param","process","return","switch","throw","trap","try",
+    "until","using","var","while","workflow","parallel","sequence","hidden","static"
+  ],
+  "builtins": [
+    "Write-Host","Write-Output","Write-Error","Write-Warning","Write-Verbose","Write-Debug",
+    "Get-Content","Set-Content","Add-Content","Get-Item","Set-Item","Remove-Item","Copy-Item",
+    "Move-Item","Rename-Item","New-Item","Test-Path","Get-ChildItem","Get-Location",
+    "Set-Location","Get-Command","Get-Help","Get-Member","Get-Process","Start-Process",
+    "Stop-Process","Get-Service","Start-Service","Stop-Service","Restart-Service",
+    "Get-EventLog","Invoke-Expression","Invoke-WebRequest","Invoke-RestMethod",
+    "ConvertTo-Json","ConvertFrom-Json","ConvertTo-Csv","ConvertFrom-Csv","Import-Csv",
+    "Export-Csv","Import-Module","Get-Module","Out-File","Out-Null","Out-String",
+    "Select-Object","Where-Object","ForEach-Object","Sort-Object","Group-Object",
+    "Measure-Object","Format-Table","Format-List","Format-Wide","Tee-Object","Select-String",
+    "Get-Date","New-Object","Add-Type","Start-Job","Get-Job","Receive-Job",
+    "Wait-Job","Remove-Job","Start-Sleep","Test-Connection","Test-NetConnection"
+  ],
+  "snippets": [
+    { "trigger": "Write-Host",     "template": true, "insert": "Write-Host \"ACDV-Teams\"",                               "description": "Write-Host ACDV-Teams" },
+    { "trigger": "Get-Content",    "template": true, "insert": "Get-Content -Path \"acdv-teams.txt\"",                    "description": "Get-Content" },
+    { "trigger": "Invoke-WebRequest","template": true, "insert": "Invoke-WebRequest -Uri \"https://acdv-teams.api/endpoint\" -Method GET", "description": "Invoke-WebRequest" },
+    { "trigger": "func",  "insert": "function Name {\n    param(\n        [Parameter(Mandatory=$true)]\n        [string]$Arg = 'ACDV-Teams'\n    )\n    Write-Host $Arg\n}", "description": "function param" },
+    { "trigger": "if",    "insert": "if ($condition) {\n    Write-Host \"ACDV-Teams\"\n}",                                "description": "if" },
+    { "trigger": "ifel",  "insert": "if ($condition) {\n    Write-Host \"ACDV-Teams\"\n} elseif ($other) {\n    Write-Host \"ACDV-Teams\"\n} else {\n    Write-Host \"ACDV-Teams\"\n}", "description": "if/elseif/else" },
+    { "trigger": "foreach","insert": "foreach ($item in $items) {\n    Write-Host \"ACDV-Teams: $item\"\n}",              "description": "foreach" },
+    { "trigger": "for",   "insert": "for ($i = 0; $i -lt $n; $i++) {\n    Write-Host \"ACDV-Teams $i\"\n}",                "description": "for" },
+    { "trigger": "while", "insert": "while ($condition) {\n    Write-Host \"ACDV-Teams\"\n}",                              "description": "while" },
+    { "trigger": "tryc",  "insert": "try {\n    Write-Host \"ACDV-Teams\"\n} catch {\n    Write-Error \"ACDV-Teams: $($_.Exception.Message)\"\n} finally {\n    Write-Host \"ACDV-Teams done\"\n}", "description": "try/catch/finally" },
+    { "trigger": "switch","insert": "switch ($value) {\n    1 { Write-Host \"ACDV-Teams\" }\n    default { Write-Host \"ACDV-Teams\" }\n}", "description": "switch" },
+    { "trigger": "cls",   "insert": "class Name {\n    [string]$Field = 'ACDV-Teams'\n\n    Name([string]$f) { $this.Field = $f }\n}", "description": "class" },
+    { "trigger": "pipe",  "insert": "Get-ChildItem | Where-Object { $_.Length -gt 1MB } | Select-Object Name, Length", "description": "pipeline" },
+    { "trigger": "param", "insert": "param(\n    [Parameter(Mandatory=$true)][string]$Path = 'ACDV-Teams',\n    [switch]$Verbose\n)", "description": "param block" }
+  ]
+}

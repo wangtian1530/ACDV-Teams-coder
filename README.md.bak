@@ -1,7 +1,815 @@
-# ACDV-Teams Module — MD Code Extractor
+📄 wecom.md — Bản đầy đủ v2.0.1
 
-- Thời gian tạo: 2026-10-23 00:10:26
-- Tổng số file: 30
-- Bản quyền: **ACDV-Teams Module**
+File này engine sẽ load qua /api/readme (fallback README.md). Bạn có thể lưu thành wecom.md hoặc README.md — engine đọc cả hai.
 
-> Toàn bộ cấu trúc thư mục cha → con đã được tái tạo tự động.
+```markdown
+🚀 Chào mừng đến với ACDV-Teams Coder!
+
+Vì sao ACDV-Teams Coder ra đời? 😅
+Chuyện là thế này: tôi mê code, nhưng phần cứng thì... yếu kém. Trên chiếc Android bé nhỏ với RAM có hạn, mỗi lần code là một lần "khổ dâm": mở AIDE để gõ, mở Termux để chạy, mở trình duyệt để debug — vừa quay qua quay lại thì tràn RAM, ứng dụng bị kill ngang, code chưa kịp lưu đã bay màu 💀. Thời gian rảnh thì có hạn, mà cứ mở app, đóng app, chờ load, bị kill, mở lại... thì code được mấy dòng?
+
+Từ nỗi bất tiện đó, ACDV-Teams Coder được tạo ra để giải quyết triệt để bài toán: Làm sao để có một môi trường lập trình độc lập, tối ưu tuyệt đối, linh hoạt và hoàn toàn nằm trong tầm kiểm soát ngay trên thiết bị cá nhân (Android/Termux và Linux local) — chỉ cần một chỗ, không cần mở loạn xạ, không bị kill giữa chừng?
+
+Chào mừng bạn đã đến với ACDV-Teams Coder — hệ thống Web IDE mô-đun tối ưu, hiệu năng cao được thiết kế chuyên biệt để chạy mượt mà trên môi trường Android/Termux và Linux cục bộ (localhost).
+
+Dự án mang đến tinh thần mã nguồn mở minh bạch, tự lực cánh sinh, định hình theo triết lý "Vỏ siêu nhẹ": Python đóng vai trò là trạm trung chuyển điều phối linh hoạt, kết hợp cùng các module độc lập hiệu năng cao, mang lại trải nghiệm lập trình tự chủ và hoàn toàn kiểm soát trên thiết bị của chính bạn.
+
+---
+
+🩹 CHANGELOG v2.0.1 — Hotfix toàn diện
+
+Phiên bản 2.0.1 khắc phục **35 bug** ảnh hưởng trực tiếp đến độ ổn định, bảo mật và UX. Nếu bạn đang dùng 2.0.0 hoặc 1.4.x, **nên nâng cấp ngay**.
+
+### 🔴 Critical (đã fix)
+
+| Bug | Mô tả | Ảnh hưởng cũ |
+|---|---|---|
+| **C1** | Module watcher chết ngay từ đầu | Auto-detect hoàn toàn vô dụng, cài module bằng copy folder không được nhận |
+| **C2** | Watcher không phát hiện thay đổi file | Sửa `main.py`/`init.txt` không auto-reload |
+| **C3** | Critical module fail không kill engine | Safety net vô hiệu — engine boot tiếp tục dù critical module chết |
+| **C4** | Terminal session leak | Sau 8 lần mở terminal (dù đã exit) → "Terminal limit reached" |
+| **C5** | CSP `connect-src` cho phép `ws:` wildcard | Overlay độc hại vẫn exfil qua WS bất kỳ host |
+| **C6** | Overlay unload xoá CSS khi tắt JS | Tắt JS module → CSS module biến mất vĩnh viễn |
+| **C7** | Editor reset dirty flag khi lazy load mode | Gõ trong 200ms đầu → mất dấu ● unsaved |
+| **C8** | Diagnostics markers mất sau lazy load | Bug hiển thị khi mở file mới lần đầu |
+| **C9** | Diagnostics `cleared` break với path có `/` | Marker của `src/main.py` không bị clear → stale |
+| **C10** | Save sau khi delete project → resurrect | Project tái sinh một nửa từ tab editor còn mở |
+| **C11** | Module run output trộn vào panel Run của core | Log compiler Java xen kẽ output Python |
+
+### 🟠 High (đã fix)
+
+| Bug | Mô tả |
+|---|---|
+| **H1** | Version mismatch (config 1.4.0 vs README 2.0.0), port mismatch (8889 vs 8765) |
+| **H2** | `/api/readme` đọc `wecom.md` nhưng báo lỗi `README.md not found` |
+| **H3** | HTTP body không giới hạn → DoS OOM (fix: 64MB cap) |
+| **H4** | WS idle 5 phút timeout → terminal chết ngầm (fix: heartbeat 90s) |
+| **H5** | Settings ghi không atomic → corrupt khi kill giữa dump (fix: tmp+fsync+replace) |
+| **H6** | Chunk upload chỉ assemble khi chunk cuối đến (fix: assemble khi đủ bất kể thứ tự) |
+| **H7** | Storage meta corrupt khi concurrent upload (fix: lock + atomic) |
+| **H8** | Quota check chỉ chunk đầu → bypass bằng total_size lie (fix: check lại lúc assemble) |
+| **H9** | Upload fail khi `check_and_warn` raise dù file đã ghi xong |
+| **H10** | Stale diagnostics sau module reload |
+| **H11** | Install lại module bỏ qua `on_shutdown` instance cũ → leak resource |
+| **H12** | Overlay double-init race khi register trước App ready |
+
+### 🟡 Medium (đã fix)
+
+| Bug | Mô tả |
+|---|---|
+| **M1** | Settings error không hiển thị đầy đủ (`errors[]`) |
+| **M4** | Storage UI không hiển thị path đầy đủ khi file nested |
+| **M5** | Upload trùng tên ghi đè không cảnh báo |
+| **M6** | App init fail không hiển thị lỗi (trang blank) |
+| **M7** | File bị xoá không đóng tab editor → save sau resurrect |
+| **M8** | Project bị xoá không đóng tab editor |
+| **M9** | Config change không broadcast → 2 tab tranh chấp |
+| **M11** | Overlay khai báo nhưng file missing không cảnh báo |
+| **M12** | Settings UI không refresh khi broadcast `settings_changed` |
+| **M14** | Terminal open fail do queue đầy → "Connecting…" mãi mãi |
+
+### 🔵 Low (đã fix)
+
+| Bug | Mô tả |
+|---|---|
+| **L1** | Serve dotfiles (`/.env`, `/.git/`) trong frontend |
+| **L2** | Không hỗ trợ Range header → không resume download lớn |
+| **L5** | SIGWINCH race khi terminal resize trên proc đã chết |
+| **L8** | Log name collision giữa `a/b.py` và `a_b.py` |
+| **L10** | Không cleanup log cũ → đầy disk (fix: xoá log > 7 ngày) |
+| **L15** | `provider.diagnose()` không có timeout → module treo thread diagnostics |
+| **L16** | Ctrl+S trong input Settings vẫn save editor |
+
+### ✨ Cải tiến kèm theo v2.0.1
+
+- **Module route unregister** khi reload/uninstall — không còn route "mồ côi" trong router
+- **Log runner** dùng hash cho path — tránh nhầm log giữa file cùng base name
+- **Heartbeat WS** giữ kết nối sống qua proxy/NAT
+- **`_showFatal` overlay** — App init fail giờ hiển thị lỗi rõ ràng thay vì loading treo
+- **`closeByPath` / `closeByProject`** — tab editor tự đóng khi file/project bị xoá
+- **Overlay `_unloadJsOnly()`** — tắt JS không đụng CSS
+- **Node.js hint** — error message rõ ràng khi chạy `.js` mà thiếu Node
+
+---
+
+🚨🚨 CẢNH BÁO CỰC KỲ QUAN TRỌNG — ĐỌC KỸ TRƯỚC KHI SỬ DỤNG 🚨🚨
+
+⚠️ ĐÂY LÀ PHẦN BẮT BUỘC ĐỌC. BỎ QUA PHẦN NÀY CÓ THỂ DẪN ĐẾN MẤT TOÀN BỘ DỮ LIỆU, BỊ CHIẾM QUYỀN ĐIỀU KHIỂN THIẾT BỊ, HOẶC LÂY NHIỄM MÃ ĐỘC KHÔNG THỂ CỨU CHỮA.
+
+🔴 Bối cảnh rủi ro cần hiểu rõ
+
+ACDV-Teams Coder là ứng dụng được viết hoàn toàn bằng Python và thực thi trực tiếp (interpreted/executed trực tiếp) trên môi trường Termux (Android) hoặc Linux thuần (bare-metal Linux). Điều này có nghĩa là:
+
+· Không có lớp biên dịch bảo vệ (no compiled binary barrier): Mã nguồn Python được đọc và chạy trực tiếp — bất kỳ đoạn mã độc nào chèn vào module đều có thể thực thi ngay lập tức với đầy đủ quyền của user đang chạy tiến trình.
+· Không có sandbox mặc định của hệ điều hành: Termux và Linux thuần không tự động cô lập tiến trình Python. Một module giả mạo có thể đọc/ghi file cá nhân, đánh cắp SSH key, token, cookie, API key, hoặc liên lạc ra ngoài mà bạn không hề hay biết.
+· Nguy cơ leo thang đặc quyền (privilege escalation): Nếu bạn chạy ACDV-Teams Coder bằng user thường nhưng thiết bị đã root (Android), hoặc bạn dùng sudo (Linux), một module độc hại có thể chiếm toàn quyền điều khiển thiết bị, cài backdoor, đánh cắp dữ liệu ngân hàng, tài khoản mạng xã hội, hoặc biến máy bạn thành botnet.
+
+🔴 Quy tắc an toàn BẮT BUỘC — KHÔNG CÓ NGOẠI LỆ
+
+1. 🚫 TUYỆT ĐỐI KHÔNG cài đặt, chạy thử, hay import bất kỳ module nào KHÔNG được phát hành chính thức từ ACDV-Teams.
+   · Chỉ tin tưởng các module có chữ ký/hash SHA256 khớp với danh sách chính thức do ACDV-Teams công bố.
+   · Mọi module "chia sẻ lại", "mod by ...", "fork không rõ nguồn", "tải từ group/telegram/diễn đàn" → coi như mã độc cho đến khi chứng minh được ngược lại.
+   · Kể cả khi mã nguồn mở và bạn nghĩ mình đã đọc hết — một dòng import ẩn, một subprocess, một eval/exec, hay một dependency bị đầu độc là đủ để thực thi mã độc.
+2. 🚫 KHÔNG BAO GIỜ chạy ACDV-Teams Coder với quyền sudo / root trên Linux, và KHÔNG chạy trên thiết bị Android đã root khi chưa có biện pháp cô lập.
+   · Trên Android đã root, rủi ro tăng theo cấp số nhân: một module độc hại có thể chạm tới toàn bộ hệ thống, vượt qua mọi rào cản của Android sandbox, đọc tin nhắn, danh bạ, ảnh, mật khẩu đã lưu, và cài persistent malware.
+   · Trên Linux thuần, tuyệt đối không dùng sudo python ... hay chạy dưới user có quyền cao. Hãy tạo một user riêng, quyền hạn tối thiểu (least privilege) chỉ để chạy ACDV-Teams Coder.
+3. ✅ KHUYẾN NGHỊ CỰC KỲ MẠNH: Chạy ACDV-Teams Coder trong môi trường sandbox/cô lập.
+   · Trên Android/Termux: Chạy trong Linux sandbox / proot-distro (ví dụ: proot-distro install debian, ubuntu, alpine) hoặc dùng các giải pháp container nhẹ. Termux gốc không phải sandbox đủ mạnh cho các module không kiểm chứng.
+   · Trên Linux: Chạy trong Docker / Podman với:
+     · User không phải root bên trong container,
+     · --read-only cho filesystem gốc (nếu có thể),
+     · mount volume chỉ định cho thư mục project (không mount $HOME hay /),
+     · --network=none hoặc network giới hạn nếu module không cần mạng,
+     · --cap-drop=ALL và --security-opt=no-new-privileges.
+   · Nguyên tắc vàng: Một module bị lỗi/độc hại chỉ được phép làm hỏng môi trường sandbox — không được phép chạm tới máy thật của bạn.
+4. ✅ Kiểm tra hash trước khi tin — không tin bằng mắt.
+   · Luôn chạy kiểm tra SHA256 trước khi kích hoạt module mới.
+   · Nếu hệ thống báo "hash mismatch" → DỪNG NGAY, xóa module, không cố chạy.
+   · Không tải module từ nguồn không có kênh phân phối chính thức của ACDV-Teams.
+5. ✅ Nguyên tắc "3 KHÔNG" khi dùng module lạ:
+   · KHÔNG chạy trên máy có dữ liệu quan trọng.
+   · KHÔNG đăng nhập tài khoản cá nhân (ngân hàng, email, mạng xã hội) trong lúc test module chưa kiểm chứng.
+   · KHÔNG bật quyền trợ năng (Accessibility), quyền ghi hệ thống, hay cấp quyền đặc biệt cho bất kỳ thành phần nào liên quan đến module lạ.
+
+💀 Tóm lại: ACDV-Teams Coder là công cụ mạnh, chạy trực tiếp bằng Python, không có "lớp giáp" mặc định. Nếu bạn cài module không chính thức trên Termux/Android root/Linux thuần mà không sandbox — bạn đang tự trao chìa khóa thiết bị cho người lạ. Hãy sandbox, hãy kiểm hash, hãy chỉ dùng module chính thức.
+
+⚠️ RIÊNG v2.0.1 — CSP chỉ chặn exfil qua HTTP fetch, KHÔNG chặn exfil qua WebSocket
+CSP `connect-src` đã được siết (chỉ cho phép WS tới host:port hiện tại), nhưng overlay chạy trong cùng origin vẫn có thể gửi `terminal_open` qua WS → server thực thi shell với quyền user. Fix triệt để cần **iframe sandbox** (roadmap v2.1). Trong lúc chờ: **chỉ cài module từ nguồn tin cậy**.
+
+---
+
+📖 Hướng dẫn sử dụng cơ bản (Dành cho User)
+
+1. Khởi động hệ thống
+
+· Hệ thống chạy hoàn toàn ở chế độ Non-root (Không sudo) nhằm đảm bảo an toàn tuyệt đối cho thiết bị của bạn.
+· Khởi động trạm trung chuyển Python qua dòng lệnh local trên Termux/Linux. Giao diện Web IDE sẽ sẵn sàng để bạn quản lý project và thao tác trực tiếp.
+· Mở trình duyệt: `http://localhost:8765` (mặc định — đã đồng bộ với config.json v2.0.1).
+· Nhắc lại: Nên chạy trong sandbox (proot-distro trên Termux, Docker trên Linux) — xem phần Cảnh báo ở trên.
+
+Lệnh khởi động:
+
+```bash
+cd /path/to/acdv-coder
+python3 main.py
+```
+
+Port khác (nếu 8765 bị chiếm):
+
+```bash
+python3 main.py --port 9000
+```
+
+Reset khi kẹt:
+
+```bash
+pkill -f "python main.py"
+fuser -k 8765/tcp
+rm core/data/.run_pids.json
+rm core/data/settings.json
+rm -rf modules/*/storage/.tmp_uploads
+```
+
+2. Quản lý và Cắm rút Module
+
+· Cơ chế Module độc lập: Mỗi tính năng mở rộng được đóng gói trong một thư mục tài nguyên riêng biệt.
+· Auto-detect (v2.0.1 đã fix C1/C2): Cài module bằng cách copy folder vào modules/ → engine tự nhận trong ≤ 2 giây. Sửa main.py/init.txt của module → tự reload. Xoá folder → tự unload.
+· Quy tắc bảo mật SHA256 & Thương hiệu:
+· Hệ thống tự động quét và kiểm tra mã băm SHA256 đối với các module mang nhãn hiệu acdv-teams để chống mã độc và giả mạo.
+· Nếu phát hiện mã nguồn bị can thiệp trái phép, hệ thống sẽ tự động vô hiệu hóa module đó để bảo vệ an toàn cho toàn bộ hệ thống.
+· Luật chơi mở (Mã nguồn công khai): Bạn hoàn toàn có quyền sao chép (copy) và tự do tùy biến mã nguồn theo ý thích, nhưng bắt buộc phải đổi tên khác để không xung đột với bản chính hãng của ACDV-Teams.
+· ⚠️ Module tự biên/tự fork không có hash chính thức → tự chịu mọi rủi ro. Khuyến nghị chạy thử trong sandbox trước.
+
+3. Cài module từ ZIP
+
+· Tab Modules → 📤 Upload ZIP
+· Module phải có init.txt (JSON metadata) + main.py (class Module kế thừa ModuleBase)
+· Export ZIP để backup/restore: Tab Modules → click ⬇ cạnh tên module
+
+4. Chạy code
+
+· Core hỗ trợ chạy trực tiếp: .py, .js, .sh, .bash
+· Ngôn ngữ khác (Java, C/C++, Go, Rust, …): phải cài module — module tự pkg install compiler và stream output
+· Bấm ▶ trên toolbar hoặc nút ▶ cạnh file trong Explorer
+· Dừng: nút ■ (SIGTERM → SIGKILL nếu > 2s)
+
+5. Terminal
+
+· Mở/đóng: `Ctrl + \`` hoặc nút ⌨
+· Shell thật qua PTY — hỗ trợ vim/htop/less
+· Session tự cleanup khi process exit (v2.0.1 fix C4) — không còn "Terminal limit reached" sau 8 lần
+· Heartbeat 90s giữ kết nối qua proxy/NAT (v2.0.1 fix H4)
+
+6. Diagnostics (VS Code style)
+
+· Module báo lỗi qua diagnose() — gạch chân inline + panel Problems
+· Click vào problem → nhảy tới dòng tương ứng
+· Nested path (src/main.py) giờ hoạt động đúng (v2.0.1 fix C9)
+· Module diagnose() có timeout 5s — không treo thread (v2.0.1 fix L15)
+
+7. Module Storage (💾)
+
+· Mỗi module có storage riêng — quota 512MB (config được)
+· Upload chunked 4MB (tới 200MB/file), download, xoá, export ZIP
+· Cảnh báo ≥ 90% (warn), từ chối upload ≥ 98% (full)
+· Concurrent upload an toàn (v2.0.1 fix H7)
+· Chunk out-of-order OK (v2.0.1 fix H6)
+· Cảnh báo overwrite khi trùng tên (v2.0.1 fix M5)
+
+8. Overlay Runtime (CSS/JS của module)
+
+· Module có thể inject CSS (web/overlay.css hoặc data/overlay.css) và JS (web/overlay.js hoặc data/overlay.js)
+· JS overlay phải dùng ACDV.register(name, fn) — xem §Overlay bên dưới
+· Safe mode: ?safe=1 hoặc Settings → Overlays → Safe mode ON — unload thật sự (cleanup LIFO)
+· Tắt JS không mất CSS (v2.0.1 fix C6)
+
+---
+
+🛠️ Định hướng tương lai & Phát triển
+
+· Tăng tốc độ bàn thờ với C++: Trong tương lai, các tác vụ tính toán nặng hoặc xử lý logic cốt lõi sẽ được biên dịch sẵn thành các file binary (native binary) độc quyền, cắm trực tiếp vào module để đạt hiệu năng tối đa mà không làm phồng to app core.
+· Cơ chế tự hủy an toàn (Heartbeat): Các module sẽ liên tục đồng bộ trạng thái kết nối với core. Mất kết nối là tự động giải phóng tài nguyên, không để lại tiến trình mồ côi (orphan process) ngốn ngầm RAM hay CPU.
+· Overlay sandbox bằng iframe (v2.1): Overlay JS chạy trong <iframe sandbox> — fix triệt để RCE qua terminal_open (CSP không chặn được WS same-origin).
+· Module marketplace (v2.2): UI chọn module theo ngôn ngữ thay vì upload ZIP.
+
+---
+
+⚠️ Trạng thái hiện tại (v2.0.1 — Ổn định)
+
+· ✅ Core engine, router, server: ổn định
+· ✅ Watcher auto-detect (add/reload/remove): hoạt động đúng
+· ✅ Terminal session lifecycle: tự cleanup, không leak
+· ✅ Overlay v2.0.1: cleanup registry, ETag, CSP siết, uninstall không ghost
+· ✅ Storage: quota, chunk, concurrent-safe
+· ✅ Settings: atomic write, không corrupt
+· ✅ Diagnostics: timeout, nested path OK
+· ✅ Editor: dirty flag preserved, markers re-render
+· ⚠️ Overlay vẫn có thể gửi terminal_open qua WS (fix ở v2.1 với iframe sandbox)
+· ⚠️ Error dispatch chain: cần test thêm với 3+ module
+· ⚠️ Android: cần test thêm trên Samsung Internet, Firefox mobile
+· Mọi đóng góp, báo lỗi hoặc tự do vọc vạch tùy biến đều được hoan nghênh theo đúng tinh thần mã nguồn mở và tự chủ công nghệ!
+
+---
+
+🧠 Triết lý cốt lõi — Edit ≠ Run
+
+```
+┌─────────────────────────────────────────────────┐
+│  EDIT (core)                                    │
+│  ─ CodeMirror syntax highlight ~50 languages    │
+│  ─ Save = plaintext UTF-8                       │
+│  ─ Không phụ thuộc compiler                     │
+├─────────────────────────────────────────────────┤
+│  RUN (core — giới hạn)                          │
+│  ─ .py  → sys.executable -u                    │
+│  ─ .js  → node                                  │
+│  ─ .sh  → bash                                  │
+│  ─ .bash → bash                                 │
+├─────────────────────────────────────────────────┤
+│  RUN (module — mở rộng)                         │
+│  ─ java, c, cpp, go, rust, php, ruby, …         │
+│  ─ Module tự pkg install                        │
+│  ─ Module tự spawn compiler                     │
+│  ─ Module tự stream output qua engine._broadcast│
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+📖 Hướng dẫn chi tiết cho Developer
+
+Module Contract
+
+File modules/<name>/init.txt:
+
+```json
+{
+  "name": "my_module",
+  "version": "1.0.0",
+  "description": "Mô tả ngắn",
+  "critical": false,
+  "module_storage_quota": 134217728,
+
+  "routes": [
+    { "method": "GET",  "path": "/api/my_module/hello", "handler": "hello" }
+  ],
+
+  "ui_buttons": [
+    {
+      "id": "ping",
+      "label": "Ping",
+      "icon": "📡",
+      "color": "info",
+      "action": "custom"
+    }
+  ],
+
+  "settings_schema": {
+    "enabled": { "type": "boolean", "default": true, "label": "Enable" },
+    "threshold": { "type": "number", "default": 10, "min": 1, "max": 100 }
+  },
+
+  "diagnostics": { "files": ["*.py", "*.js"] }
+}
+```
+
+File modules/<name>/main.py:
+
+```python
+from core.loader import ModuleBase
+
+class Module(ModuleBase):
+    def on_load(self): pass
+    def on_recovery(self): pass
+    def on_shutdown(self): pass
+    def on_settings_changed(self, new_settings): pass
+
+    def diagnose(self, project, path, content) -> list[dict]:
+        return []
+
+    def on_any_error(self, ctx) -> dict | None: return None
+    def on_http_error(self, ctx) -> dict | None: return None
+    def on_ws_route_error(self, ctx) -> dict | None: return None
+    def on_ws_action_error(self, ctx) -> dict | None: return None
+
+    def hello(self, req) -> dict:
+        return {"ok": True, "msg": "Hello"}
+
+    def on_button_ping(self, params) -> dict:
+        return {"ok": True, "pong": True}
+```
+
+Diagnostic shape (từ diagnose()):
+
+```python
+{
+    "severity":   "error" | "warning" | "info" | "hint",
+    "line":       1,      # bắt buộc (1-indexed)
+    "column":     1,
+    "end_line":   1,
+    "end_column": 5,
+    "message":    "Mô tả lỗi",
+    "code":       "MY001",
+}
+```
+
+Overlay Runtime v2.0.1 — API cho module JS
+
+File modules/<name>/web/overlay.js:
+
+```js
+(function (ACDV) {
+  'use strict';
+
+  ACDV.register('<name>', function (ctx) {
+    // Core refs
+    ctx.app;        // window.App
+    ctx.cm;         // CodeMirror instance
+    ctx.editor;     // EditorManager
+    ctx.ws;         // WSClient
+    ctx.settings;   // globalSettings
+
+    // Auto-cleanup helpers
+    ctx.cmOn('change', handler);              // → cm.off() khi unload
+    ctx.wsOn('run_output', handler);          // → ws.off() khi unload
+    ctx.on(document, 'keydown', handler);     // → removeEventListener
+    ctx.append(document.body, el);            // → remove DOM
+    ctx.timer(fn, 1000);                      // → clearTimeout
+    ctx.interval(fn, 3000);                   // → clearInterval
+    ctx.onCleanup(customFn);                  // custom cleanup
+
+    // Utilities
+    ctx.log('ready');
+    await ctx.fetch('/api/modules');          // chỉ same-origin
+    ctx.storageGet('key', def);               // localStorage per-module
+    ctx.storageSet('key', val);
+  });
+})(window.ACDV);
+```
+
+Migration từ v1.x (leak pattern):
+
+```js
+// ❌ CŨ (leak) — mỗi reload thêm 1 handler, không gỡ được
+(function () {
+  const editor = App.editor.cm;
+  editor.on('inputRead', handler);
+  document.addEventListener('keydown', h);
+  setInterval(pollServer, 3000);
+})();
+
+// ✅ MỚI — auto cleanup khi unload
+(function (ACDV) {
+  ACDV.register('my_mod', function (ctx) {
+    ctx.cmOn('inputRead', handler);
+    ctx.on(document, 'keydown', h);
+    ctx.interval(pollServer, 3000);
+  });
+})(window.ACDV);
+```
+
+Debug overlay runtime:
+
+```js
+// DevTools Console
+ACDV.status();
+// → { version, appReady, safeMode, modules: {...}, injected: {...} }
+
+OverlayLoader.refresh();          // force refresh
+OverlayLoader.unload('my_mod');   // unload 1 module
+OverlayLoader.unloadAll();        // unload tất cả
+```
+
+Safe mode — 3 cách bật:
+
+1. URL: http://localhost:8765/?safe=1
+2. Settings UI: Settings → Overlays → Safe mode = ON
+3. Banner: click 🛑 Disable khi có overlay active
+
+v2.0.1 khác v2.0.0 ở điểm: tắt JS không xoá CSS (fix C6). Nếu module khai báo cả hai, tắt JS → chỉ script bị remove, link CSS vẫn giữ.
+
+CSP headers (server tự thêm)
+
+```
+Content-Security-Policy: default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+  img-src 'self' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+  font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+  connect-src 'self' ws://<host>:<port> wss://<host>:<port>;   ← v2.0.1 SIẾT
+  worker-src 'self' blob:;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+```
+
+Hệ quả:
+
+· ✅ Overlay gọi /api/* (same-origin) → OK
+· ✅ Overlay kết nối WS tới server hiện tại → OK
+· ❌ Overlay gọi https://evil.com/... → CSP block
+· ❌ Overlay mở wss://evil.com/exfil → CSP block (v2.0.1 fix C5)
+· ⚠️ Overlay vẫn có thể gửi terminal_open qua WS same-origin → RCE với quyền user (fix v2.1 iframe)
+
+ETag cache flow
+
+```
+Lần 1 load trang:
+  GET /module/code_suggest/overlay.js?v=<etag1>
+  ← 200 + ETag: <etag1> + Cache-Control: no-cache
+
+F5 reload (không đổi file):
+  ← 304 Not Modified (không body)
+
+Sửa file + reload module:
+  POST /api/modules/reload {name:"code_suggest"}
+  → loader._enrich_overlay_meta() → etag mới
+  GET /api/overlay → { js_etag: "<etag2>" }
+  Client thấy etag khác → inject URL mới
+  ← 200 + body mới
+```
+
+Multi-language editing (~50 ngôn ngữ)
+
+Core hỗ trợ syntax highlight + save UTF-8 cho ~50 extension. Bảng tóm tắt:
+
+Nhóm Extension Compile core?
+Python .py .pyw .pyi ✅
+JavaScript .js .mjs .cjs .jsx ✅
+Shell .sh .bash .zsh .ksh .fish ✅
+HTML/CSS/JSON/XML/YAML/TOML tương ứng ❌ (edit-only)
+TypeScript .ts .tsx ❌ (cần module lang_ts)
+Java .java ❌ (cần module lang_java)
+C/C++ .c .h .cpp .cc .hpp ❌ (cần module lang_gcc)
+Go .go ❌ (cần module lang_go)
+Rust .rs ❌ (cần module lang_rust)
+PHP/Ruby/Perl/Lua tương ứng ❌ (cần module)
+Kotlin/C#/Scala/Dart/Swift tương ứng ❌ (cần module)
+SQL/Markdown/Dockerfile/… tương ứng ❌ (edit-only)
+
+Unknown extension → plaintext mode (vẫn edit + save bình thường).
+
+Module Storage — API Python
+
+```python
+def on_load(self):
+    # Quota info
+    usage = self.engine.storage.usage(self.name)
+    # → {"used": 12345, "quota": 536870912, "percent": 0.0023,
+    #    "status": "ok"|"warn"|"full", "free": 536858567}
+
+    # Ghi/đọc file
+    self.engine.storage.write_file(self.name, "cache/data.json", '{"x":1}')
+    data = self.engine.storage.read_file(self.name, "cache/data.json")
+
+    # List / Delete / Clear / Export
+    files = self.engine.storage.list_files(self.name, "")
+    self.engine.storage.delete_file(self.name, "cache/data.json")
+    self.engine.storage.clear_all(self.name)
+    result = self.engine.storage.export_zip(self.name)
+```
+
+API Reference (rút gọn)
+
+Core:
+
+Endpoint Method Response
+/api/status GET {status, version, boot_id, uptime_modules}
+/api/boot GET {ok, boot_id, version, modules}
+/api/config GET/POST {config, spec...}
+/api/modules GET {<name>: metadata}
+/api/modules/install POST {zip_base64}
+/api/modules/reload POST {name}
+/api/modules/export POST {name}
+/api/overlay GET {safe_mode, overlays:[{name, css_etag, js_etag,...}]}
+/api/readme GET {content} — đọc wecom.md hoặc README.md
+
+Projects:
+
+Endpoint Method
+/api/projects GET
+/api/projects/create POST {name, language}
+/api/projects/file/read POST {project, path}
+/api/projects/file/write POST {project, path, content}
+/api/projects/run POST — chỉ .py/.js/.sh/.bash
+/api/projects/run/stop POST {force?}
+
+Storage:
+
+Endpoint Method
+/api/modules/storage/usage POST {name}
+/api/modules/storage/upload_chunk POST {name, path, chunk_index, total_chunks, chunk_b64, total_size, upload_id}
+/api/modules/storage/export_zip POST {name}
+
+WebSocket Protocol
+
+Client → Server:
+
+```json
+{ "type": "ping", "time": 1234567890 }
+{ "type": "status" }
+{ "type": "route", "id": "req-1", "method": "POST", "path": "/api/status", "body": {} }
+{ "type": "module_action", "module": "lang_java", "button_id": "compile_run", "params": {...} }
+{ "type": "terminal_open", "id": "t_abc", "cols": 80, "rows": 24, "cwd": "projects/demo" }
+{ "type": "terminal_input", "id": "t_abc", "data": "ls\r" }
+{ "type": "terminal_resize", "id": "t_abc", "cols": 100, "rows": 30 }
+{ "type": "terminal_close", "id": "t_abc" }
+```
+
+Server → Client:
+
+```json
+{ "type": "pong", "time": 1234567890 }
+{ "type": "status", "data": {...} }
+{ "type": "route_result", "id": "req-1", "ok": true, "data": {...} }
+{ "type": "module_action_result", "module": "x", "button_id": "y", "ok": true, "result": {...} }
+{ "type": "run_started", "project", "path", "log_name", "pid" }
+{ "type": "run_output", "project", "path", "lines": ["...", "..."] }
+{ "type": "run_finished", "project", "path", "exit_code", "log_name" }
+{ "type": "diagnostics_update", "project", "path", "diagnostics": [...] }
+{ "type": "diagnostics_cleared" }
+{ "type": "settings_changed", "settings": {...} }
+{ "type": "module_settings_changed", "module", "values": {...} }
+{ "type": "modules_changed", "action": "added|removed|reloaded", "module": "..." }
+{ "type": "project_deleted", "project": "..." }         ← v2.0.1 M8
+{ "type": "project_file_deleted", "project", "path" }   ← v2.0.1 M7
+{ "type": "config_changed", "config": {...} }           ← v2.0.1 M9
+{ "type": "storage_warning", "module", "usage", "severity" }
+{ "type": "terminal_opened", "id" }
+{ "type": "terminal_output", "id", "data" }
+{ "type": "terminal_exit", "id", "code" }
+{ "type": "terminal_error", "id", "error" }
+{ "type": "system_restarting" }
+{ "type": "system_restarted", "boot_id", "version" }
+{ "type": "system_shutdown" }
+```
+
+WSClient methods:
+
+```js
+const ws = new WSClient();
+ws.connect();
+
+const unsub = ws.on('run_output', handler);  // trả unsubscribe
+ws.off('run_output', handler);
+ws.once('run_finished', handler);            // auto off sau 1 lần
+ws.send({ type: 'route', ... });             // queue nếu chưa OPEN
+ws.removeAll('run_output');                  // xoá tất cả listener của event
+```
+
+v2.0.1 tự động gửi ping mỗi 90s để giữ kết nối (fix H4).
+
+Undo / Redo per-tab
+
+Thao tác Cách
+Undo Ctrl+Z / Cmd+Z
+Redo Ctrl+Y hoặc Ctrl+Shift+Z
+Undo (mobile) Nút ↶ trên toolbar
+Redo (mobile) Nút ↷ trên toolbar
+
+Cơ chế: mỗi tab giữ CodeMirror.Doc riêng, cm.swapDoc() khi chuyển tab (KHÔNG dùng setValue — sẽ xoá history).
+
+v2.0.1: dirty flag được bảo toàn khi lazy-load mode (fix C7) — không còn mất dấu ● unsaved.
+
+Export / Import ZIP
+
+Đối tượng Cách
+Project Tab Projects → click ⬇ cạnh tên
+Module Tab Modules → click ⬇ cạnh tên
+Storage Tab Modules → 💾 → "Export ZIP"
+
+Round-trip: Export ZIP → Uninstall → Upload lại qua 📤 → Restored 100%.
+
+---
+
+🔧 Troubleshooting (mở rộng — v2.0.1)
+
+Vấn đề Nguyên nhân Fix
+Undo/redo không hoạt động Focus trong input/modal Click vào editor rồi thử lại
+Dirty ● không biến mất sau undo Line ending mismatch (CRLF) Kiểm tra file line ending
+Ctrl+S trong Settings save nhầm editor (Đã fix L16) Update v2.0.1
+Theme không đổi Theme CM5 không hợp lệ Đổi sang dracula/default/material/monokai/solarized/eclipse
+Overlay JS leak listener Module cũ dùng addEventListener trực tiếp Migration §Overlay — dùng ctx.on
+Overlay JS chạy 2 lần Module không dùng ACDV.register Migration §Overlay
+Tắt JS mất CSS (Đã fix C6) Update v2.0.1
+Safe mode không tắt được Module cũ không cleanup v2.0.1 cleanup những module dùng ACDV.register
+Uninstall ghost Overlay chạy sau khi xoá (Đã fix từ v2.0.0) — refresh on modules_changed
+Terminal limit reached (sau 8 lần) Session leak khi process exit Đã fix C4 — update v2.0.1
+Terminal "Connecting…" mãi WS queue đầy Đã fix M14 — thử lại sau 2s
+Terminal chết sau 5 phút idle WS timeout 300s Đã fix H4 — heartbeat 90s
+Đóng tab editor file đã xoá → save resurrect Không đóng tab khi file delete Đã fix C10 + M7
+Save sau delete project → tái sinh write_file tạo lại dir Đã fix C10
+Run output trộn giữa Python và Java Module không tách event Đã fix C11 — module output vào Output panel
+Module không auto-detect khi copy folder Watcher chết từ đầu Đã fix C1 — update v2.0.1
+Sửa main.py module không reload Watcher chỉ check add/remove Đã fix C2 — so sánh mtime
+Critical module fail → server vẫn chạy Không exit Đã fix C3 — fail_critical ngay khi load
+Settings corrupt sau crash Write không atomic Đã fix H5 — tmp+fsync+replace
+Upload chunk fail khi mạng yếu Assemble phụ thuộc thứ tự Đã fix H6 — assemble khi đủ
+Concurrent upload mất metadata Không lock Đã fix H7
+Storage vượt quota Chỉ check chunk đầu Đã fix H8 — check lại lúc assemble
+Stale diagnostics sau module reload Cache không clear Đã fix H10
+Install module bỏ qua on_shutdown cũ Folder đã xoá tay Đã fix H11
+Overlay double-init Race register trước ready Đã fix H12
+Nesteds path diagnostics stale Split / sai Đã fix C9
+CSP vẫn cho phép WS ngoài Wildcard ws: Đã fix C5 — siết host:port
+2 tab tranh chấp config Không broadcast Đã fix M9
+2 tab tranh chấp settings Không reload UI Đã fix M12
+Upload trùng tên không cảnh báo Ghi đè silent Đã fix M5
+App init fail → trang blank Không catch Đã fix M6 — _showFatal
+Serve /.env Không check dotfile Đã fix L1
+Download lớn không resume Không có Range Đã fix L2
+Log file collision Dùng _ thay / Đã fix L8
+Disk đầy vì log cũ Không cleanup Đã fix L10 — xoá log > 7 ngày
+Module treo thread diagnostics Không timeout Đã fix L15 — 5s timeout
+Đọc README sai tên Hard-code wecom.md Đã fix H2 — fallback README.md
+Port sai (theo README 8765 nhưng config 8889) Mismatch Đã fix H1 — đồng bộ 8765
+
+Reset khi kẹt (v2.0.1):
+
+```bash
+# Kill process
+pkill -f "python main.py"
+fuser -k 8765/tcp
+
+# Reset state
+rm core/data/.run_pids.json
+rm core/data/settings.json
+rm -rf modules/*/storage/.tmp_uploads
+
+# Chạy lại
+python3 main.py
+
+# Hard reload browser (không phải F5)
+# Ctrl + Shift + R
+```
+
+---
+
+⚠️ Known issues / Roadmap
+
+🔴 Cần test kỹ (v2.0.1)
+
+· ☐ Error dispatch chain: on_any_error → on_http_error với 3+ module
+· ☐ Settings modal: schema validation, on_settings_changed callback
+· ☐ Diagnostics: auto-run on save, inline markers, jump-to-line
+· ☐ Core route protection: module cố override /api/status phải bị reject
+· ☐ Android: Samsung Internet, Firefox mobile
+· ☐ Terminal: Windows pipes (không có PTY), copy/paste mobile
+· ☐ Undo/Redo: selection state sau swapDoc, fold state per-tab, IME composition
+· ☐ Export: symlink handling, project lớn (> 100MB), concurrent export
+· ☐ Storage: quota edge case (upload vượt 100%, concurrent upload)
+· ☐ Overlay v2.0.1: migration test với 3+ module cũ
+· ☐ Overlay v2.0.1: CSP tương thích Safari cũ
+· ☐ WS queue: overflow behavior khi mất mạng lâu
+· ☐ Heartbeat v2.0.1: không conflict khi proxy block WS
+
+🟢 Nice to have
+
+· ☐ Import from Git URL
+· ☐ Multi-user auth
+· ☐ Resource limits (CPU/mem per process)
+· ☐ Overlay: iframe sandbox (fix triệt để RCE) — ưu tiên cao
+· ☐ Overlay: capability registry
+· ☐ Overlay: hot-reload khi save file trong data/
+· ☐ Per-file undo history persistence (sessionStorage)
+· ☐ Per-file fold state persistence (localStorage)
+· ☐ Terminal scrollback persistence
+· ☐ Terminal split panes
+· ☐ Export: chọn subset file
+· ☐ Storage: file preview (image, text)
+· ☐ Storage: quota dashboard toàn hệ thống
+· ☐ Multi-language: LSP integration
+· ☐ Multi-language: Tree-sitter
+
+Roadmap
+
+v2.0.x — polish (hiện tại v2.0.1)
+
+· ✅ Fix 35 bug critical/high/medium/low
+· ✅ Watcher hoạt động đúng (add/reload/remove)
+· ✅ Terminal leak fixed
+· ✅ CSP siết WS
+· ✅ Overlay CSS preserved khi tắt JS
+· ☐ Test suite cho 3+ module overlay cũ
+· ☐ CapabilityRegistry generic
+· ☐ Diagnostics dedup giữa nhiều module
+· ☐ Router reject collision (owner tracking) — đã có _unregister_module_routes
+
+v2.1.0 — overlay sandbox
+
+· ☐ Overlay JS chạy trong <iframe sandbox>
+· ☐ Giao tiếp qua postMessage với whitelist API
+· ☐ Terminal open từ overlay cần confirmation
+· ☐ Capability contract cho autocomplete/diagnostics
+· ☐ Fix triệt để RCE qua terminal_open (CSP không chặn được WS same-origin)
+
+v2.2.0 — module marketplace
+
+· ☐ UI chọn module theo ngôn ngữ (thay vì upload ZIP)
+· ☐ Module registry (JSON index)
+· ☐ Terminal: multiple tabs
+· ☐ Undo history persistence qua sessionStorage
+
+v3.0.0 — scale
+
+· ☐ Multi-user + auth
+· ☐ Collaborative editing (WS) — OT
+· ☐ Docker isolation per project
+· ☐ LSP server bridge
+· ☐ Module compile sandbox (chroot)
+
+---
+
+📋 Legal
+
+Educational / personal use. Không cài module từ nguồn không tin cậy — module có toàn quyền Python. Không chạy server bằng sudo. Terminal chạy với quyền user server — cẩn trọng khi expose ra mạng LAN/WAN.
+
+Module Storage không có authentication — chỉ serve file user upload. Không lưu dữ liệu nhạy cảm.
+
+⭐ Module compile: Module compile có quyền chạy pkg install và spawn process với quyền user — nguy hiểm tương đương việc bạn tự chạy lệnh đó. Chỉ cài module từ nguồn tin cậy.
+
+⭐ Overlay v2.0.1: Overlay JS chạy trong browser của app. v2.0.1 có:
+
+· Cleanup registry — reload/uninstall tự dọn
+· CSP connect-src siết theo host:port — chặn overlay gọi mạng ngoài qua HTTP lẫn WS
+· ETag cache — không bust, không leak khi reload
+· Tắt JS không xoá CSS
+
+Chưa fix triệt để (roadmap v2.1):
+
+· Overlay vẫn có thể gửi terminal_open qua WS same-origin → chạy lệnh shell với quyền user. CSP connect-src không chặn được vì WS là same-origin.
+· Fix triệt để cần iframe sandbox — overlay không truy cập được window.App/window.fetch, chỉ giao tiếp qua postMessage whitelist.
+· Trong khi chờ, chỉ cài module tin cậy.
+
+⭐ Multi-language editing: Core chỉ syntax highlight + lưu plaintext — không chạy/không compile ngôn ngữ ngoài .py/.js/.sh/.bash. File được lưu nguyên văn UTF-8.
+
+---
+
+Chúc bạn có những trải nghiệm code thật mượt mà — và thật an toàn — cùng ACDV-Teams Coder v2.0.1! 🎉
+
+```
+
+---
+
+## 📌 Ghi chú cho bạn
+
+**File này có thể lưu với 2 tên:**
+- `wecom.md` (ưu tiên — engine đọc trước)
+- `README.md` (fallback — v2.0.1 fix H2 cho phép đọc cả hai)
+
+**Điểm khác biệt so với bản gốc:**
+1. ✅ **Header mới:** v2.0.1 thay vì v2.0.0/1.4.0, port 8765 khớp config
+2. ✅ **CHANGELOG section mới:** liệt kê 35 bug đã fix, phân loại C/H/M/L
+3. ✅ **Cảnh báo bổ sung:** v2.0.1 CSP chỉ chặn HTTP exfil, KHÔNG chặn WS exfil — nhấn mạnh iframe sandbox là fix triệt để ở v2.1
+4. ✅ **Hướng dẫn cập nhật:** thêm note về auto-detect, terminal cleanup, heartbeat
+5. ✅ **Troubleshooting mở rộng:** 30+ dòng mới mapping bug → fix version
+6. ✅ **Roadmap rõ ràng:** v2.0.1 → v2.1.0 → v2.2.0 → v3.0.0
+7. ✅ **Giữ nguyên triết lý gốc:** Edit ≠ Run, sandbox warning, module contract — không thay đổi phần cốt lõi
+
+**Nếu bạn muốn tôi viết thêm:**
+- `SECURITY.md` riêng (chi tiết về threat model, cách report bug bảo mật)
+- `CHANGELOG.md` (chỉ liệt kê thay đổi giữa các version)
+- `CONTRIBUTING.md` (hướng dẫn dev tham gia)
+- Hoặc bản README dạng **ngắn gọn** (~500 dòng) cho người mới, tách guide dài sang `docs/`
+
+Cứ nói nhé!

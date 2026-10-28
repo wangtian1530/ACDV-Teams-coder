@@ -1,9 +1,15 @@
-"""Process runner — chạy file project, stream output, kill process group an toàn."""
+"""Process runner — chạy file project, stream output, kill process group an toàn.
+
+v2.0.1 (hotfix):
+  - L8: log name dùng hash để tránh collision giữa "a/b.py" và "a_b.py".
+  - L10: giới hạn số log file để tránh đầy disk (xóa log cũ hơn 7 ngày).
+"""
 import os
 import sys
 import json
 import shutil
 import time
+import hashlib
 import signal
 import subprocess
 import threading
@@ -16,6 +22,7 @@ class ProcessRunner:
     HARD_KILL_WAIT = 2.0
     BATCH_INTERVAL = 0.10
     BATCH_MAX_LINES = 100
+    LOG_MAX_AGE_DAYS = 7
 
     def __init__(self, engine, logs_dir):
         self.engine = engine
@@ -26,6 +33,27 @@ class ProcessRunner:
         os.makedirs(self.logs_dir, exist_ok=True)
         try:
             atexit.register(self._atexit_kill)
+        except Exception:
+            pass
+        try:
+            self._cleanup_old_logs()
+        except Exception:
+            pass
+
+    def _cleanup_old_logs(self):
+        """Xóa log cũ hơn N ngày để tránh đầy disk."""
+        now = time.time()
+        max_age = self.LOG_MAX_AGE_DAYS * 86400
+        try:
+            for fn in os.listdir(self.logs_dir):
+                if fn.startswith(".") or not fn.endswith(".log"):
+                    continue
+                full = os.path.join(self.logs_dir, fn)
+                try:
+                    if now - os.path.getmtime(full) > max_age:
+                        os.remove(full)
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -89,7 +117,10 @@ class ProcessRunner:
         if ext == ".js":
             node = shutil.which("node") or shutil.which("nodejs")
             if not node:
-                raise Exception("Node.js not found in PATH")
+                raise Exception(
+                    "Node.js not found in PATH. "
+                    "Cài: pkg install nodejs (Termux) hoặc cài Node từ nodejs.org"
+                )
             return [node, filepath]
         if ext in (".sh", ".bash"):
             bash = shutil.which("bash") or "/bin/bash"
@@ -99,8 +130,14 @@ class ProcessRunner:
         )
 
     def _log_path_for(self, project, rel_path):
-        safe = (rel_path or "file").replace("/", "_").replace("\\", "_")
-        return os.path.join(self.logs_dir, f"{project}__{safe}.log")
+        """⭐ L8: dùng hash để tránh collision giữa 'a/b.py' và 'a_b.py'."""
+        # Sanitize project name (an toàn cho filename)
+        safe_proj = (project or "proj").replace("/", "_").replace("\\", "_")
+        # Full hash của rel_path, chỉ lấy 12 ký tự
+        path_hash = hashlib.sha1((rel_path or "").encode("utf-8")).hexdigest()[:12]
+        # Filename ngắn gọn (giữ để dễ đọc)
+        base = os.path.basename(rel_path or "file").replace("/", "_").replace("\\", "_")
+        return os.path.join(self.logs_dir, f"{safe_proj}__{base}__{path_hash}.log")
 
     def _is_alive(self, cur):
         try:

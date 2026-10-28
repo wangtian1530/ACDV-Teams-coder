@@ -1,0 +1,98 @@
+/* modules/localhost_detector/web/overlay.css
+   Namespace: .acdv-localhost_detector-*
+*/
+
+.acdv-localhost_detector-root {
+  position: fixed;
+  right: 16px;
+  bottom: 64px; /* chừa chỗ cho toolbar dưới */
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+.acdv-localhost_detector-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.acdv-localhost_detector-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+.acdv-localhost_detector-btn:active {
+  transform: translateY(0);
+}
+
+.acdv-localhost_detector-close {
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  line-height: 1;
+}
+.acdv-localhost_detector-close:hover {
+  background: rgba(220, 38, 38, 0.85);
+}
+
+.acdv-localhost_detector-menu {
+  position: absolute;
+  right: 0;
+  bottom: 46px;
+  background: #1f2937;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.acdv-localhost_detector-item {
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  text-align: left;
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid #374151;
+  font-family: inherit;
+  width: 100%;
+}
+.acdv-localhost_detector-item:last-child {
+  border-bottom: none;
+}
+.acdv-localhost_detector-item:hover {
+  background: #374151;
+}
+.acdv-localhost_detector-item-url {
+  font-size: 13px;
+  font-weight: 600;
+  color: #60a5fa;
+  word-break: break-all;
+}
+.acdv-localhost_detector-item-fw {
+  font-size: 11px;
+  opacity: 0.7;
+}

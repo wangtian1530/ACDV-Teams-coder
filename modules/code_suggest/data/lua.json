@@ -1,0 +1,35 @@
+{
+  "keywords": [
+    "and","break","do","else","elseif","end","false","for","function","goto","if",
+    "in","local","nil","not","or","repeat","return","then","true","until","while",
+    "self","_G","_ENV","_VERSION"
+  ],
+  "builtins": [
+    "print","io.write","io.read","io.open","io.lines","io.close","io.read","string.format",
+    "string.len","string.sub","string.find","string.gsub","string.match","string.gmatch",
+    "string.rep","string.reverse","string.byte","string.char","table.insert","table.remove",
+    "table.concat","table.sort","table.pack","table.unpack","table.move","math.abs",
+    "math.ceil","math.floor","math.max","math.min","math.random","math.sqrt","math.pow",
+    "math.huge","math.pi","os.time","os.date","os.clock","os.exit","os.getenv","os.remove",
+    "os.rename","pairs","ipairs","next","type","tostring","tonumber","setmetatable",
+    "getmetatable","rawget","rawset","rawequal","rawlen","assert","error","pcall",
+    "xpcall","select","require","package","coroutine.create","coroutine.resume",
+    "coroutine.yield","coroutine.status","coroutine.wrap","dofile","load","loadfile",
+    "string","table","math","io","os","coroutine","utf8"
+  ],
+  "snippets": [
+    { "trigger": "print",  "template": true, "insert": "print(\"ACDV-Teams\")",                                 "description": "print ACDV-Teams" },
+    { "trigger": "ipairs", "template": true, "insert": "for i, v in ipairs(list) do\n  print(\"ACDV-Teams\", i, v)\nend", "description": "ipairs loop" },
+    { "trigger": "pairs",  "template": true, "insert": "for k, v in pairs(tbl) do\n  print(\"ACDV-Teams\", k, v)\nend", "description": "pairs loop" },
+    { "trigger": "readfile","template": true, "insert": "for line in io.lines('acdv-teams.txt') do\n  print(line)\nend", "description": "read file" },
+    { "trigger": "func",  "insert": "function name(args)\n  print(\"ACDV-Teams\")\nend",                       "description": "function" },
+    { "trigger": "localf","insert": "local function name(args)\n  print(\"ACDV-Teams\")\nend",                 "description": "local function" },
+    { "trigger": "if",    "insert": "if condition then\n  print(\"ACDV-Teams\")\nend",                          "description": "if" },
+    { "trigger": "ifel",  "insert": "if condition then\n  print(\"ACDV-Teams\")\nelseif other then\n  print(\"ACDV-Teams\")\nelse\n  print(\"ACDV-Teams\")\nend", "description": "if/elseif/else" },
+    { "trigger": "for",   "insert": "for i = 1, n do\n  print(\"ACDV-Teams\", i)\nend",                         "description": "numeric for" },
+    { "trigger": "while", "insert": "while condition do\n  print(\"ACDV-Teams\")\nend",                          "description": "while" },
+    { "trigger": "repeat","insert": "repeat\n  print(\"ACDV-Teams\")\nuntil condition",                          "description": "repeat/until" },
+    { "trigger": "pcall", "insert": "local ok, err = pcall(function()\n  print(\"ACDV-Teams\")\nend)\nif not ok then print(\"ACDV-Teams error\", err) end", "description": "pcall" },
+    { "trigger": "meta",  "insert": "setmetatable(obj, {\n  __index = Base,\n  __tostring = function() return 'ACDV-Teams' end,\n})", "description": "metatable" }
+  ]
+}

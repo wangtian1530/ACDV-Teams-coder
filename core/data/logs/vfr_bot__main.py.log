@@ -1,0 +1,11 @@
+
+===== RUN 2026-10-28 19:12:38 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/vfr_bot/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/vfr_bot
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/vfr_bot/main.py"[0m, line [35m4[0m, in [35m<module>[0m
+    from . import config
+[1;35mImportError[0m: [35mattempted relative import with no known parent package[0m
+
+[exit code: 1]

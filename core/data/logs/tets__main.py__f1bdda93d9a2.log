@@ -1,0 +1,10 @@
+
+===== RUN 2026-10-29 00:02:50 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+<Response [502]>
+ACDV-Teams error 'Response' object has no attribute 'get'
+
+[exit code: 0]

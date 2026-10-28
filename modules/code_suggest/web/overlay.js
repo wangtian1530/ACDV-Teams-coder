@@ -31,14 +31,97 @@
     return null;
   }
 
+  // ─── Language mapping (CodeMirror mode → data file) ───
+  const LANG_MAP = {
+    // Python
+    'python':          'python',
+
+    // JavaScript family
+    'javascript':      'javascript',
+    'jsx':             'javascript',
+
+    // TypeScript family
+    'typescript':      'typescript',
+    'typescript-jsx':  'typescript',
+
+    // Shell
+    'shell':           'bash',
+    'bash':            'bash',
+    'sh':              'bash',
+
+    // C family
+    'c':               'c',
+    'clike':           'c',
+    'cpp':             'cpp',
+    'c++':             'cpp',
+
+    // C#
+    'csharp':          'csharp',
+    'cs':              'csharp',
+    'c#':              'csharp',
+
+    // Dart
+    'dart':            'dart',
+
+    // Go
+    'go':              'go',
+
+    // Java
+    'java':            'java',
+
+    // Kotlin
+    'kotlin':          'kotlin',
+    'text/x-kotlin':   'kotlin',
+
+    // Lua
+    'lua':             'lua',
+
+    // PHP
+    'php':             'php',
+    'application/x-httpd-php': 'php',
+
+    // PowerShell
+    'powershell':      'powershell',
+    'ps1':             'powershell',
+
+    // Ruby
+    'ruby':            'ruby',
+
+    // Rust
+    'rust':            'rust',
+
+    // SQL
+    'sql':             'sql',
+    'text/x-sql':      'sql',
+    'mysql':           'sql',
+    'pgsql':           'sql',
+
+    // Swift
+    'swift':           'swift',
+  };
+
   function getLanguage() {
     if (!cm) return null;
     try {
       const m = cm.getMode();
-      const n = (m && (m.name || m.helperType || '')) || '';
-      if (n === 'python') return 'python';
-      if (['javascript','jsx','typescript','typescript-jsx'].includes(n)) return 'javascript';
-      if (['shell','bash','sh'].includes(n)) return 'bash';
+      if (!m) return null;
+
+      const candidates = [
+        m.name,
+        m.helperType,
+        (m.name || '').toLowerCase(),
+        (m.helperType || '').toLowerCase(),
+      ];
+
+      for (const c of candidates) {
+        if (!c) continue;
+        const key = String(c).toLowerCase();
+        if (LANG_MAP[key]) return LANG_MAP[key];
+      }
+
+      const file = (cm.getOption && cm.getOption('mode')) || '';
+      const fk = String(file).toLowerCase();
+      if (LANG_MAP[fk]) return LANG_MAP[fk];
     } catch (_) {}
     return null;
   }
@@ -75,7 +158,6 @@
       const c = cm.cursorCoords(false, 'window');
       const boxH = Math.min(box.offsetHeight || 0, 280);
       let top = c.bottom + 4;
-      // flip up nếu chạm đáy viewport
       if (top + boxH > window.innerHeight - 10) top = c.top - boxH - 4;
       box.style.left = Math.max(4, c.left) + 'px';
       box.style.top  = Math.max(4, top)  + 'px';
@@ -197,8 +279,15 @@
         if (!data || !data.ok || !Array.isArray(data.suggestions) || !data.suggestions.length) {
           return hide();
         }
-        // bỏ qua nếu suggestion == prefix (không giúp gì)
-        const list2 = data.suggestions.filter(s => s.label !== prefix);
+
+        // ─── Filter: giữ template khi user đã gõ đủ tên hàm ───
+        // Bỏ qua suggestion chỉ nếu label === prefix VÀ insert trùng label
+        // (tức là gợi ý vô nghĩa — không giúp user gõ thêm gì).
+        // Nếu insert khác label (function template) → GIỮ LẠI để user accept.
+        const list2 = data.suggestions.filter(s => {
+          if (s.label === prefix && (s.insert === s.label || !s.insert)) return false;
+          return true;
+        });
         if (!list2.length) return hide();
         items = list2;
         selected = 0;
@@ -276,7 +365,7 @@
     buildBox();
     bindEvents();
     loadSettings();
-    console.info('[code_suggest] ready');
+    console.info('[code_suggest] ready — ACDV-Teams v1.1.0');
   }
 
   if (document.readyState === 'loading') {

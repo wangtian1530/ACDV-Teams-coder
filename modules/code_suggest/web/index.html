@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACDV-Teams Code Suggest — Module Intro</title>
+<style>
+  :root {
+    --bg:#1e1e2e; --bg2:#282a36; --fg:#f8f8f2; --dim:#9aa0b0;
+    --accent:#61afef; --gold:#e5c07b; --purple:#c678dd; --green:#98c379;
+    --border:#44475a; --red:#e06c75;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:0; background:var(--bg); color:var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                 'Helvetica Neue', Arial, sans-serif;
+    line-height:1.6;
+  }
+  code, pre, .mono { font-family: 'Consolas','Menlo','Courier New',monospace; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+
+  .wrap { max-width:960px; margin:0 auto; padding:32px 24px; }
+
+  .hero {
+    text-align:center; padding:48px 24px 32px;
+    background: linear-gradient(135deg, #1e1e2e 0%, #2a2d3e 100%);
+    border-bottom:1px solid var(--border);
+  }
+  .hero h1 {
+    margin:0 0 8px; font-size:42px; font-weight:800;
+    background: linear-gradient(135deg, #61afef, #c678dd, #e5c07b);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .hero .brand {
+    font-size:14px; letter-spacing:3px; color:var(--gold);
+    text-transform:uppercase; margin-bottom:16px;
+  }
+  .hero .version-badge {
+    display:inline-block; padding:4px 12px; border-radius:20px;
+    background:var(--bg2); border:1px solid var(--border);
+    font-size:13px; color:var(--dim); margin-top:12px;
+  }
+  .hero .tagline {
+    max-width:640px; margin:16px auto 0; color:var(--dim);
+    font-size:16px;
+  }
+
+  h2 {
+    font-size:22px; font-weight:700; margin:40px 0 16px;
+    padding-bottom:8px; border-bottom:1px solid var(--border);
+    color:var(--fg);
+  }
+  h2::before { content:'▸ '; color:var(--accent); }
+
+  .features {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+    gap:16px; margin:20px 0;
+  }
+  .feature {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:8px; padding:18px;
+    transition: border-color .15s, transform .15s;
+  }
+  .feature:hover { border-color:var(--accent); transform: translateY(-2px); }
+  .feature .icon { font-size:26px; margin-bottom:8px; }
+  .feature h3 { margin:0 0 6px; font-size:16px; color:var(--fg); }
+  .feature p { margin:0; font-size:14px; color:var(--dim); }
+
+  .lang-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+    gap:8px; margin:16px 0;
+  }
+  .lang-chip {
+    background:var(--bg2); border:1px solid var(--border);
+    padding:8px 12px; border-radius:6px; font-size:13px;
+    text-align:center; color:var(--fg);
+  }
+  .lang-chip .dot {
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--green); margin-right:6px;
+  }
+
+  .example {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:8px; padding:16px; margin:12px 0;
+  }
+  .example .label {
+    font-size:12px; color:var(--dim); text-transform:uppercase;
+    letter-spacing:1px; margin-bottom:6px;
+  }
+  .example pre {
+    margin:0; padding:12px; background:#16171f; border-radius:6px;
+    overflow-x:auto; font-size:13px; color:var(--fg);
+  }
+  .example .arrow { color:var(--gold); font-weight:bold; }
+  .str { color:var(--green); }
+  .kw  { color:var(--purple); }
+  .fn  { color:var(--accent); }
+
+  .kbd {
+    display:inline-block; padding:2px 8px; border-radius:4px;
+    background:#16171f; border:1px solid var(--border);
+    font-size:12px; font-family:monospace; color:var(--gold);
+  }
+
+  .footer {
+    text-align:center; padding:40px 24px 32px; margin-top:60px;
+    border-top:1px solid var(--border); color:var(--dim); font-size:13px;
+  }
+  .footer .copy { color:var(--gold); font-weight:600; margin-bottom:4px; }
+  .footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="brand">ACDV-Teams Module</div>
+  <h1>Code Suggest</h1>
+  <div class="version-badge">v1.1.0 · 18 languages</div>
+  <p class="tagline">
+    Autocomplete kiểu VS Code + function call templates.
+    Gõ <code>setTimeout</code> → nhận ngay <code>setTimeout(() =&gt; { … }, 1000)</code>.
+    String mẫu luôn là <strong style="color:var(--green)">ACDV-Teams</strong>.
+  </p>
+</div>
+
+<div class="wrap">
+
+  <h2>✨ Tính năng chính</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">⚡</div>
+      <h3>Function templates</h3>
+      <p>Gõ tên hàm → gợi ý template hoàn chỉnh với tham số mẫu (vd <code>setTimeout</code> → <code>setTimeout(() =&gt; {}, 1000)</code>).</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🌐</div>
+      <h3>18 ngôn ngữ</h3>
+      <p>Python, JS, TS, C, C++, C#, Go, Rust, Java, Kotlin, Dart, Swift, Ruby, PHP, Bash, Lua, PowerShell, SQL.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🏷️</div>
+      <h3>ACDV-Teams strings</h3>
+      <p>Mọi string mẫu trong snippet đều là <code>"ACDV-Teams"</code> — dễ nhận biết, đổi 1 chỗ là xong.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔍</div>
+      <h3>Local symbols</h3>
+      <p>Đọc file đang mở, gợi ý tên hàm/biến vừa định nghĩa trong chính file đó.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">⌨️</div>
+      <h3>Ctrl-Space</h3>
+      <p>Trigger thủ công khi cần. Arrow keys để chọn, <span class="kbd">Enter</span>/<span class="kbd">Tab</span> để accept, <span class="kbd">Esc</span> để đóng.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">⚙️</div>
+      <h3>Hot-apply settings</h3>
+      <p>Bật/tắt từng loại suggestion, đổi max items, min prefix — áp dụng ngay không cần reload.</p>
+    </div>
+  </div>
+
+  <h2>💡 Ví dụ</h2>
+
+  <div class="example">
+    <div class="label">JavaScript — setTimeout</div>
+    <pre><span class="kw">setTimeout</span><span class="arrow">→</span> <span class="fn">setTimeout</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="str">'ACDV-Teams'</span>);
+}, <span class="kw">1000</span>);</pre>
+  </div>
+
+  <div class="example">
+    <div class="label">Python — print</div>
+    <pre><span class="kw">print</span><span class="arrow">→</span> <span class="fn">print</span>(<span class="str">'ACDV-Teams'</span>)</pre>
+  </div>
+
+  <div class="example">
+    <div class="label">C — printf</div>
+    <pre><span class="kw">printf</span><span class="arrow">→</span> <span class="fn">printf</span>(<span class="str">"ACDV-Teams\n"</span>);</pre>
+  </div>
+
+  <div class="example">
+    <div class="label">Go — Println</div>
+    <pre><span class="kw">Println</span><span class="arrow">→</span> fmt.<span class="fn">Println</span>(<span class="str">"ACDV-Teams"</span>)</pre>
+  </div>
+
+  <h2>🌐 Ngôn ngữ hỗ trợ</h2>
+  <div class="lang-grid" id="langGrid">
+    <div class="lang-chip">đang tải…</div>
+  </div>
+
+  <h2>🚀 Cách dùng</h2>
+  <ul style="color:var(--dim); font-size:14px;">
+    <li>Mở file code trong editor → gõ vài ký tự → popup suggestion tự hiện.</li>
+    <li>Nhấn <span class="kbd">↑</span> / <span class="kbd">↓</span> để di chuyển, <span class="kbd">Enter</span> hoặc <span class="kbd">Tab</span> để chấp nhận.</li>
+    <li><span class="kbd">Ctrl</span> + <span class="kbd">Space</span> để trigger thủ công.</li>
+    <li>Vào <strong>Settings → Modules → code_suggest</strong> để tinh chỉnh.</li>
+  </ul>
+
+  <h2>📦 API công khai</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <thead>
+      <tr style="text-align:left; border-bottom:1px solid var(--border);">
+        <th style="padding:8px; color:var(--dim);">Method</th>
+        <th style="padding:8px; color:var(--dim);">Path</th>
+        <th style="padding:8px; color:var(--dim);">Mô tả</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px;"><code>POST</code></td>
+        <td style="padding:8px;"><code>/api/code_suggest/complete</code></td>
+        <td style="padding:8px; color:var(--dim);">Lấy gợi ý cho prefix</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px;"><code>GET</code></td>
+        <td style="padding:8px;"><code>/api/code_suggest/languages</code></td>
+        <td style="padding:8px; color:var(--dim);">Danh sách ngôn ngữ</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;"><code>GET</code></td>
+        <td style="padding:8px;"><code>/api/code_suggest/about</code></td>
+        <td style="padding:8px; color:var(--dim);">Metadata module</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<div class="footer">
+  <div class="copy">© 2026 ACDV-Teams Module</div>
+  <div>Code Suggest v1.1.0 · Built for <a href="/">ACDV-Teams Coder</a></div>
+</div>
+
+<script>
+  // Fetch languages dynamically
+  fetch('/api/code_suggest/languages')
+    .then(r => r.json())
+    .then(d => {
+      const grid = document.getElementById('langGrid');
+      if (!d || !d.languages || !d.languages.length) {
+        grid.innerHTML = '<div class="lang-chip">Không có dữ liệu</div>';
+        return;
+      }
+      grid.innerHTML = d.languages.map(l =>
+        '<div class="lang-chip"><span class="dot"></span>' + l + '</div>'
+      ).join('');
+    })
+    .catch(() => {
+      document.getElementById('langGrid').innerHTML =
+        '<div class="lang-chip" style="color:var(--red)">Lỗi tải danh sách</div>';
+    });
+</script>
+
+</body>
+</html>

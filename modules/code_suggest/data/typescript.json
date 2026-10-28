@@ -1,0 +1,41 @@
+{
+  "keywords": [
+    "abstract","any","as","async","await","boolean","break","case","catch","class",
+    "const","constructor","continue","debugger","declare","default","delete","do",
+    "else","enum","export","extends","false","finally","for","from","function","get",
+    "if","implements","import","in","infer","instanceof","interface","is","keyof",
+    "let","module","namespace","never","new","null","number","object","of","private",
+    "protected","public","readonly","return","set","static","string","super","switch",
+    "symbol","this","throw","true","try","type","typeof","undefined","unique","unknown",
+    "var","void","while","with","yield","satisfies","asserts"
+  ],
+  "builtins": [
+    "console.log","console.error","console.warn","console.info","console.table",
+    "Array","Object","String","Number","Boolean","Math","Date","RegExp","JSON","Promise",
+    "Map","Set","WeakMap","WeakSet","Symbol","BigInt","parseInt","parseFloat","isNaN",
+    "isFinite","setTimeout","setInterval","clearTimeout","clearInterval","queueMicrotask",
+    "fetch","URL","URLSearchParams","Request","Response","Headers","AbortController",
+    "document","window","localStorage","sessionStorage","navigator","require","module",
+    "exports","process","Buffer","querySelector","querySelectorAll","addEventListener",
+    "Partial","Required","Readonly","Record","Pick","Omit","Exclude","Extract","ReturnType",
+    "Parameters","Awaited","Promise.all","Promise.allSettled","Promise.race","Object.keys",
+    "Object.entries","Object.fromEntries","Object.assign","Array.isArray"
+  ],
+  "snippets": [
+    { "trigger": "setTimeout",  "template": true, "insert": "setTimeout(() => {\n  console.log('ACDV-Teams');\n}, 1000);", "description": "setTimeout 1000ms (ACDV-Teams)" },
+    { "trigger": "setInterval", "template": true, "insert": "setInterval(() => {\n  console.log('ACDV-Teams');\n}, 1000);", "description": "setInterval 1000ms (ACDV-Teams)" },
+    { "trigger": "fetch",       "template": true, "insert": "fetch('https://acdv-teams.api/endpoint')\n  .then((r: Response) => r.json())\n  .then((data: unknown) => console.log('ACDV-Teams', data))\n  .catch((err: Error) => console.error('ACDV-Teams error', err));", "description": "fetch API (ACDV-Teams)" },
+    { "trigger": "clg",         "template": true, "insert": "console.log('ACDV-Teams');", "description": "console.log (ACDV-Teams)" },
+    { "trigger": "iface",  "insert": "interface Name {\n    field: string;\n    method(): void;\n}", "description": "interface" },
+    { "trigger": "type",   "insert": "type Name = {\n    field: string;\n};",                   "description": "type alias" },
+    { "trigger": "enum",   "insert": "enum Name {\n    A = 'A',\n    B = 'B',\n}",             "description": "enum" },
+    { "trigger": "cls",    "insert": "export class Name {\n    constructor(private readonly name: string = 'ACDV-Teams') {}\n}", "description": "class" },
+    { "trigger": "fn",     "insert": "export function name(args: string): void {\n    console.log('ACDV-Teams', args);\n}", "description": "function" },
+    { "trigger": "afn",    "insert": "export async function name(): Promise<void> {\n    const data = await fetch('https://acdv-teams.api');\n    console.log('ACDV-Teams', data);\n}", "description": "async function" },
+    { "trigger": "arrow",  "insert": "const fn = (x: string): void => {\n    console.log('ACDV-Teams', x);\n};", "description": "arrow fn" },
+    { "trigger": "forof",  "insert": "for (const item of items) {\n    console.log('ACDV-Teams', item);\n}", "description": "for of" },
+    { "trigger": "tryc",   "insert": "try {\n    // ACDV-Teams\n} catch (err) {\n    if (err instanceof Error) console.error('ACDV-Teams', err.message);\n}", "description": "try/catch" },
+    { "trigger": "guard",  "insert": "function isFoo(x: unknown): x is Foo {\n    return typeof x === 'object' && x !== null && 'foo' in x;\n}", "description": "type guard" },
+    { "trigger": "import", "insert": "import { name } from './acdv-teams';",                    "description": "import named" }
+  ]
+}

@@ -1,5 +1,5 @@
 /* ============================================================ */
-/*  ACDV-Teams Coder — Complete stylesheet v1.3.4              */
+/*  ACDV-Teams Coder — Complete stylesheet v1.4.1              */
 /* ============================================================ */
 
 /* ---------- CSS variables ---------- */
@@ -86,11 +86,9 @@ input, select, textarea { font-family: inherit; }
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .icon-btn.small { font-size: 12px; padding: 3px 6px; }
 
-/* ---------- ⭐ v1.3.4: Toolbar overflow ---------- */
-/* Ẩn/hiện theo breakpoint — logic toggle ở cuối file trong @media */
+/* ---------- Mobile overflow ---------- */
 .mobile-only { display: none !important; }
 
-/* Chấm đỏ báo Problems trên nút More (mirror từ #problemsBtn .badge) */
 #moreBtn .mobile-badge-dot {
   position: absolute;
   top: 2px; right: 2px;
@@ -102,7 +100,6 @@ input, select, textarea { font-family: inherit; }
 }
 #moreBtn .mobile-badge-dot.error { background: var(--error); }
 
-/* ---------- ⭐ v1.3.4: Mobile overflow menu ---------- */
 .top-menu {
   position: absolute;
   top: calc(100% + 2px);
@@ -253,21 +250,253 @@ input, select, textarea { font-family: inherit; }
 .editor-tab.dirty .close { font-size: 0; }
 .editor-tab.dirty .close::before { font-size: 10px; }
 
-/* ---------- Editor wrap ---------- */
+/* ---------- Editor wrap (⭐ v1.4.1 FIX: flex column) ---------- */
 .editor-wrap {
-  flex: 1; position: relative; overflow: hidden;
-  background: var(--bg); min-height: 0;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .editor { display: none; }
-.editor-empty {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--bg);
-}
-.empty-inner { text-align: center; color: var(--fg-dim); }
-.empty-inner h2 { font-size: 22px; margin: 0 0 8px; color: var(--fg); font-weight: 500; }
-.empty-inner p  { margin: 0 0 20px; font-size: 13px; }
 
+/* ---------- Editor empty / Welcome ---------- */
+/* ⭐ v1.4.1 FIX: force block layout, không center */
+.editor-empty {
+  position: absolute !important;
+  inset: 0 !important;
+  background: var(--bg) !important;
+  overflow: hidden !important;
+  display: block !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+}
+
+.welcome-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  background: var(--bg) !important;
+}
+
+.welcome-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  padding: 16px 24px !important;
+  background: var(--bg-2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0 !important;
+  min-height: fit-content !important;
+}
+
+.welcome-header h2 {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--fg) !important;
+  flex: 1 1 100% !important;
+  min-width: 0 !important;
+  line-height: 1.3 !important;
+}
+
+.welcome-header .btn.primary,
+.welcome-header #refreshReadmeBtn {
+  flex: 0 0 auto !important;
+}
+
+.welcome-header p {
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: var(--fg-dim) !important;
+  flex: 1 1 100% !important;
+  order: initial !important;
+  line-height: 1.4 !important;
+}
+
+.welcome-readme {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 24px 40px 48px !important;
+  color: var(--fg) !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.welcome-readme::-webkit-scrollbar { width: 10px; }
+.welcome-readme::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 5px; }
+.welcome-readme::-webkit-scrollbar-track { background: var(--bg); }
+
+.welcome-loading {
+  color: var(--fg-dim);
+  font-style: italic;
+  padding: 40px;
+  text-align: center;
+}
+.welcome-error {
+  color: var(--error);
+  padding: 40px;
+  text-align: center;
+  background: rgba(241, 76, 76, 0.05);
+  border: 1px solid rgba(241, 76, 76, 0.2);
+  border-radius: 6px;
+}
+.welcome-raw {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+/* --- Markdown content trong welcome-readme --- */
+.welcome-readme > * { max-width: 100% !important; }
+
+.welcome-readme h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  padding-bottom: 8px;
+  margin: 8px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.welcome-readme h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  padding-bottom: 6px;
+  margin: 28px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.welcome-readme h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 20px 0 8px;
+}
+.welcome-readme h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 16px 0 8px;
+}
+.welcome-readme h5,
+.welcome-readme h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e5e5e5;
+  margin: 12px 0 6px;
+}
+
+.welcome-readme p { margin: 10px 0; }
+.welcome-readme ul,
+.welcome-readme ol { padding-left: 24px; margin: 10px 0; }
+.welcome-readme li { margin: 4px 0; }
+.welcome-readme li > p { margin: 4px 0; }
+
+.welcome-readme a {
+  color: #4af;
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+  transition: border-color 0.15s;
+}
+.welcome-readme a:hover { border-bottom-color: #4af; }
+
+.welcome-readme strong { color: #fff; font-weight: 600; }
+.welcome-readme em { color: var(--fg-dim); }
+
+.welcome-readme code {
+  background: var(--bg-3);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #e6b673;
+  border: 1px solid rgba(255,255,255,0.04);
+  word-break: break-word;
+}
+
+.welcome-readme pre {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.5;
+  max-width: 100%;
+  white-space: pre;
+  word-wrap: normal;
+}
+.welcome-readme pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: #d4d4d4;
+  font-size: 12px;
+  white-space: pre;
+  word-wrap: normal;
+  word-break: normal;
+}
+
+.welcome-readme table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  max-width: 100%;
+  font-size: 13px;
+  display: block;
+  overflow-x: auto;
+}
+.welcome-readme th,
+.welcome-readme td {
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.welcome-readme th {
+  background: var(--bg-3);
+  font-weight: 600;
+  color: #fff;
+}
+.welcome-readme tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.welcome-readme blockquote {
+  border-left: 4px solid var(--accent);
+  padding: 8px 16px;
+  margin: 12px 0;
+  background: var(--bg-2);
+  color: var(--fg-dim);
+  border-radius: 0 4px 4px 0;
+}
+.welcome-readme blockquote p { margin: 4px 0; }
+
+.welcome-readme hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+.welcome-readme img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* ---------- CodeMirror base ---------- */
 .CodeMirror { height: 100% !important; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
 .CodeMirror-scroll { min-height: 100%; }
 
@@ -675,10 +904,8 @@ input.settings-input[type=checkbox] { width: auto; }
     grid-template-rows: var(--topbar-h) 1fr var(--mobile-bar-h);
   }
 
-  /* ⭐ v1.3.4: topbar z-index cao hơn sidebar (100) để dropdown ⋯ nổi lên trên */
   .topbar { z-index: 200; }
 
-  /* ⭐ v1.3.4: ẩn nút desktop, hiện nút ⋯ */
   .desktop-only { display: none !important; }
   .mobile-only  { display: inline-flex !important; }
 
@@ -713,24 +940,53 @@ input.settings-input[type=checkbox] { width: auto; }
   .about-hero { flex-direction: column; text-align: center; }
   .about-grid { grid-template-columns: 90px 1fr; }
   .logs-body  { grid-template-columns: 1fr; grid-template-rows: 140px 1fr; }
+
+  /* Mobile welcome */
+  .welcome-header {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+  }
+  .welcome-header h2 {
+    font-size: 14px !important;
+    flex: 1 1 100% !important;
+  }
+  .welcome-header p {
+    font-size: 11px !important;
+  }
+  .welcome-readme {
+    padding: 14px 16px 40px !important;
+    font-size: 13px !important;
+  }
+  .welcome-readme h1 { font-size: 19px !important; }
+  .welcome-readme h2 { font-size: 16px !important; margin-top: 22px !important; }
+  .welcome-readme h3 { font-size: 14px !important; }
+  .welcome-readme pre { padding: 10px 12px !important; }
+  .welcome-readme pre code { font-size: 11px !important; }
+  .welcome-readme table { font-size: 12px !important; }
+  .welcome-readme th,
+  .welcome-readme td { padding: 4px 8px !important; }
 }
 
 /* ==================== Code folding ==================== */
+/* ⭐ v1.4.1 FIX: gutter luôn hiện, contrast tốt hơn */
 .CodeMirror-foldgutter {
-  width: 14px;
-  text-align: center;
+  width: 14px !important;
+  min-width: 14px !important;
+  text-align: center !important;
 }
 .CodeMirror-foldgutter-open,
 .CodeMirror-foldgutter-folded {
-  cursor: pointer;
-  color: #666;
-  font-size: 11px;
-  line-height: 1.3;
+  cursor: pointer !important;
+  color: #888 !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  opacity: 1 !important;
 }
 .CodeMirror-foldgutter-open:hover,
-.CodeMirror-foldgutter-folded:hover { color: #4af; }
+.CodeMirror-foldgutter-folded:hover { color: #4af !important; }
 .CodeMirror-foldgutter-open:after   { content: "▾"; }
 .CodeMirror-foldgutter-folded:after { content: "▸"; }
+.CodeMirror-foldgutter-blank { color: transparent; }
 
 .CodeMirror-foldmarker {
   color: #4af;
@@ -799,6 +1055,7 @@ input.settings-input[type=checkbox] { width: auto; }
     min-height: 180px;
   }
 }
+
 /* ============================================================ */
 /*  ⭐ v1.4.0: Loading overlay + Storage UI                     */
 /* ============================================================ */
@@ -1001,143 +1258,3 @@ input.settings-input[type=checkbox] { width: auto; }
 .mini-fill.ok     { background: var(--success); }
 .mini-fill.warn   { background: var(--warning); }
 .mini-fill.danger { background: var(--error); }
-/* ============================================================ */
-/*  ⭐ v1.4.1 FIX: Welcome screen bị che + fold không hoạt động  */
-/* ============================================================ */
-
-/* FIX 1: Override .editor-empty cũ (v1.3.4) — dùng !important để chắc chắn */
-.editor-empty {
-  position: absolute !important;
-  inset: 0 !important;
-  background: var(--bg) !important;
-  overflow: hidden !important;
-  display: block !important;
-  align-items: initial !important;
-  justify-content: initial !important;
-}
-
-/* FIX 2: welcome-screen PHẢI fill hết chiều cao, các child dùng flex properly */
-.welcome-screen {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  background: var(--bg) !important;
-}
-
-.welcome-header {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  flex-wrap: wrap !important;
-  padding: 16px 24px !important;
-  background: var(--bg-2) !important;
-  border-bottom: 1px solid var(--border) !important;
-  flex-shrink: 0 !important;
-  min-height: fit-content !important;
-}
-
-.welcome-header h2 {
-  margin: 0 !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: var(--fg) !important;
-  flex: 1 1 100% !important;   /* ⭐ Chiếm full hàng để không bị che */
-  min-width: 0 !important;
-  line-height: 1.3 !important;
-}
-
-.welcome-header .btn.primary {
-  flex: 0 0 auto !important;
-}
-
-.welcome-header #refreshReadmeBtn {
-  flex: 0 0 auto !important;
-}
-
-.welcome-header p {
-  margin: 0 !important;
-  font-size: 12px !important;
-  color: var(--fg-dim) !important;
-  flex: 1 1 100% !important;   /* ⭐ Xuống dòng riêng, không chèn giữa h2 và buttons */
-  order: initial !important;
-  line-height: 1.4 !important;
-}
-
-/* FIX 3: welcome-readme PHẢI scroll được — không bị cắt chữ */
-.welcome-readme {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;      /* ⭐ Quan trọng: cho phép shrink trong flex column */
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding: 24px 40px 48px !important;
-  color: var(--fg) !important;
-  font-size: 14px !important;
-  line-height: 1.65 !important;
-  max-width: 100% !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
-}
-
-/* FIX 4: markdown content không tràn */
-.welcome-readme > * {
-  max-width: 100% !important;
-}
-
-.welcome-readme pre {
-  max-width: 100% !important;
-  overflow-x: auto !important;
-  white-space: pre !important;
-  word-wrap: normal !important;
-}
-
-.welcome-readme pre code {
-  white-space: pre !important;
-  word-wrap: normal !important;
-  word-break: normal !important;
-}
-
-.welcome-readme code {
-  word-break: break-word !important;
-}
-
-.welcome-readme table {
-  display: block !important;
-  overflow-x: auto !important;
-  max-width: 100% !important;
-}
-
-.welcome-readme img {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
-/* FIX 5: Mobile welcome */
-@media (max-width: 768px) {
-  .welcome-header {
-    padding: 12px 14px !important;
-    gap: 8px !important;
-  }
-  .welcome-header h2 {
-    font-size: 14px !important;
-    flex: 1 1 100% !important;
-  }
-  .welcome-header p {
-    font-size: 11px !important;
-  }
-  .welcome-readme {
-    padding: 14px 16px 40px !important;
-    font-size: 13px !important;
-  }
-  .welcome-readme h1 { font-size: 19px !important; }
-  .welcome-readme h2 { font-size: 16px !important; margin-top: 22px !important; }
-  .welcome-readme h3 { font-size: 14px !important; }
-  .welcome-readme pre {
-    padding: 10px 12px !important;
-  }
-  .welcome-readme pre code { font-size: 11px !important; }
-  .welcome-readme table { font-size: 12px !important; }
-  .welcome-readme th,
-  .welcome-readme td { padding: 4px 8px !important; }
-}

@@ -1,0 +1,47 @@
+{
+  "keywords": [
+    "break","default","func","interface","select","case","defer","go","map",
+    "struct","chan","else","goto","package","switch","const","fallthrough","if",
+    "range","type","continue","for","import","return","var","nil","true","false",
+    "iota","init","new","make","append","len","cap","copy","delete","close","panic",
+    "recover","error","string","int","int8","int16","int32","int64","uint","uint8",
+    "uint16","uint32","uint64","uintptr","float32","float64","complex64","complex128",
+    "byte","rune","bool","any","comparable","print","println"
+  ],
+  "builtins": [
+    "fmt.Println","fmt.Printf","fmt.Sprintf","fmt.Errorf","fmt.Fprintln","fmt.Scanln",
+    "strings.Split","strings.Join","strings.Contains","strings.HasPrefix","strings.HasSuffix",
+    "strings.ToLower","strings.ToUpper","strings.TrimSpace","strings.ReplaceAll","strings.Builder",
+    "strconv.Itoa","strconv.Atoi","strconv.ParseInt","strconv.FormatInt","strconv.ParseFloat",
+    "os.Args","os.Getenv","os.Setenv","os.Open","os.Create","os.ReadFile","os.WriteFile",
+    "io.Copy","io.ReadAll","bufio.NewReader","bufio.NewScanner","bufio.NewWriter",
+    "errors.New","errors.Is","errors.As","time.Now","time.Sleep","time.Since",
+    "context.Background","context.WithCancel","context.WithTimeout","sync.Mutex",
+    "sync.RWMutex","sync.WaitGroup","sync.Once","sync.Map","sort.Slice","sort.Ints",
+    "sort.Strings","math.Abs","math.Max","math.Min","math.Pow","math.Sqrt","math.Round",
+    "encoding/json.Marshal","encoding/json.Unmarshal","net/http.Get","net/http.Post",
+    "log.Println","log.Printf","log.Fatal","log.Fatalf","filepath.Join","filepath.Base"
+  ],
+  "snippets": [
+    { "trigger": "Println", "template": true, "insert": "fmt.Println(\"ACDV-Teams\")",                              "description": "fmt.Println ACDV-Teams" },
+    { "trigger": "Printf",  "template": true, "insert": "fmt.Printf(\"ACDV-Teams: %v\\n\", value)",                "description": "fmt.Printf ACDV-Teams" },
+    { "trigger": "Errorf",  "template": true, "insert": "fmt.Errorf(\"ACDV-Teams: %w\", err)",                       "description": "fmt.Errorf" },
+    { "trigger": "NewReader","template": true, "insert": "reader := bufio.NewReader(os.Stdin)\nline, _ := reader.ReadString('\\n')\nfmt.Println(\"ACDV-Teams\", line)", "description": "bufio reader" },
+    { "trigger": "NewScanner","template": true, "insert": "scanner := bufio.NewScanner(os.Stdin)\nfor scanner.Scan() {\n    fmt.Println(\"ACDV-Teams\", scanner.Text())\n}", "description": "bufio scanner" },
+    { "trigger": "main",   "insert": "package main\n\nimport \"fmt\"\n\nfunc main() {\n    fmt.Println(\"ACDV-Teams\")\n}", "description": "main" },
+    { "trigger": "func",   "insert": "func name(args) ret {\n    fmt.Println(\"ACDV-Teams\")\n}",              "description": "function" },
+    { "trigger": "meth",   "insert": "func (r *Receiver) Name(args) ret {\n    // ACDV-Teams\n}",             "description": "method" },
+    { "trigger": "if",     "insert": "if condition {\n    fmt.Println(\"ACDV-Teams\")\n}",                    "description": "if" },
+    { "trigger": "ifel",   "insert": "if condition {\n    // ACDV-Teams\n} else {\n    // ACDV-Teams\n}",     "description": "if/else" },
+    { "trigger": "for",    "insert": "for i := 0; i < n; i++ {\n    fmt.Println(\"ACDV-Teams\", i)\n}",       "description": "for" },
+    { "trigger": "forr",   "insert": "for i, v := range items {\n    fmt.Println(\"ACDV-Teams\", i, v)\n}",   "description": "range" },
+    { "trigger": "switch", "insert": "switch x {\ncase 1:\n    fmt.Println(\"ACDV-Teams\")\ncase 2:\n    // ACDV-Teams\ndefault:\n    // ACDV-Teams\n}", "description": "switch" },
+    { "trigger": "struct", "insert": "type Name struct {\n    Value string\n}\n\nn := Name{Value: \"ACDV-Teams\"}", "description": "struct" },
+    { "trigger": "iface",  "insert": "type Name interface {\n    Method() error\n}",                           "description": "interface" },
+    { "trigger": "err",    "insert": "if err != nil {\n    return err\n}",                                    "description": "error check" },
+    { "trigger": "goro",   "insert": "go func() {\n    fmt.Println(\"ACDV-Teams\")\n}()",                     "description": "goroutine" },
+    { "trigger": "chan",   "insert": "ch := make(chan string, 0)\ndefer close(ch)\nch <- \"ACDV-Teams\"",     "description": "channel" },
+    { "trigger": "defer",  "insert": "defer func() {\n    fmt.Println(\"ACDV-Teams\")\n}()",                   "description": "defer" },
+    { "trigger": "select", "insert": "select {\ncase v := <-ch:\n    fmt.Println(\"ACDV-Teams\", v)\ncase <-ctx.Done():\n    return ctx.Err()\n}", "description": "select" }
+  ]
+}

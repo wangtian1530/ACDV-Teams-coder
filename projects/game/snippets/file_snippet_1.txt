@@ -1,0 +1,7 @@
+snake-io-tet2027/
+├── server.py
+├── README.md
+└── static/
+    ├── index.html
+    ├── style.css
+    └── game.js

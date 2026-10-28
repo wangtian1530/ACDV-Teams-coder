@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Space Shooter AI v4</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>🚀 Space Shooter AI <span class="tag">TURN-BASED • LASER</span></h1>
+    <div class="controls">
+      <button data-speed="1" class="speed">x1<br><small>0.5×</small></button>
+      <button data-speed="2" class="speed active">x2<br><small>1×</small></button>
+      <button data-speed="3" class="speed">x3<br><small>2×</small></button>
+      <button data-speed="4" class="speed">x4<br><small>3×</small></button>
+      <button data-speed="5" class="speed">x5<br><small>5×</small></button>
+      <button id="rewind">⏪ Rewind</button>
+      <button id="pause">⏸ Pause</button>
+      <button id="reset">🔄 Reset</button>
+    </div>
+  </header>
+  <main>
+    <div class="canvas-wrap">
+      <div class="canvas-container"><canvas id="canvas"></canvas></div>
+      <div id="hud">
+        <span id="turn-info">...</span>
+        <span id="actor-info"></span>
+        <span id="phase-info"></span>
+        <span id="bullet-info"></span>
+        <span id="status"></span>
+      </div>
+    </div>
+    <aside id="stats">
+      <div class="panel">
+        <h2>🏆 Bảng Xếp Hạng</h2>
+        <div id="leaderboard"></div>
+      </div>
+      <div class="panel">
+        <h2>📊 Bot Statistics</h2>
+        <div id="bot-list"></div>
+      </div>
+    </aside>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

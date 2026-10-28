@@ -1,0 +1,48 @@
+{
+  "keywords": [
+    "alignas","alignof","and","and_eq","asm","auto","bitand","bitor","bool","break",
+    "case","catch","char","char8_t","char16_t","char32_t","class","compl","concept",
+    "const","consteval","constexpr","constinit","const_cast","continue","co_await",
+    "co_return","co_yield","decltype","default","delete","do","double","dynamic_cast",
+    "else","enum","explicit","export","extern","false","float","for","friend","goto",
+    "if","inline","int","long","mutable","namespace","new","noexcept","not","not_eq",
+    "nullptr","operator","or","or_eq","private","protected","public","register",
+    "reinterpret_cast","requires","return","short","signed","sizeof","static",
+    "static_assert","static_cast","struct","switch","template","this","thread_local",
+    "throw","true","try","typedef","typeid","typename","union","unsigned","using",
+    "virtual","void","volatile","wchar_t","while","xor","xor_eq"
+  ],
+  "builtins": [
+    "std::cout","std::cerr","std::cin","std::endl","std::string","std::vector",
+    "std::array","std::map","std::unordered_map","std::set","std::unordered_set",
+    "std::pair","std::tuple","std::make_pair","std::make_tuple","std::make_unique",
+    "std::make_shared","std::unique_ptr","std::shared_ptr","std::weak_ptr",
+    "std::move","std::forward","std::swap","std::sort","std::find","std::reverse",
+    "std::accumulate","std::transform","std::count","std::count_if","std::all_of",
+    "std::any_of","std::none_of","std::for_each","std::min","std::max","std::minmax",
+    "std::clamp","std::to_string","std::stoi","std::stol","std::stod","std::getline",
+    "std::ifstream","std::ofstream","std::stringstream","std::optional","std::variant",
+    "std::any","std::function","std::bind","std::thread","std::mutex","std::lock_guard",
+    "std::atomic","std::future","std::async","std::chrono::steady_clock","std::size_t",
+    "std::nullptr_t","printf","scanf","malloc","free","memcpy","memset","strlen"
+  ],
+  "snippets": [
+    { "trigger": "cout",   "template": true, "insert": "std::cout << \"ACDV-Teams\" << std::endl;",                 "description": "std::cout ACDV-Teams" },
+    { "trigger": "vector", "template": true, "insert": "std::vector<std::string> v = {\"ACDV-Teams\"};\nv.reserve(10);", "description": "vector + reserve" },
+    { "trigger": "string", "template": true, "insert": "std::string name = \"ACDV-Teams\";",                        "description": "std::string" },
+    { "trigger": "map",    "template": true, "insert": "std::map<std::string, std::string> m;\nm[\"name\"] = \"ACDV-Teams\";", "description": "std::map" },
+    { "trigger": "smart",  "template": true, "insert": "auto p = std::make_unique<T>(args);",                       "description": "unique_ptr" },
+    { "trigger": "main",   "insert": "#include <iostream>\n\nint main(int argc, char **argv) {\n    std::cout << \"ACDV-Teams\\n\";\n    return 0;\n}", "description": "main" },
+    { "trigger": "cls",    "insert": "class Name {\npublic:\n    Name() = default;\n    ~Name() = default;\n\nprivate:\n    std::string name_ = \"ACDV-Teams\";\n};", "description": "class" },
+    { "trigger": "if",     "insert": "if (condition) {\n    // ACDV-Teams\n}",                              "description": "if" },
+    { "trigger": "ifel",   "insert": "if (condition) {\n    // ACDV-Teams\n} else {\n    // ACDV-Teams\n}",  "description": "if/else" },
+    { "trigger": "for",    "insert": "for (auto &item : items) {\n    std::cout << \"ACDV-Teams: \" << item << std::endl;\n}", "description": "range for" },
+    { "trigger": "fori",   "insert": "for (std::size_t i = 0; i < n; ++i) {\n    // ACDV-Teams\n}",        "description": "for i" },
+    { "trigger": "while",  "insert": "while (condition) {\n    // ACDV-Teams\n}",                           "description": "while" },
+    { "trigger": "templ",  "insert": "template <typename T>\nT name(T a) {\n    return a;\n}",               "description": "template function" },
+    { "trigger": "ns",     "insert": "namespace acdv {\n\n}  // namespace acdv",                              "description": "namespace" },
+    { "trigger": "struct", "insert": "struct Name {\n    std::string value = \"ACDV-Teams\";\n};",           "description": "struct" },
+    { "trigger": "lambda", "insert": "[capture](args) -> void {\n    std::cout << \"ACDV-Teams\" << std::endl;\n}", "description": "lambda" },
+    { "trigger": "trycatch","insert": "try {\n    // ACDV-Teams\n} catch (const std::exception &e) {\n    std::cerr << \"ACDV-Teams: \" << e.what() << std::endl;\n}", "description": "try/catch" }
+  ]
+}

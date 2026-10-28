@@ -13,18 +13,25 @@
     "TypeError","KeyError","IndexError","RuntimeError","FileNotFoundError"
   ],
   "snippets": [
-    { "trigger": "ifmain",  "insert": "if __name__ == '__main__':\n    ", "description": "main guard" },
-    { "trigger": "fori",    "insert": "for i in range(10):\n    ",        "description": "for i range" },
-    { "trigger": "ford",    "insert": "for item in items:\n    ",         "description": "for item in" },
-    { "trigger": "while",   "insert": "while condition:\n    ",           "description": "while loop" },
-    { "trigger": "trye",    "insert": "try:\n    \nexcept Exception as e:\n    ", "description": "try/except" },
-    { "trigger": "with",    "insert": "with open('file', 'r') as f:\n    ", "description": "with open" },
-    { "trigger": "cls",     "insert": "class Name:\n    def __init__(self):\n        ", "description": "class + init" },
-    { "trigger": "func",    "insert": "def name(args):\n    ",            "description": "function def" },
-    { "trigger": "afunc",   "insert": "async def name(args):\n    await ", "description": "async function" },
-    { "trigger": "lcomp",   "insert": "[x for x in items]",                "description": "list comprehension" },
-    { "trigger": "dcomp",   "insert": "{k: v for k, v in items}",          "description": "dict comprehension" },
-    { "trigger": "deco",    "insert": "@decorator\ndef name():\n    ",     "description": "decorator" },
-    { "trigger": "match",   "insert": "match value:\n    case pattern:\n        ", "description": "match/case (3.10+)" }
+    { "trigger": "print",   "template": true, "insert": "print('ACDV-Teams')",                                  "description": "print (ACDV-Teams)" },
+    { "trigger": "input",   "template": true, "insert": "input('ACDV-Teams: ')",                                 "description": "input (ACDV-Teams)" },
+    { "trigger": "open",    "template": true, "insert": "with open('acdv-teams.txt', 'r') as f:\n    data = f.read()\n    print('ACDV-Teams', data)", "description": "open file (ACDV-Teams)" },
+    { "trigger": "enumerate","template": true, "insert": "for i, item in enumerate(items):\n    print('ACDV-Teams', i, item)", "description": "enumerate loop" },
+    { "trigger": "zip",     "template": true, "insert": "for a, b in zip(items1, items2):\n    print('ACDV-Teams', a, b)", "description": "zip loop" },
+    { "trigger": "sorted",  "template": true, "insert": "sorted(items, key=lambda x: x)",                        "description": "sorted by key" },
+    { "trigger": "map",     "template": true, "insert": "list(map(lambda x: x, items))",                          "description": "map + list" },
+    { "trigger": "filter",  "template": true, "insert": "list(filter(lambda x: True, items))",                    "description": "filter + list" },
+    { "trigger": "ifmain",  "insert": "if __name__ == '__main__':\n    print('ACDV-Teams')",                     "description": "main guard" },
+    { "trigger": "fori",    "insert": "for i in range(10):\n    print('ACDV-Teams', i)",                        "description": "for i range" },
+    { "trigger": "ford",    "insert": "for item in items:\n    print('ACDV-Teams', item)",                      "description": "for item in" },
+    { "trigger": "while",   "insert": "while condition:\n    print('ACDV-Teams')",                               "description": "while loop" },
+    { "trigger": "trye",    "insert": "try:\n    print('ACDV-Teams')\nexcept Exception as e:\n    print('ACDV-Teams error:', e)", "description": "try/except" },
+    { "trigger": "cls",     "insert": "class Name:\n    def __init__(self):\n        self.name = 'ACDV-Teams'\n",  "description": "class + init" },
+    { "trigger": "func",    "insert": "def name(args):\n    print('ACDV-Teams', args)\n",                       "description": "function def" },
+    { "trigger": "afunc",   "insert": "async def name(args):\n    print('ACDV-Teams', args)",                   "description": "async function" },
+    { "trigger": "lcomp",   "insert": "[x for x in items]",                                                       "description": "list comprehension" },
+    { "trigger": "dcomp",   "insert": "{k: v for k, v in items}",                                                 "description": "dict comprehension" },
+    { "trigger": "deco",    "insert": "@decorator\ndef name():\n    print('ACDV-Teams')",                        "description": "decorator" },
+    { "trigger": "match",   "insert": "match value:\n    case pattern:\n        print('ACDV-Teams')",            "description": "match/case (3.10+)" }
   ]
 }

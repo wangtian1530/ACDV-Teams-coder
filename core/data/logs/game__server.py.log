@@ -1,0 +1,182 @@
+
+===== RUN 2026-10-28 19:22:09 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+==================================================
+  🐍  SNAKE.IO đang chạy tại: http://localhost:8000
+  📁  Thư mục: /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Nhấn Ctrl+C để dừng
+==================================================
+[28/Oct/2026 19:22:28] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:22:28] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:22:28] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:39:26 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT v2: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 19:39:38] code 404, message File not found
+[28/Oct/2026 19:39:38] "GET /module/md_parser/ HTTP/1.1" 404 -
+[28/Oct/2026 19:39:45] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:39:45] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:39:45] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:42:24 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT v2: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 19:42:28] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:42:28] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:42:28] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:55:26 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🎮  ACDV-TEAMS SNAKE ARENA: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:55:45 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🎮  ACDV-TEAMS SNAKE ARENA: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:55:51 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🎮  ACDV-TEAMS SNAKE ARENA: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 19:55:54] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:55:54] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:55:54] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 19:56:26] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:56:26] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:56:26] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 19:57:11] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:57:11] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:57:11] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 19:58:38 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🎮  ACDV-TEAMS SNAKE ARENA: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 19:59:10] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:59:10] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 19:59:10] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:59:10] code 404, message File not found
+[28/Oct/2026 19:59:10] "GET /favicon.ico HTTP/1.1" 404 -
+[28/Oct/2026 20:01:05] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:01:05] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:01:05] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 20:01:05] code 404, message File not found
+[28/Oct/2026 20:01:05] "GET /favicon.ico HTTP/1.1" 404 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 20:06:14 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT ĐINH MÙI 2027: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 20:06:36] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:06:36] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 20:06:36] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:06:36] code 404, message File not found
+[28/Oct/2026 20:06:36] "GET /favicon.ico HTTP/1.1" 404 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 20:07:23 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT ĐINH MÙI 2027: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 20:07:29] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:07:29] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:07:29] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 20:07:31] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:07:31] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:07:31] "GET /game.js HTTP/1.1" 200 -
+[28/Oct/2026 20:12:04] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:12:04] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:12:04] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 20:36:49 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT ĐINH MÙI 2027: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 20:37:31] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 20:37:31] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 20:37:31] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]
+
+===== RUN 2026-10-28 21:57:50 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT ĐINH MÙI 2027: http://localhost:8000
+  📁  /storage/emulated/0/tool/coder/acdv-coder/projects/game/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 21:57:57] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 21:57:57] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 21:57:57] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -15]

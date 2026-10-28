@@ -1,4 +1,9 @@
-"""Terminal session manager — spawn shell with PTY (POSIX) or pipes (Windows)."""
+"""Terminal session manager — spawn shell with PTY (POSIX) or pipes (Windows).
+
+v2.0.1 (hotfix):
+  - C4: session tự pop khỏi manager.sessions khi reader exit/process chết.
+  - L5: guard signal/killpg an toàn khi proc đã chết.
+"""
 import os
 import subprocess
 import threading
@@ -100,6 +105,23 @@ class TerminalSession:
                     code = self.proc.returncode
                 except Exception:
                     code = -1
+
+            # ⭐ C4: pop khỏi manager.sessions — tránh leak quota "max_sessions"
+            try:
+                with self.engine.terminal.lock:
+                    self.engine.terminal.sessions.pop(self.id, None)
+            except Exception:
+                pass
+
+            # Đóng PTY master fd
+            if self.master_fd is not None:
+                try:
+                    os.close(self.master_fd)
+                    self.master_fd = None
+                except Exception:
+                    pass
+
+            self.closed = True
             self._send({"type": "terminal_exit", "id": self.id, "code": code})
 
     def _send(self, payload):
@@ -140,9 +162,11 @@ class TerminalSession:
         self.rows = rows
         if HAS_PTY and self.master_fd is not None:
             self._set_winsize(self.master_fd, rows, cols)
+            # ⭐ L5: guard an toàn khi proc đã chết
             try:
-                import signal as _sig
-                os.killpg(os.getpgid(self.proc.pid), _sig.SIGWINCH)
+                if self.proc and self.proc.poll() is None:
+                    import signal as _sig
+                    os.killpg(os.getpgid(self.proc.pid), _sig.SIGWINCH)
             except Exception:
                 pass
 
@@ -207,6 +231,11 @@ class TerminalManager:
             max_sessions = int(
                 (self.engine.config.get("terminal") or {}).get("max_sessions", 8)
             )
+            # Dọn session đã đóng trước khi check quota
+            dead = [tid for tid, s in self.sessions.items() if s.closed]
+            for tid in dead:
+                self.sessions.pop(tid, None)
+
             if len(self.sessions) >= max_sessions:
                 raise Exception(f"Terminal limit reached ({max_sessions})")
             cwd = self._resolve_cwd(cwd_hint)

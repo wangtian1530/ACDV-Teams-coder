@@ -1,11 +1,10 @@
 """HTTP + WebSocket server written from scratch on raw sockets.
 
-v1.3.2:
-  - Terminal over WebSocket.
-v1.3.7:
-  - HTTPS / WSS support.
-v1.4.0:
-  - Không đổi core protocol; storage đi qua HTTP API.
+v2.0.1 (hotfix):
+  - C5: CSP connect-src giới hạn theo host:port hiện tại (không wildcard ws:/wss:).
+  - H3: giới hạn Content-Length 64MB — chống DoS OOM.
+  - L1: chặn serve dotfiles (/.env, /.git/…).
+  - L2: hỗ trợ Range header cho static assets.
 """
 import os
 import ssl
@@ -22,6 +21,7 @@ import urllib.parse
 import traceback
 
 WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+MAX_BODY_BYTES = 64 * 1024 * 1024  # 64MB — đủ cho project ZIP lớn
 
 
 class WebSocketConnection:
@@ -190,6 +190,58 @@ class HttpWsServer:
         try: self.sock.close()
         except Exception: pass
 
+    # ================================================================ #
+    #  ⭐ C5: CSP giới hạn theo host:port hiện tại
+    # ================================================================ #
+    def _csp_headers(self):
+        # Xác định origin WS tương ứng — cho phép cả localhost và host bind
+        host = self.host if self.host and self.host != "0.0.0.0" else "localhost"
+        ws_origin = f"ws://{host}:{self.port} wss://{host}:{self.port}"
+        # Cho phép thêm localhost alias nếu bind khác
+        if host != "localhost":
+            ws_origin += f" ws://localhost:{self.port} wss://localhost:{self.port}"
+        return {
+            "Content-Security-Policy": (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' "
+                "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' "
+                "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "img-src 'self' data: blob: "
+                "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "font-src 'self' data: "
+                "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                f"connect-src 'self' {ws_origin}; "
+                "worker-src 'self' blob:; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self';"
+            ),
+        }
+
+    def _file_etag(self, path):
+        try:
+            st = os.stat(path)
+            return f"{st.st_mtime_ns:x}-{st.st_size:x}"
+        except OSError:
+            return None
+
+    def _build_response(self, status, resp_headers, resp_body):
+        resp_headers = dict(resp_headers)
+        if not status.startswith("304"):
+            resp_headers.update(self._csp_headers())
+
+        out = f"HTTP/1.1 {status}\r\n"
+        for k, v in resp_headers.items():
+            out += f"{k}: {v}\r\n"
+
+        is_304 = status.startswith("304")
+        if not is_304:
+            out += f"Content-Length: {len(resp_body)}\r\n"
+        out += "Connection: close\r\n\r\n"
+
+        return out.encode("utf-8") + (b"" if is_304 else resp_body)
+
     def _accept_loop(self):
         while self.running:
             try:
@@ -248,7 +300,24 @@ class HttpWsServer:
                 self._handle_websocket(client, headers)
                 return
 
-            clen = int(headers.get("content-length", "0") or "0")
+            clen_raw = headers.get("content-length", "0") or "0"
+            try:
+                clen = int(clen_raw)
+            except ValueError:
+                clen = 0
+
+            # ⭐ H3: giới hạn body size
+            if clen > MAX_BODY_BYTES:
+                resp = self._build_response(
+                    "413 Payload Too Large",
+                    {"Content-Type": "application/json"},
+                    json.dumps({
+                        "error": f"Body quá lớn ({clen} bytes, max {MAX_BODY_BYTES})"
+                    }).encode("utf-8"),
+                )
+                client.sendall(resp)
+                client.close(); return
+
             while len(body) < clen:
                 chunk = client.recv(65536)
                 if not chunk:
@@ -256,12 +325,7 @@ class HttpWsServer:
                 body += chunk
 
             status, resp_headers, resp_body = self._handle_http(method, path, headers, body)
-            out = f"HTTP/1.1 {status}\r\n"
-            for k, v in resp_headers.items():
-                out += f"{k}: {v}\r\n"
-            out += f"Content-Length: {len(resp_body)}\r\n"
-            out += "Connection: close\r\n\r\n"
-            client.sendall(out.encode("utf-8") + resp_body)
+            client.sendall(self._build_response(status, resp_headers, resp_body))
             client.close()
         except Exception:
             try: client.close()
@@ -318,26 +382,71 @@ class HttpWsServer:
                         {"Content-Type": "application/json"},
                         json.dumps({"error": str(e)}).encode("utf-8"))
         if route_path.startswith("/module/"):
-            return self._serve_module_asset(route_path)
-        return self._serve_static(route_path)
+            return self._serve_module_asset(route_path, headers)
+        return self._serve_static(route_path, headers)
 
-    def _serve_static(self, path):
+    # ⭐ L1: chặn dotfile, L2: Range support
+    def _serve_static(self, path, request_headers=None):
+        request_headers = request_headers or {}
         if path in ("", "/"):
             path = "/index.html"
         rel = path.lstrip("/")
+
+        # L1: chặn dotfile (.env, .git, ...)
+        for part in rel.split("/"):
+            if part.startswith(".") and part not in (".", ".."):
+                return ("403 Forbidden", {"Content-Type": "text/plain"}, b"forbidden")
+            if part == "..":
+                return ("403 Forbidden", {"Content-Type": "text/plain"}, b"forbidden")
+
         frontend_abs = os.path.abspath(self.frontend_dir)
         target = os.path.abspath(os.path.join(frontend_abs, rel))
         if target != frontend_abs and not target.startswith(frontend_abs + os.sep):
             return ("403 Forbidden", {"Content-Type": "text/plain"}, b"forbidden")
         if not os.path.isfile(target):
             return ("404 Not Found", {"Content-Type": "text/plain"}, b"not found")
+
+        etag = self._file_etag(target)
+        if etag and request_headers.get("if-none-match") == etag:
+            return ("304 Not Modified",
+                    {"ETag": etag, "Cache-Control": "no-cache"},
+                    b"")
+
         mime, _ = mimetypes.guess_type(target)
         mime = mime or "application/octet-stream"
+        resp_headers = {"Content-Type": mime}
+        if etag:
+            resp_headers["ETag"] = etag
+            resp_headers["Cache-Control"] = "no-cache"
+
+        # L2: Range support cho file lớn
+        file_size = os.path.getsize(target)
+        range_hdr = request_headers.get("range", "")
+        if range_hdr.startswith("bytes="):
+            try:
+                spec = range_hdr[len("bytes="):].split(",")[0].strip()
+                if "-" in spec:
+                    start_s, end_s = spec.split("-", 1)
+                    start = int(start_s) if start_s else 0
+                    end = int(end_s) if end_s else file_size - 1
+                    end = min(end, file_size - 1)
+                    if 0 <= start <= end:
+                        with open(target, "rb") as f:
+                            f.seek(start)
+                            chunk = f.read(end - start + 1)
+                        resp_headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+                        resp_headers["Accept-Ranges"] = "bytes"
+                        return ("206 Partial Content", resp_headers, chunk)
+            except Exception:
+                pass
+
+        resp_headers["Accept-Ranges"] = "bytes"
         with open(target, "rb") as f:
             content = f.read()
-        return ("200 OK", {"Content-Type": mime}, content)
+        return ("200 OK", resp_headers, content)
 
-    def _serve_module_asset(self, path):
+    def _serve_module_asset(self, path, request_headers=None):
+        request_headers = request_headers or {}
         parts = path.split("/", 3)
         if len(parts) < 3 or not parts[2]:
             return ("400 Bad Request", {"Content-Type": "text/plain"}, b"bad module path")
@@ -378,11 +487,21 @@ class HttpWsServer:
         if not os.path.isfile(target):
             return ("404 Not Found", {"Content-Type": "text/plain"}, b"not found")
 
+        etag = self._file_etag(target)
+        if etag and request_headers.get("if-none-match") == etag:
+            return ("304 Not Modified",
+                    {"ETag": etag, "Cache-Control": "no-cache"},
+                    b"")
+
         mime, _ = mimetypes.guess_type(target)
         mime = mime or "application/octet-stream"
+        resp_headers = {"Content-Type": mime}
+        if etag:
+            resp_headers["ETag"] = etag
+            resp_headers["Cache-Control"] = "no-cache"
         with open(target, "rb") as f:
             content = f.read()
-        return ("200 OK", {"Content-Type": mime}, content)
+        return ("200 OK", resp_headers, content)
 
     def _handle_websocket(self, client, headers):
         key = headers.get("sec-websocket-key")
@@ -630,6 +749,8 @@ class HttpWsServer:
             ws.send_json({"type": "error", "error": f"unknown type: {mtype}"})
 
     def broadcast(self, obj):
+        with self.lock if False else self.ws_lock:
+            pass
         with self.ws_lock:
             clients = list(self.ws_clients)
         for ws in clients:

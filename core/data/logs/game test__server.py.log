@@ -1,0 +1,15 @@
+
+===== RUN 2026-10-28 19:27:51 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/game test/server.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/game test
+------------------------------------------------------------
+=======================================================
+  🧧  SNAKE.IO TẾT đang chạy: http://localhost:8000
+  📁  Thư mục: /storage/emulated/0/tool/coder/acdv-coder/projects/game test/static
+  ⏹   Ctrl+C để dừng
+=======================================================
+[28/Oct/2026 19:27:59] "GET / HTTP/1.1" 200 -
+[28/Oct/2026 19:27:59] "GET /style.css HTTP/1.1" 200 -
+[28/Oct/2026 19:27:59] "GET /game.js HTTP/1.1" 200 -
+
+[exit code: -9]

@@ -1,8 +1,8 @@
 {
   "theme": "dracula",
   "editor": {
-    "font_size": 1,
-    "tab_size": 1,
+    "font_size": 16,
+    "tab_size": 10,
     "line_wrap": false,
     "auto_save": false
   },

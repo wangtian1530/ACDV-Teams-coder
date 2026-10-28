@@ -1,0 +1,45 @@
+{
+  "keywords": [
+    "abstract","and","array","as","break","callable","case","catch","class","clone",
+    "const","continue","declare","default","die","do","echo","else","elseif","empty",
+    "enddeclare","endfor","endforeach","endif","endswitch","endwhile","eval","exit",
+    "extends","final","finally","fn","for","foreach","function","global","goto","if",
+    "implements","include","include_once","instanceof","insteadof","interface","isset",
+    "list","match","namespace","new","or","print","private","protected","public",
+    "readonly","require","require_once","return","static","switch","throw","trait",
+    "try","unset","use","var","while","xor","yield","true","false","null","enum"
+  ],
+  "builtins": [
+    "echo","print","print_r","var_dump","var_export","sprintf","printf","strlen",
+    "strpos","str_replace","strtolower","strtoupper","trim","explode","implode",
+    "substr","substr_count","preg_match","preg_replace","json_encode","json_decode",
+    "is_array","is_string","is_int","is_bool","is_null","count","array_map",
+    "array_filter","array_reduce","array_merge","array_keys","array_values",
+    "array_push","array_pop","array_shift","array_unshift","in_array","array_search",
+    "sort","rsort","usort","file_get_contents","file_put_contents","fopen","fclose",
+    "fwrite","fread","file_exists","unlink","mkdir","rmdir","scandir","basename",
+    "dirname","pathinfo","realpath","date","time","strtotime","DateTime","DateTimeImmutable",
+    "random_int","rand","mt_rand","password_hash","password_verify","hash","md5","sha1",
+    "filter_var","filter_input","header","setcookie","session_start","Exception",
+    "Error","Throwable","PDO","mysqli","curl_init","curl_exec","curl_setopt"
+  ],
+  "snippets": [
+    { "trigger": "echo",    "template": true, "insert": "echo \"ACDV-Teams\";",                                    "description": "echo ACDV-Teams" },
+    { "trigger": "printr",  "template": true, "insert": "print_r($data); // ACDV-Teams",                           "description": "print_r" },
+    { "trigger": "json_encode","template": true, "insert": "echo json_encode(['name' => 'ACDV-Teams']);",          "description": "json_encode" },
+    { "trigger": "file_get_contents","template": true, "insert": "$data = file_get_contents('acdv-teams.txt');\necho $data;", "description": "file_get_contents" },
+    { "trigger": "php",   "insert": "<?php\n\ndeclare(strict_types=1);\n\necho \"ACDV-Teams\\n\";",                "description": "PHP open + strict" },
+    { "trigger": "cls",   "insert": "<?php\n\nclass Name\n{\n    public function __construct(public string $name = 'ACDV-Teams')\n    {\n    }\n}", "description": "class" },
+    { "trigger": "fn",    "insert": "function name($args): void\n{\n    echo \"ACDV-Teams\";\n}",                  "description": "function" },
+    { "trigger": "arrow", "insert": "fn($x) => \"ACDV-Teams: $x\"",                                                "description": "arrow fn" },
+    { "trigger": "if",    "insert": "if ($condition) {\n    echo \"ACDV-Teams\";\n}",                              "description": "if" },
+    { "trigger": "ifel",  "insert": "if ($condition) {\n    echo \"ACDV-Teams\";\n} elseif ($other) {\n    // ACDV-Teams\n} else {\n    // ACDV-Teams\n}", "description": "if/elseif/else" },
+    { "trigger": "for",   "insert": "for ($i = 0; $i < $n; $i++) {\n    echo \"ACDV-Teams $i\\n\";\n}",          "description": "for" },
+    { "trigger": "fore",  "insert": "foreach ($items as $key => $value) {\n    echo \"ACDV-Teams: $key = $value\\n\";\n}", "description": "foreach" },
+    { "trigger": "while", "insert": "while ($condition) {\n    echo \"ACDV-Teams\";\n}",                          "description": "while" },
+    { "trigger": "tryc",  "insert": "try {\n    // ACDV-Teams\n} catch (\\Throwable $e) {\n    echo \"ACDV-Teams: \" . $e->getMessage();\n}", "description": "try/catch" },
+    { "trigger": "iface", "insert": "interface Name\n{\n    public function method(): void;\n}",                  "description": "interface" },
+    { "trigger": "trait", "insert": "trait Name\n{\n    public function method(): void { echo 'ACDV-Teams'; }\n}", "description": "trait" },
+    { "trigger": "match", "insert": "$result = match ($value) {\n    1 => 'ACDV-Teams',\n    default => 'ACDV-Teams',\n};", "description": "match" }
+  ]
+}

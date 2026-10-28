@@ -416,3 +416,219 @@ CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
 [{'id': 2, 'name': 'Project của admin', 'image': 'None', 'description': 'Project mẫu seed tự động', 'technologies': '["Node.js","MariaDB","ESP32"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-10-04T03:26:33.000Z', 'update_at': '2026-10-04T03:26:33.000Z'}, {'id': 1, 'name': 'bản demo trang porject', 'image': 'https://acdv-teams.io.vn/777800982_1743918396640391_6932518907822797689_n.jpg', 'description': 'đây là bản demo được tạo ra để test trang project', 'technologies': ' ["Python", "ESP32", "Linux"]', 'status': 'Completed', 'hidden': 0, 'created_at': '2026-09-30T12:31:55.000Z', 'update_at': None}]
 
 [exit code: 0]
+
+===== RUN 2026-10-24 20:32:24 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m12[0m
+    print('ACDV-Teams')[1;31mp[0m
+                       [1;31m^[0m
+[1;35mSyntaxError[0m: [35minvalid syntax[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-24 22:01:49 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1116[0m, in [35mjson[0m
+    return [31mcomplexjson.loads[0m[1;31m(self.text, **kwargs)[0m
+           [31m~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/__init__.py"[0m, line [35m352[0m, in [35mloads[0m
+    return [31m_default_decoder.decode[0m[1;31m(s)[0m
+           [31m~~~~~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m345[0m, in [35mdecode[0m
+    obj, end = [31mself.raw_decode[0m[1;31m(s, idx=_w(s, 0).end())[0m
+               [31m~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m363[0m, in [35mraw_decode[0m
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+[1;35mjson.decoder.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m11[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m5[0m, in [35mmain[0m
+    repon = requests.get(url).json()
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1120[0m, in [35mjson[0m
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+[1;35mrequests.exceptions.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-24 22:02:49 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+
+[exit code: -15]
+
+===== RUN 2026-10-24 22:03:08 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1116[0m, in [35mjson[0m
+    return [31mcomplexjson.loads[0m[1;31m(self.text, **kwargs)[0m
+           [31m~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/__init__.py"[0m, line [35m352[0m, in [35mloads[0m
+    return [31m_default_decoder.decode[0m[1;31m(s)[0m
+           [31m~~~~~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m345[0m, in [35mdecode[0m
+    obj, end = [31mself.raw_decode[0m[1;31m(s, idx=_w(s, 0).end())[0m
+               [31m~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m363[0m, in [35mraw_decode[0m
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+[1;35mjson.decoder.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m11[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m5[0m, in [35mmain[0m
+    repon = requests.get(url).json()
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1120[0m, in [35mjson[0m
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+[1;35mrequests.exceptions.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-27 22:24:24 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+Traceback (most recent call last):
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1116[0m, in [35mjson[0m
+    return [31mcomplexjson.loads[0m[1;31m(self.text, **kwargs)[0m
+           [31m~~~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/__init__.py"[0m, line [35m352[0m, in [35mloads[0m
+    return [31m_default_decoder.decode[0m[1;31m(s)[0m
+           [31m~~~~~~~~~~~~~~~~~~~~~~~[0m[1;31m^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m345[0m, in [35mdecode[0m
+    obj, end = [31mself.raw_decode[0m[1;31m(s, idx=_w(s, 0).end())[0m
+               [31m~~~~~~~~~~~~~~~[0m[1;31m^^^^^^^^^^^^^^^^^^^^^^^[0m
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/json/decoder.py"[0m, line [35m363[0m, in [35mraw_decode[0m
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+[1;35mjson.decoder.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m11[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m5[0m, in [35mmain[0m
+    repon = requests.get(url).json()
+  File [35m"/data/data/com.termux/files/usr/lib/python3.14/site-packages/requests/models.py"[0m, line [35m1120[0m, in [35mjson[0m
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+[1;35mrequests.exceptions.JSONDecodeError[0m: [35mExpecting value: line 1 column 1 (char 0)[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-27 22:25:34 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m11[0m
+    except Exception as e:[1;31mfor[0m i, item in enumerate(items):
+                          [1;31m^^^[0m
+[1;35mSyntaxError[0m: [35minvalid syntax[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-27 22:26:20 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams ok
+ACDV-Teams
+
+[exit code: 0]
+
+===== RUN 2026-10-27 22:26:41 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams ok
+ACDV-Teams Expecting value: line 1 column 1 (char 0)
+
+[exit code: 0]
+
+===== RUN 2026-10-27 22:27:15 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+ACDV-Teams Expecting value: line 1 column 1 (char 0)
+
+[exit code: 0]
+
+===== RUN 2026-10-27 22:27:26 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+ACDV-Teams error Expecting value: line 1 column 1 (char 0)
+
+[exit code: 0]
+
+===== RUN 2026-10-27 22:29:05 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+<Response [502]>
+ACDV-Teams error 'Response' object has no attribute 'get'
+
+[exit code: 0]
+
+===== RUN 2026-10-28 15:54:57 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+<Response [502]>
+ACDV-Teams error 'Response' object has no attribute 'get'
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m10[0m, in [35mmain[0m
+    print([1;31mrepon.get[0m('data'))
+          [1;31m^^^^^^^^^[0m
+[1;35mAttributeError[0m: [35m'Response' object has no attribute 'get'[0m
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m16[0m, in [35m<module>[0m
+    [31mmain[0m[1;31m()[0m
+    [31m~~~~[0m[1;31m^^[0m
+  File [35m"/storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py"[0m, line [35m14[0m, in [35mmain[0m
+    prin
+[1;35mNameError[0m: [35mname 'prin' is not defined. Did you mean: 'print'?[0m
+
+[exit code: 1]
+
+===== RUN 2026-10-28 15:55:49 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+<Response [502]>
+ACDV-Teams error 'Response' object has no attribute 'get'
+
+[exit code: 0]
+
+===== RUN 2026-10-28 19:38:31 =====
+CMD: /data/data/com.termux/files/usr/bin/python -u /storage/emulated/0/tool/coder/acdv-coder/projects/tets/main.py
+CWD: /storage/emulated/0/tool/coder/acdv-coder/projects/tets
+------------------------------------------------------------
+ACDV-Teams load
+<Response [502]>
+ACDV-Teams error 'Response' object has no attribute 'get'
+
+[exit code: 0]

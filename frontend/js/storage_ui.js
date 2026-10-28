@@ -1,14 +1,12 @@
-/* ACDV Module Storage UI — v1.4.0
- *
- * - Hiển thị usage bar (used / quota) cho từng module.
- * - Upload file theo chunk (4MB) + progress bar.
- * - Download / delete file.
- * - Export ZIP toàn bộ storage.
- * - Cảnh báo khi gần đầy quota.
+/* ACDV Module Storage UI — v2.0.1
+ * v2.0.1 fixes:
+ * - M4: hiển thị path đầy đủ khi file ở subdir (tránh nhầm khi cùng tên).
+ * - M5: cảnh báo trước khi upload file có tên trùng.
  */
 const StorageUI = {
   _currentModule: null,
   _modalEl: null,
+  _lastFiles: [],
 
   _ensureModal() {
     if (this._modalEl) return this._modalEl;
@@ -88,7 +86,8 @@ const StorageUI = {
       ]);
       if (usageRes && usageRes.ok) this._renderUsage(usageRes.usage);
       if (listRes && listRes.ok) {
-        this._renderFiles(listRes.files || []);
+        this._lastFiles = listRes.files || [];
+        this._renderFiles(this._lastFiles);
       } else {
         const el = document.getElementById("storageFiles");
         if (el) el.innerHTML = `<div class="storage-error">✗ ${listRes.error || "load failed"}</div>`;
@@ -135,9 +134,13 @@ const StorageUI = {
       row.className = "storage-file-row";
       const icon = f.type === "dir" ? "📁" : "📄";
       const sizeTxt = f.type === "dir" ? "" : this._fmtSize(f.size);
+
+      // ⭐ M4: hiển thị path đầy đủ nếu file nằm trong subdir
+      const label = f.path && f.path !== f.name ? f.path : f.name;
+
       row.innerHTML = `
         <span class="storage-file-icon">${icon}</span>
-        <span class="storage-file-name" title="${this._escape(f.path)}">${this._escape(f.name)}</span>
+        <span class="storage-file-name" title="${this._escape(f.path)}">${this._escape(label)}</span>
         <span class="storage-file-size">${sizeTxt}</span>
       `;
       const actions = document.createElement("div");
@@ -181,6 +184,18 @@ const StorageUI = {
     if (!this._currentModule) return;
     const name = this._currentModule;
     const CHUNK = 4 * 1024 * 1024;
+
+    // ⭐ M5: cảnh báo overwrite nếu trùng tên
+    const existingPaths = new Set(
+      (this._lastFiles || [])
+        .filter(f => f.type === "file")
+        .map(f => f.path)
+    );
+    const conflicts = files.filter(f => existingPaths.has(f.name)).map(f => f.name);
+    if (conflicts.length > 0) {
+      const msg = `Các file sau đã tồn tại và sẽ bị GHI ĐÈ:\n\n${conflicts.join("\n")}\n\nTiếp tục?`;
+      if (!confirm(msg)) return;
+    }
 
     for (const file of files) {
       if (file.size === 0) continue;

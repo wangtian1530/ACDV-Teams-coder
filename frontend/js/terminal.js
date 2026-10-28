@@ -1,4 +1,8 @@
-/* ACDV Terminal UI — xterm.js wrapper over WS terminal protocol. */
+/* ACDV Terminal UI — xterm.js wrapper over WS terminal protocol.
+ * v2.0.1:
+ * - M14: kiểm tra ws.send() return, báo lỗi nếu queue full.
+ * - C4: gửi terminal_close sau terminal_exit để server dọn session ngay.
+ */
 const TerminalUI = {
   term: null,
   fitAddon: null,
@@ -94,7 +98,25 @@ const TerminalUI = {
       cwd = 'projects/' + Explorer.currentProject;
     }
 
-    App.ws.send({ type: 'terminal_open', id: this.termId, cols, rows, cwd });
+    // ⭐ M14: kiểm tra send return
+    const ok = App.ws.send({ type: 'terminal_open', id: this.termId, cols, rows, cwd });
+    if (!ok) {
+      // WS chưa sẵn sàng (queue đầy hoặc đang reconnect) → không treo "Connecting…"
+      const pendingId = this.termId;
+      this.termId = null;
+      this._updateStatus('offline');
+      if (this.term) {
+        this.term.writeln('\r\n\x1b[33m[WS chưa sẵn sàng — đợi kết nối rồi mở lại terminal]\x1b[0m');
+      }
+      // Thử lại sau 2s nếu user vẫn đang ở panel terminal
+      setTimeout(() => {
+        const active = document.querySelector(".ptab.active");
+        if (active && active.dataset.ptab === "terminal" && !this.termId) {
+          this.openSession();
+        }
+      }, 2000);
+      return;
+    }
     this._updateStatus('connecting');
   },
 
@@ -134,9 +156,15 @@ const TerminalUI = {
     } else if (msg.type === 'terminal_exit') {
       if (msg.id !== this.termId) return;
       this.term.writeln('\r\n\x1b[33m[process exited with code ' + msg.code + ']\x1b[0m');
+      // ⭐ C4: server đã pop session ở backend khi exit — chỉ reset local state
+      const exitedId = this.termId;
       this.termId = null;
       this.ready = false;
       this._updateStatus('exited');
+      // Defensive: gửi close để server dọn sạch (nếu vì lý do nào đó session còn)
+      if (window.App && App.ws && exitedId) {
+        App.ws.send({ type: 'terminal_close', id: exitedId });
+      }
     } else if (msg.type === 'terminal_error') {
       if (msg.id !== this.termId) return;
       this.term.writeln('\r\n\x1b[31m[error: ' + (msg.error || 'unknown') + ']\x1b[0m');

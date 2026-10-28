@@ -1,0 +1,3 @@
+/* AI Autocomplete overlay — © ACDV-Teams */
+#ai-ac-btn:hover { background: #89b4fa !important; color: #11111b !important; }
+.ai-ac-ghost, .ai-ac-loading { user-select: none; }

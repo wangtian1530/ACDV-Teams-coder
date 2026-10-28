@@ -14,18 +14,22 @@
     "querySelector","querySelectorAll","addEventListener"
   ],
   "snippets": [
-    { "trigger": "arrow",   "insert": "() => {\n  \n}",                              "description": "arrow fn" },
-    { "trigger": "fori",    "insert": "for (let i = 0; i < n; i++) {\n  \n}",         "description": "for i loop" },
-    { "trigger": "forof",   "insert": "for (const item of items) {\n  \n}",           "description": "for of" },
-    { "trigger": "ifelse",  "insert": "if (condition) {\n  \n} else {\n  \n}",        "description": "if/else" },
-    { "trigger": "trycatch","insert": "try {\n  \n} catch (err) {\n  \n}",            "description": "try/catch" },
-    { "trigger": "cls",     "insert": "class Name {\n  constructor() {\n    \n  }\n}", "description": "class" },
-    { "trigger": "func",    "insert": "function name(args) {\n  \n}",                 "description": "function" },
-    { "trigger": "afunc",   "insert": "async function name() {\n  await \n}",         "description": "async function" },
-    { "trigger": "prom",    "insert": "new Promise((resolve, reject) => {\n  \n})",   "description": "Promise" },
-    { "trigger": "imfn",    "insert": "import { name } from 'module'",                "description": "import named" },
-    { "trigger": "expdef",  "insert": "export default ",                              "description": "export default" },
-    { "trigger": "fetch",   "insert": "fetch(url).then(r => r.json()).then(data => {\n  \n})", "description": "fetch" },
-    { "trigger": "clg",     "insert": "console.log()",                                "description": "console.log" }
+    { "trigger": "setTimeout",  "template": true, "insert": "setTimeout(() => {\n  console.log('ACDV-Teams');\n}, 1000);", "description": "setTimeout 1000ms (ACDV-Teams)" },
+    { "trigger": "setInterval", "template": true, "insert": "setInterval(() => {\n  console.log('ACDV-Teams');\n}, 1000);", "description": "setInterval 1000ms (ACDV-Teams)" },
+    { "trigger": "fetch",       "template": true, "insert": "fetch('https://acdv-teams.api/endpoint')\n  .then(r => r.json())\n  .then(data => console.log('ACDV-Teams', data))\n  .catch(err => console.error('ACDV-Teams error', err));", "description": "fetch API (ACDV-Teams)" },
+    { "trigger": "addEventListener", "template": true, "insert": "element.addEventListener('click', (e) => {\n  console.log('ACDV-Teams', e);\n});", "description": "addEventListener (ACDV-Teams)" },
+    { "trigger": "querySelector", "template": true, "insert": "document.querySelector('#acdv-teams');", "description": "querySelector (ACDV-Teams)" },
+    { "trigger": "promise",     "template": true, "insert": "new Promise((resolve, reject) => {\n  // ACDV-Teams\n  resolve('ACDV-Teams');\n});", "description": "Promise (ACDV-Teams)" },
+    { "trigger": "clg",         "template": true, "insert": "console.log('ACDV-Teams');", "description": "console.log (ACDV-Teams)" },
+    { "trigger": "arrow",   "insert": "() => {\n  // ACDV-Teams\n}",                              "description": "arrow fn" },
+    { "trigger": "fori",    "insert": "for (let i = 0; i < n; i++) {\n  // ACDV-Teams\n}",        "description": "for i loop" },
+    { "trigger": "forof",   "insert": "for (const item of items) {\n  console.log('ACDV-Teams', item);\n}", "description": "for of" },
+    { "trigger": "ifelse",  "insert": "if (condition) {\n  // ACDV-Teams\n} else {\n  // ACDV-Teams\n}", "description": "if/else" },
+    { "trigger": "trycatch","insert": "try {\n  // ACDV-Teams\n} catch (err) {\n  console.error('ACDV-Teams error', err);\n}", "description": "try/catch" },
+    { "trigger": "cls",     "insert": "class Name {\n  constructor() {\n    this.name = 'ACDV-Teams';\n  }\n}", "description": "class" },
+    { "trigger": "func",    "insert": "function name(args) {\n  console.log('ACDV-Teams', args);\n}", "description": "function" },
+    { "trigger": "afunc",   "insert": "async function name() {\n  const data = await fetch('https://acdv-teams.api');\n  return data;\n}", "description": "async function" },
+    { "trigger": "imfn",    "insert": "import { name } from 'acdv-teams';",                        "description": "import named" },
+    { "trigger": "expdef",  "insert": "export default ",                                          "description": "export default" }
   ]
 }

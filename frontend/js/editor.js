@@ -1,3 +1,60 @@
+const MODE_SCRIPTS = {
+  "python":                  "python/python",
+  "javascript":              "javascript/javascript",
+  "htmlmixed":               "htmlmixed/htmlmixed",
+  "css":                     "css/css",
+  "markdown":                "markdown/markdown",
+  "xml":                     "xml/xml",
+  "text/typescript":         "javascript/typescript",
+  "text/x-scss":             "css/scss",
+  "text/x-less":             "css/less",
+  "sass":                    "sass/sass",
+  "stylus":                  "stylus/stylus",
+  "yaml":                    "yaml/yaml",
+  "toml":                    "toml/toml",
+  "properties":              "properties/properties",
+  "dockerfile":              "dockerfile/dockerfile",
+  "text/x-sql":              "sql/sql",
+  "text/x-vue":              "vue/vue",
+  "text/x-pug":              "pug/pug",
+  "coffeescript":            "coffeescript/coffeescript",
+  "powershell":              "powershell/powershell",
+  "application/x-httpd-php": "php/php",
+  "ruby":                    "ruby/ruby",
+  "perl":                    "perl/perl",
+  "lua":                     "lua/lua",
+  "r":                       "r/r",
+  "text/x-csrc":             "clike/clike",
+  "text/x-c++src":           "clike/clike",
+  "text/x-objectivec":       "clike/clike",
+  "text/x-java":             "clike/clike",
+  "text/x-kotlin":           "clike/clike",
+  "text/x-csharp":           "clike/clike",
+  "text/x-scala":            "clike/clike",
+  "dart":                    "dart/dart",
+  "swift":                   "swift/swift",
+  "text/x-go":               "go/go",
+  "text/x-rustsrc":          "rust/rust",
+  "clojure":                 "clojure/clojure",
+  "haskell":                 "haskell/haskell",
+  "shell":                   "shell/shell",
+  "groovy":                  "groovy/groovy",
+  "julia":                   "julia/julia",
+  "scheme":                  "scheme/scheme",
+  "tcl":                     "tcl/tcl",
+  "verilog":                 "verilog/verilog",
+  "vhdl":                    "vhdl/vhdl",
+  "smalltalk":               "smalltalk/smalltalk",
+  "pascal":                  "pascal/pascal",
+  "haxe":                    "haxe/haxe",
+  "erlang":                  "erlang/erlang",
+  "fortran":                 "fortran/fortran",
+  "gherkin":                 "gherkin/gherkin",
+};
+
+const CM_CDN = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/";
+
+
 class EditorManager {
   constructor() {
     this.cm = null;
@@ -6,6 +63,13 @@ class EditorManager {
     this.globalSettings = null;
     this._loadedThemes = new Set(["dracula"]);
     this._lastMerge = 0;
+
+    this._loadedModeScripts = new Set([
+      "python/python", "javascript/javascript", "htmlmixed/htmlmixed",
+      "css/css", "xml/xml", "markdown/markdown",
+    ]);
+    this._loadingModeScripts = {};
+
     this.els = {
       container: document.getElementById("editor"),
       tabs: document.getElementById("editorTabs"),
@@ -17,7 +81,6 @@ class EditorManager {
     const ua = navigator.userAgent || "";
     const isAndroid = /Android/i.test(ua);
 
-    // ⭐ v1.4.1: extraKeys + foldGutter config
     const cmOpts = {
       lineNumbers: true,
       theme: "dracula",
@@ -29,7 +92,6 @@ class EditorManager {
       lineWrapping: false,
       viewportMargin: Infinity,
       autofocus: false,
-
       foldGutter: true,
       gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
       extraKeys: {
@@ -81,7 +143,153 @@ class EditorManager {
     this._updateUndoRedoButtons();
   }
 
-  // ⭐ v1.4.1: Chọn fold range finder theo mode hiện tại
+  _mode(path) {
+    const p = (path || "").toLowerCase();
+    const base = p.split("/").pop() || "";
+    if (base === "dockerfile" || base === "containerfile") return "dockerfile";
+    if (/\.(py|pyw|pyi)$/.test(p)) return "python";
+    if (/\.(js|mjs|cjs|jsx)$/.test(p)) return "javascript";
+    if (/\.(ts|tsx)$/.test(p)) return "text/typescript";
+    if (/\.(html|htm|xhtml)$/.test(p)) return "htmlmixed";
+    if (/\.vue$/.test(p)) return "text/x-vue";
+    if (/\.(pug|jade)$/.test(p)) return "text/x-pug";
+    if (/\.css$/.test(p)) return "css";
+    if (/\.scss$/.test(p)) return "text/x-scss";
+    if (/\.sass$/.test(p)) return "sass";
+    if (/\.less$/.test(p)) return "text/x-less";
+    if (/\.styl(us)?$/.test(p)) return "stylus";
+    if (/\.(md|markdown|mdown|mkd)$/.test(p)) return "markdown";
+    if (/\.(json|jsonc|json5)$/.test(p)) return "javascript";
+    if (/\.(xml|xsl|xslt|svg|rss|atom|plist|dtd)$/.test(p)) return "xml";
+    if (/\.(yaml|yml)$/.test(p)) return "yaml";
+    if (/\.toml$/.test(p)) return "toml";
+    if (/\.(ini|cfg|conf|properties|env)$/.test(p)) return "properties";
+    if (/\.(sql|ddl|dml)$/.test(p)) return "text/x-sql";
+    if (/\.(sh|bash|zsh|ksh|fish)$/.test(p)) return "shell";
+    if (/\.coffee$/.test(p)) return "coffeescript";
+    if (/\.(ps1|psm1|psd1)$/.test(p)) return "powershell";
+    if (/\.(php|phtml|php3|php4|php5|phps)$/.test(p)) return "application/x-httpd-php";
+    if (/\.(rb|rake|gemspec|ru)$/.test(p)) return "ruby";
+    if (/\.(pl|pm|pod|t)$/.test(p)) return "perl";
+    if (/\.lua$/.test(p)) return "lua";
+    if (/\.(r|rmd)$/.test(p)) return "r";
+    if (/\.jl$/.test(p)) return "julia";
+    if (/\.(c|h)$/.test(p)) return "text/x-csrc";
+    if (/\.(cpp|cc|cxx|c\+\+|hpp|hxx|hh|h\+\+)$/.test(p)) return "text/x-c++src";
+    if (/\.(m|mm)$/.test(p)) return "text/x-objectivec";
+    if (/\.java$/.test(p)) return "text/x-java";
+    if (/\.(kt|kts)$/.test(p)) return "text/x-kotlin";
+    if (/\.cs$/.test(p)) return "text/x-csharp";
+    if (/\.(scala|sc)$/.test(p)) return "text/x-scala";
+    if (/\.dart$/.test(p)) return "dart";
+    if (/\.swift$/.test(p)) return "swift";
+    if (/\.go$/.test(p)) return "text/x-go";
+    if (/\.rs$/.test(p)) return "text/x-rustsrc";
+    if (/\.(clj|cljs|cljc|edn)$/.test(p)) return "clojure";
+    if (/\.(hs|lhs)$/.test(p)) return "haskell";
+    if (/\.(scm|ss)$/.test(p)) return "scheme";
+    if (/\.(groovy|gradle)$/.test(p)) return "groovy";
+    if (/\.(tcl|tk)$/.test(p)) return "tcl";
+    if (/\.(v|sv|svh)$/.test(p)) return "verilog";
+    if (/\.(vhd|vhdl)$/.test(p)) return "vhdl";
+    if (/\.st$/.test(p)) return "smalltalk";
+    if (/\.(pas|pp|dpr)$/.test(p)) return "pascal";
+    if (/\.(hx|hxml)$/.test(p)) return "haxe";
+    if (/\.(erl|hrl)$/.test(p)) return "erlang";
+    if (/\.(f|for|f90|f95|f03)$/.test(p)) return "fortran";
+    if (/\.feature$/.test(p)) return "gherkin";
+    return "null";
+  }
+
+  _isModeLoaded(mode) {
+    if (!mode || mode === "null") return true;
+    if (!window.CodeMirror) return false;
+    try {
+      let modeName = mode;
+      const mimes = CodeMirror.mimeModes || {};
+      if (mimes[modeName]) {
+        const r = mimes[modeName];
+        modeName = typeof r === "string" ? r : (r && r.name) || modeName;
+      }
+      return !!(CodeMirror.modes && CodeMirror.modes[modeName]);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  _loadModeScript(scriptPath) {
+    if (!scriptPath) return Promise.reject(new Error("no script path"));
+    if (this._loadedModeScripts.has(scriptPath)) return Promise.resolve();
+    if (this._loadingModeScripts[scriptPath]) return this._loadingModeScripts[scriptPath];
+
+    const url = CM_CDN + scriptPath + ".min.js";
+    console.info("[Editor] Loading mode script:", scriptPath);
+    const p = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = url;
+      s.async = true;
+      s.onload = () => {
+        this._loadedModeScripts.add(scriptPath);
+        delete this._loadingModeScripts[scriptPath];
+        console.info("[Editor] ✓ Mode loaded:", scriptPath);
+        resolve();
+      };
+      s.onerror = () => {
+        delete this._loadingModeScripts[scriptPath];
+        console.warn("[Editor] ✗ Mode load failed:", scriptPath, url);
+        reject(new Error("Failed to load CodeMirror mode: " + scriptPath));
+      };
+      document.head.appendChild(s);
+    });
+    this._loadingModeScripts[scriptPath] = p;
+    return p;
+  }
+
+  // ⭐ C7+C8: preserve dirty + re-render diagnostics
+  _recreateDocWithMode(tab, mode) {
+    const wasActive = this.activeIdx >= 0 && this.tabs[this.activeIdx] === tab;
+    const isCurrent = wasActive && this.cm.getDoc() === tab.doc;
+    const val = isCurrent ? this.cm.getValue() : (tab.doc ? tab.doc.getValue() : tab.content);
+    const cursor = isCurrent ? this.cm.getCursor() : null;
+    const scrollInfo = isCurrent ? this.cm.getScrollInfo() : null;
+
+    // ⭐ C7: GIỮ dirty flag — KHÔNG reset tab.content khi đang dirty
+    const wasDirty = !!tab.dirty;
+
+    const newDoc = CodeMirror.Doc(val, mode);
+    tab.doc = newDoc;
+    // Chỉ update content khi chưa dirty (content là bản "saved trên disk")
+    if (!wasDirty) {
+      tab.content = val;
+    }
+    tab.dirty = wasDirty;
+
+    if (isCurrent) {
+      this.cm.swapDoc(newDoc);
+      if (cursor) {
+        try { this.cm.setCursor(cursor); } catch (e) {}
+      }
+      if (scrollInfo) {
+        try { this.cm.scrollTo(scrollInfo.left, scrollInfo.top); } catch (e) {}
+      }
+      setTimeout(() => { try { this.cm.refresh(); } catch (e) {} }, 20);
+
+      // ⭐ C8: re-render diagnostics markers sau khi doc bị swap
+      setTimeout(() => {
+        if (window.DiagnosticsUI && this.activeIdx >= 0) {
+          const t = this.tabs[this.activeIdx];
+          if (t === tab) {
+            const diags = window.DiagnosticsUI.getDiagnostics(t.project, t.path);
+            window.DiagnosticsUI.setFileDiagnostics(t.project, t.path, diags);
+          }
+        }
+      }, 60);
+    }
+
+    // Cập nhật tab UI (dirty marker)
+    this.renderTabs();
+  }
+
   _getFoldRangeFinder() {
     const mode = (this.cm && this.cm.getMode() && this.cm.getMode().name) || "";
     const fold = (window.CodeMirror && window.CodeMirror.fold) || {};
@@ -90,12 +298,13 @@ class EditorManager {
     if (mode.indexOf("css") >= 0 && fold.brace) return fold.brace;
     if (mode.indexOf("htmlmixed") >= 0 && fold.brace) return fold.brace;
     if (mode.indexOf("xml") >= 0 && fold.brace) return fold.brace;
+    if (mode.indexOf("yaml") >= 0 && fold.indent) return fold.indent;
+    if (mode.indexOf("shell") >= 0 && fold.brace) return fold.brace;
     if (fold.brace) return fold.brace;
     if (fold.indent) return fold.indent;
     return null;
   }
 
-  // ⭐ v1.4.1 FIX: Fold từ CUỐI về ĐẦU để line index không bị shift
   foldAll() {
     if (!this.cm) return;
     const cm = this.cm;
@@ -110,13 +319,12 @@ class EditorManager {
           } else {
             cm.foldCode({ line: i, ch: 0 });
           }
-        } catch (e) { /* skip line không fold được */ }
+        } catch (e) {}
       }
     });
     setTimeout(() => { try { cm.refresh(); } catch (e) {} }, 30);
   }
 
-  // ⭐ v1.4.1 FIX: Unfold toàn bộ bằng cách clear tất cả fold marks
   unfoldAll() {
     if (!this.cm) return;
     const cm = this.cm;
@@ -128,7 +336,6 @@ class EditorManager {
           try { m.clear(); } catch (e) {}
         }
       }
-      // Fallback: quét từng line
       try {
         for (let i = 0; i < cm.lineCount(); i++) {
           const marksAtLine = cm.findMarksAt({ line: i, ch: 0 });
@@ -139,7 +346,7 @@ class EditorManager {
             }
           }
         }
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     });
     setTimeout(() => { try { cm.refresh(); } catch (e) {} }, 30);
   }
@@ -160,18 +367,15 @@ class EditorManager {
     else this.foldAll();
   }
 
-  // ============================================================== //
-  //  Undo / Redo
-  // ============================================================== //
   undo() {
     if (!this.cm) return;
-    try { this.cm.undo(); } catch (e) { /* ignore */ }
+    try { this.cm.undo(); } catch (e) {}
     this._updateUndoRedoButtons();
   }
 
   redo() {
     if (!this.cm) return;
-    try { this.cm.redo(); } catch (e) { /* ignore */ }
+    try { this.cm.redo(); } catch (e) {}
     this._updateUndoRedoButtons();
   }
 
@@ -203,7 +407,7 @@ class EditorManager {
         input.setAttribute("spellcheck", "false");
         try { input.style.fontSize = "16px"; } catch (e) {}
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
   }
 
   _fixAndroidLineMerge() {
@@ -223,7 +427,7 @@ class EditorManager {
       if (cur.ch === 0 && cur.line > 0) {
         e.preventDefault();
         this._lastMerge = t;
-        try { cm.execCommand("delCharBefore"); } catch (err) { /* ignore */ }
+        try { cm.execCommand("delCharBefore"); } catch (err) {}
       }
     };
 
@@ -244,7 +448,7 @@ class EditorManager {
             { line: cur.line, ch: lineText.length },
             { line: cur.line + 1, ch: 0 }
           );
-        } catch (err) { /* ignore */ }
+        } catch (err) {}
       }
     };
 
@@ -322,22 +526,11 @@ class EditorManager {
         };
         document.head.appendChild(link);
         this._loadedThemes.add(theme);
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     }
     try {
       this.cm.setOption("theme", theme);
-    } catch (e) { /* ignore */ }
-  }
-
-  _mode(path) {
-    const p = (path || "").toLowerCase();
-    if (p.endsWith(".py")) return "python";
-    if (p.endsWith(".js")) return "javascript";
-    if (p.endsWith(".html")) return "htmlmixed";
-    if (p.endsWith(".css")) return "css";
-    if (p.endsWith(".md")) return "markdown";
-    if (p.endsWith(".xml")) return "xml";
-    return "null";
+    } catch (e) {}
   }
 
   open(project, path, content) {
@@ -346,17 +539,40 @@ class EditorManager {
       this.activate(existing);
       return;
     }
-    const doc = CodeMirror.Doc(content || "", this._mode(path));
-    this.tabs.push({
+
+    const mode = this._mode(path);
+    const scriptPath = MODE_SCRIPTS[mode];
+    const modeLoaded = this._isModeLoaded(mode);
+    const effMode = modeLoaded ? mode : "null";
+
+    const tab = {
       project, path,
       name: path.split("/").pop(),
       content: content || "",
-      doc: doc,
+      doc: CodeMirror.Doc(content || "", effMode),
       dirty: false,
-    });
+      _pendingMode: modeLoaded ? null : mode,
+    };
+
+    this.tabs.push(tab);
     this.activeIdx = this.tabs.length - 1;
     this._load();
     this.renderTabs();
+
+    if (!modeLoaded && scriptPath) {
+      this._loadModeScript(scriptPath).then(() => {
+        if (!this.tabs.includes(tab)) return;
+        tab._pendingMode = null;
+        if (!this._isModeLoaded(mode)) {
+          console.warn("[Editor] Mode script loaded but mode not registered:", mode);
+          return;
+        }
+        this._recreateDocWithMode(tab, mode);
+      }).catch(e => {
+        console.warn("[Editor] Mode load failed, staying plaintext:", mode, e.message);
+        tab._pendingMode = null;
+      });
+    }
   }
 
   activate(idx) {
@@ -378,7 +594,19 @@ class EditorManager {
     const tab = this.tabs[this.activeIdx];
 
     if (!tab.doc) {
-      tab.doc = CodeMirror.Doc(tab.content || "", this._mode(tab.path));
+      const mode = this._mode(tab.path);
+      const modeLoaded = this._isModeLoaded(mode);
+      tab.doc = CodeMirror.Doc(tab.content || "", modeLoaded ? mode : "null");
+      if (!modeLoaded) {
+        const sp = MODE_SCRIPTS[mode];
+        if (sp) {
+          this._loadModeScript(sp).then(() => {
+            if (this.tabs.includes(tab) && this._isModeLoaded(mode)) {
+              this._recreateDocWithMode(tab, mode);
+            }
+          }).catch(e => console.warn("[Editor] Mode load failed:", mode, e.message));
+        }
+      }
     }
     this.cm.swapDoc(tab.doc);
 
@@ -407,6 +635,36 @@ class EditorManager {
       this.activeIdx = this.tabs.length - 1;
     } else if (this.activeIdx > idx) {
       this.activeIdx--;
+    }
+    this._load();
+    this.renderTabs();
+  }
+
+  /** Đóng tất cả tab của 1 file cụ thể (dùng khi file/project bị xoá). */
+  closeByPath(project, path) {
+    const idx = this.tabs.findIndex(t => t.project === project && t.path === path);
+    if (idx < 0) return;
+    this.tabs.splice(idx, 1);
+    if (this.tabs.length === 0) {
+      this.activeIdx = -1;
+    } else if (this.activeIdx >= this.tabs.length) {
+      this.activeIdx = this.tabs.length - 1;
+    } else if (this.activeIdx > idx) {
+      this.activeIdx--;
+    }
+    this._load();
+    this.renderTabs();
+  }
+
+  /** Đóng tất cả tab của 1 project (dùng khi project bị xoá). */
+  closeByProject(project) {
+    const before = this.tabs.length;
+    this.tabs = this.tabs.filter(t => t.project !== project);
+    if (this.tabs.length === before) return;
+    if (this.tabs.length === 0) {
+      this.activeIdx = -1;
+    } else if (this.activeIdx >= this.tabs.length) {
+      this.activeIdx = this.tabs.length - 1;
     }
     this._load();
     this.renderTabs();

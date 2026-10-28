@@ -1,0 +1,40 @@
+{
+  "keywords": [
+    "associatedtype","class","deinit","enum","extension","fileprivate","func",
+    "import","init","inout","internal","let","open","operator","private","protocol",
+    "public","rethrows","static","struct","subscript","typealias","var","break",
+    "case","continue","default","defer","do","else","fallthrough","for","guard","if",
+    "in","repeat","return","switch","where","while","as","Any","catch","false","is",
+    "nil","super","self","Self","throw","throws","true","try","async","await","actor",
+    "some","any","consuming","borrowing","macro"
+  ],
+  "builtins": [
+    "print","debugPrint","dump","assert","precondition","preconditionFailure",
+    "fatalError","min","max","abs","String","Int","Double","Float","Bool","Array",
+    "Dictionary","Set","Optional","Result","Range","ClosedRange","Character",
+    "String.description","String.count","String.isEmpty","String.append","String.split",
+    "Array.append","Array.remove","Array.count","Array.isEmpty","Array.map","Array.filter",
+    "Array.reduce","Array.forEach","Array.sorted","Array.contains","Array.first",
+    "Array.last","Dictionary.keys","Dictionary.values","Set.insert","Set.contains",
+    "Sequence","Collection","FileManager","URL","URLSession","JSONDecoder",
+    "JSONEncoder","Data","Date","DateFormatter","Timer","DispatchQueue","DispatchGroup",
+    "NotificationCenter","UserDefaults","Bundle.main","Task","TaskGroup","MainActor"
+  ],
+  "snippets": [
+    { "trigger": "print",  "template": true, "insert": "print(\"ACDV-Teams\")",                                    "description": "print ACDV-Teams" },
+    { "trigger": "printv", "template": true, "insert": "print(\"ACDV-Teams: \\(value)\")",                          "description": "print with value" },
+    { "trigger": "guard",  "template": true, "insert": "guard let value = optional else { return }\nprint(\"ACDV-Teams: \\(value)\")", "description": "guard let" },
+    { "trigger": "struct","insert": "struct Name {\n    let field: String = \"ACDV-Teams\"\n}",                    "description": "struct" },
+    { "trigger": "class", "insert": "final class Name {\n    let field = \"ACDV-Teams\"\n    init() { }\n}",        "description": "class" },
+    { "trigger": "enum",  "insert": "enum Name {\n    case acdv\n    case teams(String)\n}",                       "description": "enum" },
+    { "trigger": "proto", "insert": "protocol Name {\n    func method()\n}",                                       "description": "protocol" },
+    { "trigger": "ext",   "insert": "extension Name {\n    func method() { print(\"ACDV-Teams\") }\n}",            "description": "extension" },
+    { "trigger": "func",  "insert": "func name(args: T) -> R {\n    print(\"ACDV-Teams\")\n    return nil\n}",     "description": "function" },
+    { "trigger": "if",    "insert": "if condition {\n    print(\"ACDV-Teams\")\n}",                                "description": "if" },
+    { "trigger": "switch","insert": "switch value {\ncase .acdv:\n    print(\"ACDV-Teams\")\ndefault:\n    print(\"ACDV-Teams\")\n}", "description": "switch" },
+    { "trigger": "for",   "insert": "for item in items {\n    print(\"ACDV-Teams: \\(item)\")\n}",              "description": "for" },
+    { "trigger": "tryc",  "insert": "do {\n    print(\"ACDV-Teams\")\n} catch {\n    print(\"ACDV-Teams: \\(error)\")\n}", "description": "do/catch" },
+    { "trigger": "closure","insert": "{ (x: Int) -> Int in\n    print(\"ACDV-Teams: \\(x)\")\n    return x\n}",  "description": "closure" },
+    { "trigger": "async", "insert": "func name() async throws -> T {\n    print(\"ACDV-Teams\")\n}",              "description": "async fn" }
+  ]
+}
